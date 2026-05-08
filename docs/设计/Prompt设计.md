@@ -1,8 +1,8 @@
 # AI Teacher — 苏格拉底式教学 Prompt 设计
 
-> 版本：v0.2
-> 更新日期：2026-05-08
-> 状态：已对齐实际实现
+> 版本：v0.3
+> 更新日期：2026-05-09
+> 状态：已对齐实际实现（含迭代 011 工具副作用内化）
 > 参考：Sigma Skill + 同类竞品实际交互分析
 
 ---
@@ -102,6 +102,8 @@ interface TutorPromptContext {
 ---
 
 ## 3. Agent 工具定义
+
+> **迭代 011 变更**：工具通过 `createTutorTools()` 工厂创建，`assessMastery` 和 `advanceNode` 的 execute 函数直接调用 `NodeService` 操作数据库（副作用内化）。不再需要在 `chat/route.ts` 中解析 toolResults 后手动更新节点。
 
 ### 3.1 assessMastery
 

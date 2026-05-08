@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v0.3
-> 更新日期：2026-05-08
-> 状态：已对齐实际实现（含迭代 013 画像更新）
+> 版本：v0.4
+> 更新日期：2026-05-09
+> 状态：已对齐实际实现（含迭代 011-014 全部接口）
 
 ---
 
@@ -18,6 +18,8 @@
 | POST | `/api/chat` | 流式对话（SSE） | ✅ |
 | POST | `/api/sessions/:id/diagnostic` | 生成诊断题 | ✅ |
 | POST | `/api/sessions/:id/diagnostic/evaluate` | 评估诊断答案 | ✅ |
+| POST | `/api/quick-question` | 快问（选中文字提问） | ✅ |
+| POST | `/api/suggest-reply` | AI 建议回复 | ✅ |
 
 > 以下为实际已实现的接口详情。
 
@@ -285,6 +287,70 @@ POST /api/sessions/:id/diagnostic/evaluate
 - `index < startingNodeIndex` 的节点 → `mastered`（masteryScore=100）
 - `index === startingNodeIndex` 的节点 → `in-progress`
 - 会话状态从 `diagnosing` → `active`
+
+---
+
+## 9. 快问
+
+```
+POST /api/quick-question
+```
+
+### 请求体
+
+```json
+{
+  "sessionId": "string (必填)",
+  "selectedText": "string (必填，用户选中的文字)",
+  "question": "string (必填，用户的问题)",
+  "context": "string (可选，额外上下文)"
+}
+```
+
+### 响应
+
+AI SDK `DataDataStreamResponse`（SSE 流式响应）。
+
+- 基于 `glm-4-flash`，使用苏格拉底式追问风格回答
+- 回答 1-3 句话，聚焦选中内容
+
+### 说明
+
+- 用户在聊天中选中文本后，点击"快问"按钮触发
+- 不影响主对话流程，是独立的辅助功能
+
+---
+
+## 10. AI 建议回复
+
+```
+POST /api/suggest-reply
+```
+
+### 请求体
+
+```json
+{
+  "sessionId": "string (必填)",
+  "currentQuestion": "string (必填，AI 当前问的问题)",
+  "topic": "string (可选，学习主题)",
+  "hint": "string (可选，提示方向)"
+}
+```
+
+### 响应 `200`
+
+```json
+{
+  "suggestion": "可以从 useState 的返回值结构入手，想想数组的两个元素分别代表什么..."
+}
+```
+
+### 说明
+
+- 用户不知道怎么回答时，点击输入框旁灯泡按钮触发
+- 返回的是**思考方向提示**（不是完整答案），帮助用户找到思路
+- 使用 `generateText`（非流式），直接返回 JSON
 
 ---
 
