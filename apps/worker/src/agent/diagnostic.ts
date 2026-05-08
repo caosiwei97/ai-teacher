@@ -1,5 +1,4 @@
 import { generateObject } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
 import {
   DiagnosticOutput,
   DiagnosticEvaluation,
@@ -9,12 +8,7 @@ import type {
   DiagnosticEvaluation as DiagnosticEvaluationType,
   DiagnosticAnswer,
 } from "@ai-teacher/shared";
-
-const provider = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL:
-    process.env.OPENAI_BASE_URL ?? "https://open.bigmodel.cn/api/paas/v4",
-});
+import { BaseAgent } from "./base-agent.js";
 
 const DIAGNOSTIC_QUESTION_PROMPT = `你是一个教学诊断专家。根据学习主题和知识图谱，生成诊断摸底题目。
 
@@ -35,22 +29,71 @@ const DIAGNOSTIC_EVALUATE_PROMPT = `你是一个教学诊断专家。根据学�
 4. 给出简短的定位理由
 5. 对每道题给出简短点评（正确/错误 + 一句话说明）`;
 
+interface DiagnosticQuestionInput {
+  topic: string;
+  nodes: Array<{ index: number; title: string; description: string }>;
+}
+
+interface DiagnosticEvaluateInput {
+  topic: string;
+  nodes: Array<{ index: number; title: string; description: string }>;
+  questions: Array<{
+    id: string;
+    question: string;
+    type: string;
+    correctAnswer: string;
+    nodeIndex: number;
+  }>;
+  answers: DiagnosticAnswer[];
+}
+
+export class DiagnosticQuestionAgent extends BaseAgent {
+  async run(input: DiagnosticQuestionInput): Promise<DiagnosticOutputType> {
+    const nodesSummary = input.nodes
+      .map((n) => `[${n.index}] ${n.title}: ${n.description}`)
+      .join("\n");
+
+    const result = await generateObject({
+      model: this.getModel(),
+      schema: DiagnosticOutput,
+      system: DIAGNOSTIC_QUESTION_PROMPT,
+      prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}`,
+    });
+
+    return result.object;
+  }
+}
+
+export class DiagnosticEvaluateAgent extends BaseAgent {
+  async run(input: DiagnosticEvaluateInput): Promise<DiagnosticEvaluationType> {
+    const nodesSummary = input.nodes
+      .map((n) => `[${n.index}] ${n.title}: ${n.description}`)
+      .join("\n");
+
+    const qaList = input.questions
+      .map((q) => {
+        const answer = input.answers.find((a) => a.questionId === q.id);
+        return `题目 ${q.id}（对应节点 ${q.nodeIndex}）: ${q.question}\n正确答案: ${q.correctAnswer}\n学生回答: ${answer?.answer ?? "未回答"}`;
+      })
+      .join("\n\n");
+
+    const result = await generateObject({
+      model: this.getModel(),
+      schema: DiagnosticEvaluation,
+      system: DIAGNOSTIC_EVALUATE_PROMPT,
+      prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}\n\n答题情况：\n${qaList}`,
+    });
+
+    return result.object;
+  }
+}
+
 export async function generateDiagnosticQuestions(
   topic: string,
   nodes: Array<{ index: number; title: string; description: string }>,
 ): Promise<DiagnosticOutputType> {
-  const nodesSummary = nodes
-    .map((n) => `[${n.index}] ${n.title}: ${n.description}`)
-    .join("\n");
-
-  const result = await generateObject({
-    model: provider("glm-4-flash"),
-    schema: DiagnosticOutput,
-    system: DIAGNOSTIC_QUESTION_PROMPT,
-    prompt: `学习主题：${topic}\n\n知识图谱节点：\n${nodesSummary}`,
-  });
-
-  return result.object;
+  const agent = new DiagnosticQuestionAgent();
+  return agent.run({ topic, nodes });
 }
 
 export async function evaluateDiagnosticAnswers(
@@ -65,23 +108,6 @@ export async function evaluateDiagnosticAnswers(
   }>,
   answers: DiagnosticAnswer[],
 ): Promise<DiagnosticEvaluationType> {
-  const nodesSummary = nodes
-    .map((n) => `[${n.index}] ${n.title}: ${n.description}`)
-    .join("\n");
-
-  const qaList = questions
-    .map((q) => {
-      const answer = answers.find((a) => a.questionId === q.id);
-      return `题目 ${q.id}（对应节点 ${q.nodeIndex}）: ${q.question}\n正确答案: ${q.correctAnswer}\n学生回答: ${answer?.answer ?? "未回答"}`;
-    })
-    .join("\n\n");
-
-  const result = await generateObject({
-    model: provider("glm-4-flash"),
-    schema: DiagnosticEvaluation,
-    system: DIAGNOSTIC_EVALUATE_PROMPT,
-    prompt: `学习主题：${topic}\n\n知识图谱节点：\n${nodesSummary}\n\n答题情况：\n${qaList}`,
-  });
-
-  return result.object;
+  const agent = new DiagnosticEvaluateAgent();
+  return agent.run({ topic, nodes, questions, answers });
 }
