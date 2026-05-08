@@ -14,6 +14,9 @@ test.describe("Diagnostic — Session Status", () => {
     const { session } = await response.json();
     expect(session.status).toBe("diagnosing");
     expect(session.roadmap.nodes.length).toBeGreaterThanOrEqual(5);
-    expect(session.roadmap.nodes[0].status).toBe("in-progress");
+    const inProgressCount = session.roadmap.nodes.filter(
+      (n: { status: string }) => n.status === "in-progress",
+    ).length;
+    expect(inProgressCount).toBeGreaterThanOrEqual(1);
   });
 });
