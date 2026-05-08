@@ -1,0 +1,137 @@
+apps/worker/src/agent/tools/index.ts
+  d238a929837687c0 1-5
+apps/worker/src/agent/tutor.ts
+  d238a929837687c0 1-34,36-49
+  bbe588d9f26efe30 35
+apps/worker/src/agent/tools/record-strength.ts
+  d238a929837687c0 1-13
+apps/web/src/app/api/sessions/[id]/route.ts
+  d238a929837687c0 1-46
+apps/worker/src/agent/prompts/tutor.ts
+  d238a929837687c0 1-46
+packages/db/prisma/seed.ts
+  4513e9c7255562a4 1-320
+apps/worker/src/agent/tools/record-misconception.ts
+  d238a929837687c0 1-14
+docs/3-development/iteration-plan.md
+  f8d21ddbdeb57b32 13-14
+packages/db/package.json
+  4513e9c7255562a4 11,19,21-22
+apps/web/src/app/api/sessions/route.ts
+  d238a929837687c0 1-177
+apps/web/src/app/api/chat/route.ts
+  d238a929837687c0 1-288
+apps/worker/src/agent/tools/assess-mastery.ts
+  d238a929837687c0 1-24
+apps/worker/src/agent/tools/advance-node.ts
+  d238a929837687c0 1-14
+apps/worker/src/agent/tools/generate-assessment.ts
+  d238a929837687c0 1-24
+apps/web/next.config.ts
+  d238a929837687c0 5-15
+docs/dev-log.md
+  1f92e2b75ed4d2dd 98-125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.13",
+  "base_commit_sha": "1ad8a1deae4aa1195ece4280c16b9d04c859dea9",
+  "prompts": {
+    "1f92e2b75ed4d2dd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1fabb48c8ffeRFCpBFUz5iOhKE-1c2c15f1-f73b-49c9-b1f9-186232cdb2f8",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 28,
+      "total_deletions": 0,
+      "accepted_lines": 28,
+      "overriden_lines": 0
+    },
+    "4513e9c7255562a4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1fa3cf481ffeO0xDL0d42blu8v",
+        "model": "cchGPT/gpt-5.4"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 326,
+      "total_deletions": 4,
+      "accepted_lines": 324,
+      "overriden_lines": 0
+    },
+    "7acf028e29b6d705": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1fabb48c8ffeRFCpBFUz5iOhKE",
+        "model": "zhipuai-coding-plan/glm-5.1"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 1
+    },
+    "bbe588d9f26efe30": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1fabb48c8ffeRFCpBFUz5iOhKE-69d9cbe7-371e-4265-bb3f-ec36e38fc0b2",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "d238a929837687c0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1fa3c51d1ffeYDFllO3582eJD7",
+        "model": "cchGPT/gpt-5.4"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 734,
+      "total_deletions": 23,
+      "accepted_lines": 710,
+      "overriden_lines": 0
+    },
+    "f8d21ddbdeb57b32": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1fabb48c8ffeRFCpBFUz5iOhKE-cb472d6f-0b39-459a-a18e-646b6cfdaebc",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "fbd0a7434a0e56c7": {
+      "agent_id": {
+        "tool": "known_human",
+        "id": "known_human_session",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_8dab1e225b0296": {
+      "author": "caosiwei"
+    }
+  }
+}
