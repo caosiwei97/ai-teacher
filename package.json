@@ -10,19 +10,23 @@
     "lint": "pnpm -r lint",
     "format": "prettier --write .",
     "db:generate": "pnpm --filter @ai-teacher/db generate",
-    "db:migrate": "pnpm --filter @ai-teacher/db migrate"
+    "db:migrate": "pnpm --filter @ai-teacher/db migrate",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "esbuild",
+    "@playwright/test",
+    "@prisma/client",
+    "@prisma/engines",
+    "esbuild",
       "msgpackr-extract",
       "prisma",
       "sharp"
     ]
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^22.0.0",
     "prettier": "^3.5.0",
     "typescript": "^5.7.0"
