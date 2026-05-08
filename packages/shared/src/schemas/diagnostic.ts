@@ -12,7 +12,9 @@ export const DiagnosticQuestion = z.object({
         text: z.string().describe("选项内容"),
       }),
     )
-    .describe("选择题选项（简答题为空数组）"),
+    .optional()
+    .default([])
+    .describe("选择题选项（简答题可省略）"),
   correctAnswer: z.string().describe("正确答案（选择题为选项 label，简答题为参考要点）"),
 });
 
