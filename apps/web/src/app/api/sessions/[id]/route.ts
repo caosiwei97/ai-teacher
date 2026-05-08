@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@ai-teacher/db";
+import { ProfileService } from "../../../../../../worker/src/agent/services/profile-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,7 +70,7 @@ export async function PATCH(
 
   const existingSession = await prisma.session.findUnique({
     where: { id },
-    select: { id: true },
+    select: { id: true, status: true, userId: true },
   });
 
   if (!existingSession) {
@@ -84,7 +85,49 @@ export async function PATCH(
     include: sessionInclude,
   });
 
+  if (
+    parsed.data.status === "completed" &&
+    existingSession.status !== "completed"
+  ) {
+    void updateProfileAfterCompletion(existingSession.userId, session);
+  }
+
   return NextResponse.json({ session });
+}
+
+async function updateProfileAfterCompletion(
+  userId: string,
+  session: {
+    topic: string;
+    roadmap: {
+      nodes: Array<{
+        title: string;
+        status: string;
+        masteryScore: number;
+      }>;
+    } | null;
+  },
+) {
+  try {
+    const nodes = session.roadmap?.nodes ?? [];
+    const masteredNodes = nodes
+      .filter((n) => n.status === "mastered" || n.masteryScore >= 80)
+      .map((n) => n.title);
+    const unmasteredNodes = nodes
+      .filter((n) => n.status !== "mastered" && n.masteryScore < 80)
+      .map((n) => n.title);
+
+    await ProfileService.updateAfterSession(userId, {
+      topic: session.topic,
+      masteredNodes,
+      totalNodes: nodes.length,
+      strengths: masteredNodes,
+      weaknesses: unmasteredNodes,
+      date: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("[sessions] failed to update profile", error);
+  }
 }
 
 export async function DELETE(
