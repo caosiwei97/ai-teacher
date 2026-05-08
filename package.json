@@ -2,7 +2,11 @@
   "name": "ai-teacher",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "pnpm": ">=10"
+  },
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "dev:web": "pnpm --filter @ai-teacher/web dev",
     "dev:worker": "pnpm --filter @ai-teacher/worker dev",
     "build": "pnpm -r build",
@@ -11,15 +15,21 @@
     "format": "prettier --write .",
     "db:generate": "pnpm --filter @ai-teacher/db generate",
     "db:migrate": "pnpm --filter @ai-teacher/db migrate",
+    "db:seed": "pnpm --filter @ai-teacher/db seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "setup:env": "node scripts/setup-env.mjs",
+    "bootstrap": "run-s setup:env docker:up \"db:*\"",
+    "dev": "run-p dev:*",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-    "@playwright/test",
-    "@prisma/client",
-    "@prisma/engines",
-    "esbuild",
+      "@playwright/test",
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
       "msgpackr-extract",
       "prisma",
       "sharp"
@@ -28,6 +38,7 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^22.0.0",
+    "npm-run-all2": "^8.0.4",
     "prettier": "^3.5.0",
     "typescript": "^5.7.0"
   },
