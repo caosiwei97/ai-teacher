@@ -162,25 +162,116 @@ docs/
 - 节点按依赖顺序排列，首个自动设为 in-progress ✅
 - 右侧栏路线图展示节点状态（✓/●/○）+ 进度条 ✅
 
+#### 2026-05-08 14:30 — Bug 修复：Tailwind CSS 未加载 + Chat API 400 错误
+
+**状态**：✅ 已完成
+
+**事件**：
+- 用户反馈页面样式没加载，`bg-slate-900` 渲染为透明
+- 根因 1：缺少 `postcss.config.mjs`，Tailwind CSS 4 的 `@import "tailwindcss"` 未被 PostCSS 处理
+- 根因 2：`globals.css` 未在 `layout.tsx` 中 import
+- 根因 3：Chat API 的 schema 期望 `{ sessionId, message }` 但 AI SDK `useChat` 发送 `{ id, messages, sessionId }`
+
+**代码变更**：
+- `apps/web/postcss.config.mjs` — 新增 PostCSS 配置（`@tailwindcss/postcss`）
+- `apps/web/src/app/globals.css` — 添加完整 Tailwind CSS 4 `@theme` 变量 + `@layer base`
+- `apps/web/src/app/layout.tsx` — 添加 `import "./globals.css"`
+- `apps/web/src/app/api/chat/route.ts` — schema 改为接收 `messages` 数组，移除死代码
+- `apps/web/src/hooks/use-chat-stream.ts` — 简化 useChat 封装
+
+**验证结果**：
+- `bg-slate-900` 正确渲染为 `oklch(0.208 0.042 265.755)` ✅
+- Chat API 返回 HTTP 200 + 流式响应 ✅
+
+#### 2026-05-08 14:50 — E2E 测试基础设施搭建
+
+**状态**：✅ 已完成
+
+**事件**：
+- 安装 Playwright Chromium headless shell（通过代理 127.0.0.1:7890 下载）
+- 创建 `playwright.config.ts` + 7 个 E2E 测试用例
+
+**代码变更**：
+- `playwright.config.ts` — Playwright 配置（chromium, baseURL localhost:38421, webServer 自动启动）
+- `e2e/learn.spec.ts` — 7 个测试：三栏布局、会话列表、路线图、聊天输入、深色侧边栏、发送消息接收 AI 回复、首页加载
+- `package.json` — 添加 `@playwright/test` 依赖
+
+**验证结果**：
+- 7/7 E2E 测试全部通过 ✅
+
+#### 2026-05-08 15:30 — UI 设计系统升级：暖色教育主题
+
+**状态**：✅ 已完成
+
+**事件**：
+- 用户要求统一设计系统风格，用 Tailwind 定义设计系统
+- 尝试安装第三方 UI 设计 skill（`tailwind-design-system`、`ui-design`），均因仓库格式问题失败
+- 尝试 `visual-engineering` category agent 委托，因模型不可用失败两次
+- 最终由主 session 直接完成全部设计系统 + 组件重写
+
+**设计决策**：
+- 色彩：暖色 stone 系为主调（#1c1917 / #fafaf8），amber（#d97706）为强调色
+- 左侧边栏：温暖深石色背景 + 琥珀色选中态 + 内联进度条
+- 右侧边栏：路线图带总进度百分比 + 垂直 timeline 节点连线
+- 聊天：深色用户气泡 + 浅色导师气泡 + 代码块深色背景
+- 输入框：圆角 + 琥珀色 focus ring
+- 加载状态：带脉冲动画的圆点
+
+**代码变更**：
+- `apps/web/src/app/globals.css` — 全新设计系统（15+ 语义化 CSS 变量：sidebar-*, chat-*, roadmap-*, code-*）
+- `apps/web/src/components/layout/left-sidebar.tsx` — 重写：图标按钮 + 进度条 + 分组列表
+- `apps/web/src/components/layout/right-sidebar.tsx` — 重写：总进度条 + 百分比 + 垂直 timeline
+- `apps/web/src/components/layout/three-column.tsx` — 更新：语义化变量 + lg 断点
+- `apps/web/src/components/chat/chat-area.tsx` — 更新：空状态图标 + 设计变量
+- `apps/web/src/components/chat/chat-message.tsx` — 更新：语义化颜色
+- `apps/web/src/components/chat/chat-input.tsx` — 更新：圆角 + focus ring
+- `apps/web/src/components/chat/code-block.tsx` — 更新：设计变量
+- `apps/web/src/components/roadmap/roadmap-node.tsx` — 重写：垂直 timeline + 节点圆点 + 连接线 + 进度条
+- `apps/web/src/app/page.tsx` — 改为重定向到 seed session
+- `apps/web/src/app/learn/[sessionId]/page.tsx` — 加载动画更新
+
+**验证结果**：
+- `pnpm --filter @ai-teacher/web build` → 构建成功 ✅
+- 7/7 E2E 测试通过 ✅
+
+#### 2026-05-08 16:00 — 项目级 Agent 协议建立
+
+**状态**：✅ 已完成
+
+**事件**：
+- 用户要求每个新 Agent session 自动感知项目上下文
+- 创建 `AGENTS.md` 作为项目级 Agent 工作协议
+
+**代码变更**：
+- `AGENTS.md` — 新增：session 启动流程、dev-log 记录规范、文档同步规则、质量门控、技术约束
+
+**下一步**：迭代 006（诊断摸底）或迭代 007（掌握度评分 + 门控）
+
+---
+
+## 下次 Session 应从这里继续
+
+- **当前进度**：迭代 001-005 已完成，UI 设计系统已升级，E2E 测试 7/7 通过
+- **下一步**：迭代 006（诊断摸底）— 新会话开始时评估用户水平
+- **注意**：E2E 测试必须通过才能提交代码
+
 ---
 
 ## 模板
 
 ```markdown
-### YYYY-MM-DD — {标题}
+#### YYYY-MM-DD HH:MM — {标题}
+
+**状态**：✅ 已完成 | 🔧 进行中 | ⏸️ 暂停 | ❌ 失败
 
 **事件**：
-- 
-
-**产品决策**：
 - 
 
 **代码变更**：
 - 
 
-**文档产出**：
+**验证结果**：
 - 
 
-**待确认事项**：
-- [ ]
+**下一步**：{明确的下一步}
 ```
