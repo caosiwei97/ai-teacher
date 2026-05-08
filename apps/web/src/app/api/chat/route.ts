@@ -8,18 +8,11 @@ export const dynamic = "force-dynamic";
 
 const chatRequestSchema = z.object({
   sessionId: z.string().min(1),
-  message: z.string().min(1),
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string(),
+  })).min(1),
 });
-
-type StoredMessage = {
-  role: string;
-  content: string;
-};
-
-type TutorHistoryMessage = {
-  role: "user" | "assistant";
-  content: string;
-};
 
 type AssessmentPayload = {
   success: boolean;
@@ -91,22 +84,6 @@ function buildLearnerProfile(profile: {
   ].filter((value): value is string => Boolean(value));
 
   return sections.join("\n") || "首次学习";
-}
-
-function mapMessagesToTutorHistory(messages: StoredMessage[]): TutorHistoryMessage[] {
-  const history: TutorHistoryMessage[] = [];
-
-  for (const message of messages) {
-    if (message.role === "learner") {
-      history.push({ role: "user", content: message.content });
-    }
-
-    if (message.role === "tutor") {
-      history.push({ role: "assistant", content: message.content });
-    }
-  }
-
-  return history;
 }
 
 async function persistChatTurn(
@@ -218,7 +195,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const { sessionId, message } = parsed.data;
+  const { sessionId, messages } = parsed.data;
+  const message = messages[messages.length - 1].content;
 
   const session = await prisma.session.findUnique({
     where: { id: sessionId },
@@ -276,10 +254,10 @@ export async function POST(request: Request) {
     },
     masteredNodes,
     learnerProfile: buildLearnerProfile(session.user.profile),
-    messages: [
-      ...mapMessagesToTutorHistory(session.messages),
-      { role: "user" as const, content: message },
-    ],
+    messages: messages.map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    })),
   });
 
   void persistChatTurn(sessionId, message, result);
