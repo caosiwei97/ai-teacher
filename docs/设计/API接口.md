@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v0.2
+> 版本：v0.3
 > 更新日期：2026-05-08
-> 状态：已对齐实际实现
+> 状态：已对齐实际实现（含迭代 013 画像更新）
 
 ---
 
@@ -127,6 +127,10 @@ PATCH /api/sessions/:id
 
 - 用于手动标记会话完成或归档
 - Zod 验证 status 只接受 `active`、`completed`、`archived`
+- 当 status 变为 `completed` 时，自动触发学习者画像更新：
+  - 从 roadmap 节点中提取已掌握/未掌握知识点
+  - 去重合并到用户的 LearnerProfile（strengths/weaknesses/sessionsSummary）
+  - 保留最近 10 次会话摘要
 
 ---
 
