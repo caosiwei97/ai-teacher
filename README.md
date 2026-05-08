@@ -66,12 +66,15 @@ data/
 
 | 文档 | 说明 |
 |------|------|
-| [Kickoff](docs/0-kickoff/kickoff.md) | 项目总纲、核心场景 |
-| [PRD](docs/1-requirements/prd.md) | 产品需求文档 |
-| [Architecture](docs/2-design/architecture.md) | 技术架构、数据模型、API |
-| [Prompt Design](docs/2-design/prompt-design.md) | 苏格拉底式教学 Prompt |
-| [Iteration Plan](docs/3-development/iteration-plan.md) | 迭代计划 |
-| [Dev Log](docs/dev-log.md) | 开发日志 |
+| [产品定位](docs/产品/产品定位.md) | 项目总纲、核心场景、约束边界 |
+| [需求规格](docs/产品/需求规格.md) | 用户故事、功能规格、MVP 范围 |
+| [技术架构](docs/设计/技术架构.md) | 技术栈、系统架构、数据模型 |
+| [API 接口](docs/设计/API接口.md) | 已实现的接口文档 |
+| [Prompt 设计](docs/设计/Prompt设计.md) | 苏格拉底式教学 Prompt |
+| [决策记录](docs/设计/决策记录.md) | 关键技术决策及原因 |
+| [迭代计划](docs/开发/迭代计划.md) | 12 个迭代、状态、进度 |
+| [开发日志](docs/开发/开发日志.md) | 开发时间线记录 |
+| [E2E 测试](docs/测试/e2e/README.md) | 测试用例矩阵 |
 
 ## 技术栈
 

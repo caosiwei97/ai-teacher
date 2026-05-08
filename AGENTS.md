@@ -12,13 +12,15 @@
 
 ```
 1. AGENTS.md          ← 本文件，协议入口
-2. docs/dev-log.md    ← 开发日志，找到上次中断点和未完成项
-3. docs/3-development/iteration-plan.md  ← 迭代计划和当前进度
+2. docs/开发/开发日志.md    ← 开发日志，找到上次中断点和未完成项
+3. docs/开发/迭代计划.md    ← 迭代计划和当前进度
 ```
+
+> 需要了解文档全貌时，读取 `docs/README.md`（文档索引）。
 
 ### 1.2 确定工作起点
 
-从 `dev-log.md` 最后一条记录中提取：
+从 `docs/开发/开发日志.md` 最后一条记录中提取：
 
 - **上次中断位置**：最后完成的迭代编号或具体任务
 - **未完成事项**：日志中标记为 `⬜` 或 `[ ]` 的待办
@@ -75,27 +77,82 @@ git log --oneline -10
 - 发现 bug 时记录问题和修复方案
 - 用户做出关键决策时
 - session 结束前必须记录当前状态
+- 记录到 `docs/开发/开发日志.md`
 
 ### 2.2 迭代计划同步
 
-**每次开始新迭代时**，更新 `docs/3-development/iteration-plan.md`：
+**每次开始新迭代时**，更新 `docs/开发/迭代计划.md`：
 
 - 将对应迭代的 `[ ]` 改为 `[x]`
 - 更新状态列：`⬜ 待开始` → `🔧 进行中` → `✅ 已完成`
 
-### 2.3 文档同步规则
+### 2.3 文档同步规则（强制执行）
+
+> **核心原则**：文档更新是代码变更的原子步骤，不是事后补充。每个代码变更必须同步完成文档更新，否则该变更不算完成。
+
+#### 2.3.1 代码变更前的文档影响评估
+
+**在开始写代码之前**，必须先回答：本次变更会影响哪些文档？
+
+```
+代码变更 → 文档影响评估 → 确认受影响文档列表 → 开始实现 → 同步更新文档 → 验证一致
+```
+
+具体做法：在 todo list 中，每个代码任务后面标注受影响的文档。例如：
+
+```
+- [ ] 新增 /api/sources 路由 → 影响：API接口.md, 技术架构.md(项目结构)
+- [ ] Prisma 新增 Source model 字段 → 影响：技术架构.md(数据模型), API接口.md(响应)
+```
+
+#### 2.3.2 文档触发映射表（完整版）
 
 **代码变更时，必须同步更新对应文档**：
 
 | 代码变更 | 必须更新的文档 |
 |---------|-------------|
-| 新增 API 路由 | `docs/2-design/architecture.md` 的 API 列表 |
-| 修改数据模型 | `docs/2-design/architecture.md` 的数据模型章节 |
-| 新增 Agent 工具 | `docs/2-design/prompt-design.md` 的工具定义 |
-| 新增 UI 组件 | 无需单独文档（代码即文档） |
-| 新增依赖 | `README.md` 技术栈表格 |
-| 修改端口/配置 | `.env.example` + `README.md` 服务端口表 |
-| 完成迭代 | `iteration-plan.md` 状态 + `dev-log.md` 记录 |
+| **新增 API 路由** | `docs/设计/API接口.md` 新增接口文档（方法+路径+请求体+响应+副作用） |
+| **修改 API 请求/响应** | `docs/设计/API接口.md` 更新对应接口的请求体/响应格式 |
+| **修改 Prisma Schema** | `docs/设计/技术架构.md` 的数据模型章节（复制实际 schema） |
+| **新增 Zod Schema** | `docs/设计/API接口.md` 或 `docs/设计/Prompt设计.md` 视归属而定 |
+| **新增/修改 Agent 工具** | `docs/设计/Prompt设计.md` 的工具定义（参数、说明） |
+| **修改 Agent Prompt** | `docs/设计/Prompt设计.md` 的 prompt 模板 |
+| **新增技术决策** | `docs/设计/决策记录.md` 新增 ADR（编号递增） |
+| **新增 npm 依赖** | `README.md` 技术栈表格 |
+| **修改端口/配置** | `.env.example` + `README.md` 服务端口表 + `docs/设计/技术架构.md` 端口表和环境变量章节 |
+| **修改 docker-compose.yml** | `docs/设计/技术架构.md` 的 Docker Compose 章节 |
+| **新增页面/路由** | `docs/设计/技术架构.md` 的项目结构章节 |
+| **新增共享类型/Schema** | `docs/设计/技术架构.md` 的项目结构章节 |
+| **新增 E2E 测试** | 无需更新文档（测试即文档） |
+| **修改 UI 组件** | 无需更新文档（代码即文档） |
+| **完成迭代** | `docs/开发/迭代计划.md` 状态 `[ ]`→`[x]` + 完成日期 + `docs/开发/开发日志.md` 记录 |
+| **修复 bug** | `docs/开发/开发日志.md` 记录 bug 和修复方案 |
+
+#### 2.3.3 文档更新检查清单
+
+**每个独立任务完成时**（不是 session 结束时），必须执行：
+
+```
+□ 代码变更已完成
+□ 受影响的文档已全部更新
+□ 文档中的代码示例/Schema 与实际代码一致（非旧版本）
+□ 文档版本号和更新日期已刷新
+```
+
+> **如果代码变更已完成但文档未更新，该任务不得标记为 completed。**
+
+#### 2.3.4 文档自检方法
+
+更新文档时，对以下内容做**交叉验证**：
+
+| 文档 | 验证方法 |
+|------|---------|
+| `API接口.md` | 接口列表 ↔ `apps/web/src/app/api/` 目录下的 route.ts 文件数量一致 |
+| `技术架构.md` 数据模型 | Prisma Schema ↔ 文档中的 prisma 代码块完全一致 |
+| `技术架构.md` 环境变量 | `.env.example` ↔ 文档中的变量列表完全一致 |
+| `技术架构.md` Docker | `infra/docker/docker-compose.yml` ↔ 文档中的 yaml 代码块一致 |
+| `Prompt设计.md` 工具 | `apps/worker/src/agent/tools/*.ts` ↔ 文档中的工具定义一致 |
+| `迭代计划.md` | 已完成的迭代 ↔ `git log` 中的实际提交 |
 
 ### 2.4 质量门控
 
@@ -109,6 +166,14 @@ pnpm --filter @ai-teacher/web build
 npx playwright test
 
 # 3. 两者都通过才允许 commit
+```
+
+**文档一致性检查**（提交前必须确认）：
+
+```
+□ 本次变更涉及的所有文档已更新
+□ 文档中的代码片段与实际文件一致
+□ 如果新增了文档，docs/README.md 索引已更新
 ```
 
 **如果测试发现 bug**：
@@ -143,9 +208,11 @@ packages/
   db/           — Prisma schema + seed
 infra/docker/   — Docker Compose (PG + Redis + MinIO)
 e2e/            — Playwright E2E tests
-docs/           — 项目文档
-  dev-log.md    — 开发日志（时间线）
-  3-development/iteration-plan.md — 迭代计划
+docs/           — 项目文档（中文）
+  产品/         — 产品定位、需求规格
+  设计/         — 技术架构、API接口、Prompt设计、决策记录
+  开发/         — 迭代计划、开发日志
+  测试/         — E2E 测试用例
 ```
 
 ---
@@ -154,7 +221,8 @@ docs/           — 项目文档
 
 **session 结束前（或用户说"结束"/"先到这里"）**，必须完成：
 
-1. ✅ 更新 `docs/dev-log.md` — 记录本次 session 所有工作
-2. ✅ 更新 `docs/3-development/iteration-plan.md` — 同步迭代状态
-3. ✅ 如有代码变更，确认已提交并推送
-4. ✅ 在 dev-log 末尾标注**下次 session 应从哪里继续**
+1. ✅ 更新 `docs/开发/开发日志.md` — 记录本次 session 所有工作
+2. ✅ 更新 `docs/开发/迭代计划.md` — 同步迭代状态
+3. ✅ 执行文档自检（2.3.4）— 确认本次变更涉及的所有文档与代码一致
+4. ✅ 如有代码变更，确认已提交并推送
+5. ✅ 在开发日志末尾标注**下次 session 应从哪里继续**
