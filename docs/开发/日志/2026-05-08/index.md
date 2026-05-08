@@ -1,0 +1,150 @@
+# 2026-05-08 开发日志
+
+---
+
+## 14:30 — Bug 修复：Tailwind CSS 未加载 + Chat API 400 错误
+
+**状态**：✅ 已完成
+
+**事件**：
+- 页面样式没加载，`bg-slate-900` 渲染为透明
+- 根因 1：缺少 `postcss.config.mjs`
+- 根因 2：`globals.css` 未在 `layout.tsx` 中 import
+- 根因 3：Chat API schema 不兼容 AI SDK useChat
+
+**代码变更**：
+- `apps/web/postcss.config.mjs` — 新增 PostCSS 配置
+- `apps/web/src/app/globals.css` — 完整 Tailwind CSS 4 `@theme` 变量
+- `apps/web/src/app/layout.tsx` — 添加 `import "./globals.css"`
+- `apps/web/src/app/api/chat/route.ts` — schema 改为接收 messages 数组
+
+**验证结果**：
+- `bg-slate-900` 正确渲染 ✅
+- Chat API 返回 HTTP 200 + 流式响应 ✅
+
+---
+
+## 14:50 — E2E 测试基础设施搭建
+
+**状态**：✅ 已完成
+
+**事件**：
+- 安装 Playwright Chromium headless shell
+- 创建 `playwright.config.ts` + 7 个 E2E 测试用例
+
+**代码变更**：
+- `playwright.config.ts` — Playwright 配置
+- `e2e/learn.spec.ts` — 7 个测试
+- `package.json` — 添加 `@playwright/test`
+
+**验证结果**：7/7 E2E 测试通过 ✅
+
+---
+
+## 15:30 — UI 设计系统升级：暖色教育主题
+
+**状态**：✅ 已完成
+
+**事件**：
+- 统一设计系统风格：暖色 stone 系 + amber 强调色
+- 重写左侧栏、右侧栏、聊天组件、路线图组件
+
+**设计决策**：
+- 色彩：暖色 stone（#1c1917 / #fafaf8），amber（#d97706）强调
+- 左侧边栏：温暖深石色 + 琥珀色选中态 + 内联进度条
+- 右侧边栏：路线图带总进度百分比 + 垂直 timeline
+
+**验证结果**：构建成功 + 7/7 E2E 测试通过 ✅
+
+---
+
+## 16:00 — 项目级 Agent 协议建立
+
+**状态**：✅ 已完成
+
+**事件**：创建 `AGENTS.md` 作为项目级 Agent 工作协议
+
+**代码变更**：
+- `AGENTS.md` — session 启动流程、dev-log 记录规范、文档同步规则、质量门控
+
+---
+
+## 16:15 — 迭代 006：诊断摸底
+
+**状态**：✅ 已完成
+
+**事件**：
+- 实现完整的诊断摸底功能
+- Diagnostic Agent 使用 `generateObject` + Zod Schema
+- 前端 `DiagnosticQuiz` 组件支持选择题和简答题
+
+**代码变更**：
+- `packages/shared/src/schemas/diagnostic.ts` — 诊断 Zod Schema
+- `apps/worker/src/agent/diagnostic.ts` — Diagnostic Agent
+- `apps/web/src/app/api/sessions/[id]/diagnostic/` — 诊断 API
+- `apps/web/src/components/diagnostic/diagnostic-quiz.tsx` — 诊断 UI
+- `e2e/diagnostic.spec.ts` — 诊断 E2E 测试
+
+**验证结果**：构建成功 + 8/8 E2E 测试通过 ✅
+
+---
+
+## 18:00 — 迭代 007：掌握度评分 + 门控
+
+**状态**：✅ 已完成
+
+**事件**：
+- Tutor prompt 新增完整节点列表，LLM 可正确调用 assessMastery
+- 后端自动推进：masteryScore ≥ 80 时推进下一节点
+- 前端 onFinish 回调刷新节点状态
+
+**验证结果**：构建成功 + 11/11 E2E 测试通过 ✅
+
+---
+
+## 18:10 — 迭代 008：评估卡片渲染
+
+**状态**：✅ 已完成
+
+**事件**：
+- 新增评估卡片 UI（总结 + 回顾表 + 核心标签 + "下一节"按钮）
+- 从 annotations / toolInvocations 提取 generateAssessment 结果
+
+**验证结果**：构建成功 + 11/11 E2E 测试通过 ✅
+
+---
+
+## 19:30 — 迭代 010：会话管理 + 历史记录
+
+**状态**：✅ 已完成
+
+**事件**：
+- 后端新增 PATCH/DELETE API（状态变更 + 软删除归档）
+- 首页改造为会话仪表盘（新建表单 + 历史会话卡片网格）
+- 左侧栏新增"+ 新建会话"按钮和 hover 归档操作
+- 新增 8 个会话管理 E2E 测试
+
+**验证结果**：构建成功 + 17/19 E2E 测试通过 ✅（2 个 pre-existing flaky tests）
+
+---
+
+## 20:00 — Agent 引擎优化方案设计
+
+**状态**：✅ 已完成
+
+**事件**：
+- 研究了 4 个优秀 Agent 框架的底层实现：
+  - Vercel Open Agents（ToolLoopAgent + 生命周期钩子 + 子 Agent）
+  - Pi Framework（双层循环 + beforeToolCall/afterToolCall + transformContext）
+  - Hermes Agent（5 层错误恢复 + 上下文压缩 + IterationBudget）
+  - OpenClaw（Gateway 多 Agent 路由）
+- 识别当前 agent 引擎 6 大问题
+- 设计 Agent 引擎优化方案，新增迭代 011/012
+
+**文档产出**：
+- `docs/设计/Agent引擎优化方案.md` — 完整方案（现状分析 + 参考对比 + 目标架构 + 迁移路径）
+
+**文档结构优化**：
+- 迭代计划新增分类标签（🔵功能 / 🟠优化 / ⚪基础设施）
+- 开发日志从单文件改为按日期子目录
+- 新增 `docs/开发/日志/2026-05-08/` 目录
