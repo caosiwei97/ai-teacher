@@ -247,12 +247,46 @@ docs/
 
 **下一步**：迭代 006（诊断摸底）或迭代 007（掌握度评分 + 门控）
 
+#### 2026-05-08 16:15 — 迭代 006：诊断摸底
+
+**状态**：✅ 已完成
+
+**事件**：
+- 实现完整的诊断摸底功能：新会话创建后进入 diagnosing 状态，生成 3-5 道诊断题，评估答案后定位起始节点
+- 修复 Worker tsconfig rootDir 问题（pre-existing bug，移除 rootDir 让 paths 正常工作）
+
+**技术决策**：
+- Session 新增 `diagnosing` 状态，创建时默认进入此状态
+- Diagnostic Agent 使用 `generateObject` + Zod Schema 约束输出（与 Roadmap Agent 模式一致）
+- 前端诊断 UI 为独立组件 `DiagnosticQuiz`，支持选择题和简答题
+- 诊断完成后，跳过的节点标记为 mastered，起始节点标记为 in-progress
+
+**代码变更**：
+- `packages/shared/src/schemas/diagnostic.ts` — 诊断 Zod Schema（DiagnosticQuestion, DiagnosticOutput, DiagnosticEvaluation）
+- `packages/shared/src/schemas/session.ts` — SessionStatus 新增 `diagnosing`
+- `packages/shared/src/index.ts` — 导出 diagnostic schema
+- `apps/worker/src/agent/diagnostic.ts` — Diagnostic Agent（generateDiagnosticQuestions + evaluateDiagnosticAnswers）
+- `apps/worker/tsconfig.json` — 修复 rootDir 问题
+- `apps/web/src/app/api/sessions/route.ts` — 新建会话 status 改为 `diagnosing`
+- `apps/web/src/app/api/sessions/[id]/diagnostic/route.ts` — POST 生成诊断题
+- `apps/web/src/app/api/sessions/[id]/diagnostic/evaluate/route.ts` — POST 评估答案 + 定位起始节点
+- `apps/web/src/components/diagnostic/diagnostic-quiz.tsx` — 诊断 UI 组件（选择题 + 简答题 + 进度条）
+- `apps/web/src/lib/api-client.ts` — 新增 generateDiagnostic + evaluateDiagnostic
+- `apps/web/src/app/learn/[sessionId]/page.tsx` — 集成诊断流程（diagnosing → quiz → evaluate → chat）
+- `e2e/diagnostic.spec.ts` — 诊断 E2E 测试
+
+**验证结果**：
+- `pnpm --filter @ai-teacher/web build` → 构建成功 ✅
+- `pnpm --filter @ai-teacher/worker build` → 构建成功 ✅（修复了 pre-existing rootDir 问题）
+- 8/8 E2E 测试通过 ✅
+- 手动 API 测试：创建会话 → diagnosing → 生成诊断题 → 评估答案 → 定位起始节点 ✅
+
 ---
 
 ## 下次 Session 应从这里继续
 
-- **当前进度**：迭代 001-005 已完成，UI 设计系统已升级，E2E 测试 7/7 通过
-- **下一步**：迭代 006（诊断摸底）— 新会话开始时评估用户水平
+- **当前进度**：迭代 001-006 已完成，8/8 E2E 测试通过
+- **下一步**：迭代 007（掌握度评分 + 门控）— 每轮对话后结构化评估 + 80% 门控逻辑
 - **注意**：E2E 测试必须通过才能提交代码
 
 ---
