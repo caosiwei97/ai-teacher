@@ -110,6 +110,7 @@ export async function POST(request: Request) {
       userId,
       topic,
       sourceId,
+      status: "diagnosing",
       roadmap: {
         create: {
           nodes: {

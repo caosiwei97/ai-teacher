@@ -4,9 +4,16 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ThreeColumnLayout } from "@/components/layout/three-column";
 import { ChatArea } from "@/components/chat/chat-area";
+import { DiagnosticQuiz } from "@/components/diagnostic/diagnostic-quiz";
 import { useChatStream } from "@/hooks/use-chat-stream";
-import { fetchSession, fetchSessions } from "@/lib/api-client";
+import {
+  fetchSession,
+  fetchSessions,
+  generateDiagnostic,
+  evaluateDiagnostic,
+} from "@/lib/api-client";
 import type { Message } from "ai";
+import { Loader2, Sparkles } from "lucide-react";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -26,6 +33,15 @@ interface NodeInfo {
   masteryScore: number;
 }
 
+interface DiagnosticQuestion {
+  id: string;
+  nodeIndex: number;
+  question: string;
+  type: "choice" | "open";
+  options: Array<{ label: string; text: string }>;
+  correctAnswer: string;
+}
+
 export default function LearnPage() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
@@ -34,6 +50,14 @@ export default function LearnPage() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
+
+  const [diagnosticState, setDiagnosticState] = useState<
+    | { phase: "idle" }
+    | { phase: "loading" }
+    | { phase: "quiz"; questions: DiagnosticQuestion[] }
+    | { phase: "evaluating" }
+    | { phase: "done"; startingNode: { id: string; index: number; title: string } }
+  >({ phase: "idle" });
 
   const chat = useChatStream(sessionId);
 
@@ -53,6 +77,21 @@ export default function LearnPage() {
             content: m.content,
           }));
         chat.setMessages(historyMessages);
+
+        if (sessionData.session.status === "diagnosing") {
+          setDiagnosticState({ phase: "loading" });
+          generateDiagnostic(sessionId)
+            .then((data) => {
+              setDiagnosticState({ phase: "quiz", questions: data.questions });
+            })
+            .catch((err) => {
+              console.error("Failed to generate diagnostic:", err);
+              setDiagnosticState({ phase: "idle" });
+            });
+        } else {
+          setDiagnosticState({ phase: "idle" });
+        }
+
         setLoaded(true);
       })
       .catch(console.error);
@@ -74,6 +113,44 @@ export default function LearnPage() {
     }
   }
 
+  async function handleDiagnosticSubmit(
+    answers: Array<{ questionId: string; answer: string }>,
+  ) {
+    if (diagnosticState.phase !== "quiz") return;
+
+    setDiagnosticState({ phase: "evaluating" });
+
+    try {
+      const questions = diagnosticState.questions.map((q) => ({
+        id: q.id,
+        question: q.question,
+        type: q.type,
+        correctAnswer: q.correctAnswer,
+        nodeIndex: q.nodeIndex,
+      }));
+
+      const result = await evaluateDiagnostic(sessionId, {
+        questions,
+        answers,
+      });
+
+      const sessionData = await fetchSession(sessionId);
+      setNodes(sessionData.session.roadmap?.nodes ?? []);
+
+      setDiagnosticState({
+        phase: "done",
+        startingNode: result.startingNode,
+      });
+    } catch (err) {
+      console.error("Failed to evaluate diagnostic:", err);
+      setDiagnosticState({ phase: "quiz", questions: diagnosticState.questions });
+    }
+  }
+
+  function handleStartLearning() {
+    setDiagnosticState({ phase: "idle" });
+  }
+
   if (!loaded) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -85,6 +162,13 @@ export default function LearnPage() {
     );
   }
 
+  const showDiagnostic =
+    diagnosticState.phase === "loading" ||
+    diagnosticState.phase === "quiz" ||
+    diagnosticState.phase === "evaluating";
+
+  const showDone = diagnosticState.phase === "done";
+
   return (
     <ThreeColumnLayout
       sessions={sessions}
@@ -92,14 +176,86 @@ export default function LearnPage() {
       nodes={nodes}
       onSelectSession={handleSelectSession}
     >
-      <ChatArea
-        messages={chat.messages}
-        input={chat.input}
-        isLoading={chat.isLoading}
-        onInputChange={chat.handleInputChange}
-        onSubmit={handleSubmit}
-        onStop={chat.stop}
-      />
+      {showDiagnostic && (
+        <div className="flex h-full flex-col">
+          <div className="border-b border-border bg-card px-5 py-4">
+            <div className="mx-auto flex max-w-2xl items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-roadmap-fill/10">
+                <Sparkles className="h-5 w-5 text-roadmap-fill" />
+              </div>
+              <div>
+                <h2 className="text-sm font-medium text-foreground">
+                  诊断摸底
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  回答几个问题，帮你找到合适的学习起点
+                </p>
+              </div>
+            </div>
+          </div>
+          {diagnosticState.phase === "loading" ? (
+            <div className="flex flex-1 items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-roadmap-fill" />
+                <p className="text-sm text-muted-foreground">
+                  正在生成诊断题目…
+                </p>
+              </div>
+            </div>
+          ) : diagnosticState.phase === "quiz" ? (
+            <DiagnosticQuiz
+              questions={diagnosticState.questions}
+              onSubmit={handleDiagnosticSubmit}
+              isSubmitting={false}
+            />
+          ) : (
+            <div className="flex flex-1 items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-roadmap-fill" />
+                <p className="text-sm text-muted-foreground">
+                  正在评估你的水平…
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {showDone && (
+        <div className="flex h-full flex-col">
+          <div className="flex flex-1 items-center justify-center">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-roadmap-mastered/10">
+                <Sparkles className="h-7 w-7 text-roadmap-mastered" />
+              </div>
+              <div>
+                <h2 className="text-lg font-medium text-foreground">
+                  诊断完成！
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  建议从「{diagnosticState.startingNode.title}」开始学习
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleStartLearning}
+                className="mt-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                开始学习
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {!showDiagnostic && !showDone && (
+        <ChatArea
+          messages={chat.messages}
+          input={chat.input}
+          isLoading={chat.isLoading}
+          onInputChange={chat.handleInputChange}
+          onSubmit={handleSubmit}
+          onStop={chat.stop}
+        />
+      )}
     </ThreeColumnLayout>
   );
 }

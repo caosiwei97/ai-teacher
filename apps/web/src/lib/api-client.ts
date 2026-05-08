@@ -26,3 +26,49 @@ export async function fetchSession(sessionId: string) {
     };
   }>;
 }
+
+export async function generateDiagnostic(sessionId: string) {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/diagnostic`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to generate diagnostic");
+  return res.json() as Promise<{
+    questions: Array<{
+      id: string;
+      nodeIndex: number;
+      question: string;
+      type: "choice" | "open";
+      options: Array<{ label: string; text: string }>;
+      correctAnswer: string;
+    }>;
+  }>;
+}
+
+export async function evaluateDiagnostic(
+  sessionId: string,
+  data: {
+    questions: Array<{
+      id: string;
+      question: string;
+      type: string;
+      correctAnswer: string;
+      nodeIndex: number;
+    }>;
+    answers: Array<{ questionId: string; answer: string }>;
+  },
+) {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/diagnostic/evaluate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to evaluate diagnostic");
+  return res.json() as Promise<{
+    evaluation: {
+      startingNodeIndex: number;
+      reasoning: string;
+      answersummary: Array<{ questionId: string; correct: boolean; brief: string }>;
+    };
+    startingNode: { id: string; index: number; title: string };
+  }>;
+}

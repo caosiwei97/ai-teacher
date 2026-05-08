@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SessionStatus = z.enum(["active", "completed", "archived"]);
+export const SessionStatus = z.enum(["active", "diagnosing", "completed", "archived"]);
 
 export const CreateSessionInput = z.object({
   topic: z.string().min(1),
