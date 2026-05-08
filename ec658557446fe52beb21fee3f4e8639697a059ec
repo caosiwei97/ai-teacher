@@ -1,0 +1,191 @@
+apps/web/eslint.config.mjs
+  7acf028e29b6d705 1-14
+apps/worker/src/agent/prompts/tutor.ts
+  7acf028e29b6d705 1-46
+docs/0-kickoff/kickoff.md
+  7acf028e29b6d705 1-113
+.env.example
+  7acf028e29b6d705 1-25
+apps/web/src/components/chat/chat-area.tsx
+  7acf028e29b6d705 1-47
+apps/web/src/components/ui/card.tsx
+  7acf028e29b6d705 1-103
+packages/db/prisma/seed.ts
+  7acf028e29b6d705 1-320
+docs/4-testing/e2e-test-cases.md
+  7acf028e29b6d705 1-20
+apps/web/src/components/layout/left-sidebar.tsx
+  7acf028e29b6d705 1-91
+docs/4-testing/e2e/09-layout-navigation.md
+  7acf028e29b6d705 1-115
+docs/4-testing/e2e/07-right-sidebar.md
+  7acf028e29b6d705 1-70
+.prettierrc
+  7acf028e29b6d705 1-7
+packages/db/prisma/migrations/migration_lock.toml
+  7acf028e29b6d705 1-3
+pnpm-workspace.yaml
+  7acf028e29b6d705 1-3
+apps/worker/src/agent/tools/record-misconception.ts
+  7acf028e29b6d705 1-14
+docs/4-testing/e2e/11-learning-materials.md
+  7acf028e29b6d705 1-50
+apps/web/src/app/api/sessions/route.ts
+  7acf028e29b6d705 1-177
+apps/worker/package.json
+  7acf028e29b6d705 1-24
+apps/web/src/app/globals.css
+  7acf028e29b6d705 1-12
+docs/3-development/iteration-plan.md
+  7acf028e29b6d705 1-174
+apps/web/src/lib/utils.ts
+  7acf028e29b6d705 1-6
+docs/4-testing/e2e/10-streaming-performance.md
+  7acf028e29b6d705 1-53
+apps/web/src/components/layout/three-column.tsx
+  7acf028e29b6d705 1-79
+docs/dev-log.md
+  7acf028e29b6d705 1-169
+packages/shared/src/schemas/message.ts
+  7acf028e29b6d705 1-22
+packages/shared/src/index.ts
+  7acf028e29b6d705 1-2
+apps/worker/src/index.ts
+  7acf028e29b6d705 1-11
+docs/4-testing/e2e/04-assessment-gating.md
+  7acf028e29b6d705 1-75
+apps/worker/tsconfig.json
+  7acf028e29b6d705 1-13
+.gitignore
+  7acf028e29b6d705 1-12
+apps/web/package.json
+  7acf028e29b6d705 1-36
+apps/worker/src/agent/tools/advance-node.ts
+  7acf028e29b6d705 1-14
+docs/1-requirements/prd.md
+  7acf028e29b6d705 1-200
+apps/web/next-env.d.ts
+  7acf028e29b6d705 1-6
+apps/web/src/app/api/chat/route.ts
+  7acf028e29b6d705 1-288
+apps/web/src/components/ui/input.tsx
+  7acf028e29b6d705 1-20
+apps/worker/src/agent/tools/index.ts
+  7acf028e29b6d705 1-5
+docs/2-design/architecture.md
+  7acf028e29b6d705 1-396
+apps/web/src/components/chat/code-block.tsx
+  7acf028e29b6d705 1-47
+packages/db/package.json
+  7acf028e29b6d705 1-24
+apps/worker/src/agent/tools/record-strength.ts
+  7acf028e29b6d705 1-13
+apps/web/src/hooks/use-chat-stream.ts
+  7acf028e29b6d705 1-25
+docs/4-testing/e2e/03-socratic-teaching.md
+  7acf028e29b6d705 1-113
+apps/web/src/components/ui/avatar.tsx
+  7acf028e29b6d705 1-109
+.prettierignore
+  7acf028e29b6d705 1-8
+apps/web/src/app/layout.tsx
+  7acf028e29b6d705 1-22
+apps/web/tsconfig.json
+  7acf028e29b6d705 1-37
+tsconfig.base.json
+  7acf028e29b6d705 1-20
+apps/web/src/components/ui/button.tsx
+  7acf028e29b6d705 1-58
+docs/4-testing/e2e/06-input-area.md
+  7acf028e29b6d705 1-122
+docs/4-testing/e2e/01-new-session-diagnostic.md
+  7acf028e29b6d705 1-130
+infra/docker/docker-compose.yml
+  7acf028e29b6d705 1-45
+packages/db/tsconfig.json
+  7acf028e29b6d705 1-9
+packages/shared/tsconfig.json
+  7acf028e29b6d705 1-9
+apps/web/src/components/ui/badge.tsx
+  7acf028e29b6d705 1-52
+apps/web/src/components/ui/scroll-area.tsx
+  7acf028e29b6d705 1-55
+apps/web/src/components/ui/separator.tsx
+  7acf028e29b6d705 1-25
+apps/web/src/components/chat/chat-message.tsx
+  7acf028e29b6d705 1-72
+apps/worker/src/agent/tutor.ts
+  7acf028e29b6d705 1-49
+apps/web/src/app/page.tsx
+  7acf028e29b6d705 1-10
+.npmrc
+  7acf028e29b6d705 1-2
+package.json
+  7acf028e29b6d705 1-33
+apps/web/src/app/api/sessions/[id]/route.ts
+  7acf028e29b6d705 1-46
+docs/4-testing/e2e/02-roadmap-learning-flow.md
+  7acf028e29b6d705 1-105
+docs/4-testing/e2e/12-message-actions.md
+  7acf028e29b6d705 1-51
+docs/4-testing/e2e/08-settings-account.md
+  7acf028e29b6d705 1-113
+apps/web/src/components/chat/chat-input.tsx
+  7acf028e29b6d705 1-51
+packages/db/prisma/migrations/20260508040111_init/migration.sql
+  7acf028e29b6d705 1-113
+packages/db/prisma/schema.prisma
+  7acf028e29b6d705 1-88
+apps/web/src/components/roadmap/roadmap-node.tsx
+  7acf028e29b6d705 1-31
+packages/shared/src/schemas/session.ts
+  7acf028e29b6d705 1-11
+packages/db/src/index.ts
+  7acf028e29b6d705 1-11
+docs/4-testing/e2e/README.md
+  7acf028e29b6d705 1-203
+apps/web/next.config.ts
+  7acf028e29b6d705 1-18
+apps/web/src/app/learn/[sessionId]/page.tsx
+  7acf028e29b6d705 1-97
+docs/4-testing/e2e/05-session-management.md
+  7acf028e29b6d705 1-141
+packages/shared/package.json
+  7acf028e29b6d705 1-16
+apps/web/src/components/layout/right-sidebar.tsx
+  7acf028e29b6d705 1-52
+README.md
+  7acf028e29b6d705 1-87
+apps/worker/src/agent/tools/generate-assessment.ts
+  7acf028e29b6d705 1-24
+docs/2-design/prompt-design.md
+  7acf028e29b6d705 1-306
+apps/web/postcss.config.js
+  7acf028e29b6d705 1-7
+apps/worker/src/agent/tools/assess-mastery.ts
+  7acf028e29b6d705 1-24
+apps/web/components.json
+  7acf028e29b6d705 1-25
+apps/web/src/lib/api-client.ts
+  7acf028e29b6d705 1-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.13",
+  "base_commit_sha": "ec658557446fe52beb21fee3f4e8639697a059ec",
+  "prompts": {
+    "7acf028e29b6d705": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1fabb48c8ffeRFCpBFUz5iOhKE",
+        "model": "zhipuai-coding-plan/glm-5.1"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 5572,
+      "total_deletions": 0,
+      "accepted_lines": 5572,
+      "overriden_lines": 0
+    }
+  }
+}
