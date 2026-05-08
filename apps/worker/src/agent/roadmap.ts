@@ -23,14 +23,15 @@ export class RoadmapAgent extends BaseAgent {
       ? `基于以下学习资料，为「${input.topic}」设计学习路线：\n\n${input.sourceContent.slice(0, 3000)}`
       : `为「${input.topic}」设计学习路线`;
 
-    const result = await generateObject({
-      model: this.getModel(),
-      schema: RoadmapOutput,
-      system: ROADMAP_SYSTEM_PROMPT,
-      prompt: userPrompt,
+    return this.executeWithRetry(async () => {
+      const result = await generateObject({
+        model: this.getModel(),
+        schema: RoadmapOutput,
+        system: ROADMAP_SYSTEM_PROMPT,
+        prompt: userPrompt,
+      });
+      return result.object;
     });
-
-    return result.object;
   }
 }
 

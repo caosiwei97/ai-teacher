@@ -53,14 +53,15 @@ export class DiagnosticQuestionAgent extends BaseAgent {
       .map((n) => `[${n.index}] ${n.title}: ${n.description}`)
       .join("\n");
 
-    const result = await generateObject({
-      model: this.getModel(),
-      schema: DiagnosticOutput,
-      system: DIAGNOSTIC_QUESTION_PROMPT,
-      prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}`,
+    return this.executeWithRetry(async () => {
+      const result = await generateObject({
+        model: this.getModel(),
+        schema: DiagnosticOutput,
+        system: DIAGNOSTIC_QUESTION_PROMPT,
+        prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}`,
+      });
+      return result.object;
     });
-
-    return result.object;
   }
 }
 
@@ -77,14 +78,15 @@ export class DiagnosticEvaluateAgent extends BaseAgent {
       })
       .join("\n\n");
 
-    const result = await generateObject({
-      model: this.getModel(),
-      schema: DiagnosticEvaluation,
-      system: DIAGNOSTIC_EVALUATE_PROMPT,
-      prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}\n\n答题情况：\n${qaList}`,
+    return this.executeWithRetry(async () => {
+      const result = await generateObject({
+        model: this.getModel(),
+        schema: DiagnosticEvaluation,
+        system: DIAGNOSTIC_EVALUATE_PROMPT,
+        prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}\n\n答题情况：\n${qaList}`,
+      });
+      return result.object;
     });
-
-    return result.object;
   }
 }
 

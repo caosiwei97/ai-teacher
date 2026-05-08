@@ -2,6 +2,7 @@ import { streamText } from "ai";
 import { buildTutorSystemPrompt } from "./prompts/tutor.js";
 import { BaseAgent } from "./base-agent.js";
 import { createTutorTools } from "./tools/create-tools.js";
+import { transformMessages } from "./context.js";
 
 export interface TutorContext {
   topic: string;
@@ -22,10 +23,12 @@ export class TutorAgent extends BaseAgent {
       learnerProfile: context.learnerProfile || "首次学习",
     });
 
+    const transformedMessages = transformMessages(context.messages);
+
     return streamText({
       model: this.getModel(),
       system: systemPrompt,
-      messages: context.messages,
+      messages: transformedMessages,
       tools: createTutorTools(),
       maxSteps: 3,
     });
