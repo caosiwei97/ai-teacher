@@ -1,6 +1,8 @@
 # AI Teacher — Agent 工作协议
 
 > 本文件是所有 Agent session 的**入口文件**。新 session 启动时必须先读本文件，按协议执行。
+>
+> **⚠️ 角色分工**：文档更新（开发日志、迭代计划、API文档等）由主 Agent（Sisyphus）负责。子 Agent（task 委托）只负责代码实现，不得修改 `docs/` 目录下的任何文件。
 
 ---
 

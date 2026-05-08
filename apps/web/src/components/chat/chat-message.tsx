@@ -1,10 +1,12 @@
 "use client";
 
+import { AssessmentCard, type AssessmentCardProps } from "./assessment-card";
 import { CodeBlock } from "./code-block";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
+  assessment?: AssessmentCardProps;
 }
 
 function parseContent(text: string) {
@@ -42,30 +44,34 @@ function renderInlineCode(text: string) {
   });
 }
 
-export function ChatMessage({ role, content }: ChatMessageProps) {
+export function ChatMessage({ role, content, assessment }: ChatMessageProps) {
   const isUser = role === "user";
   const parsed = parseContent(content);
+  const hasContent = content.trim().length > 0;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
-      <div className={`max-w-[80%] ${isUser ? "order-1" : ""}`}>
-        <div
-          className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed ${
-            isUser
-              ? "rounded-br-sm bg-chat-user text-chat-user-text"
-              : "rounded-bl-sm bg-chat-tutor text-chat-tutor-text shadow-sm"
-          }`}
-        >
-          {parsed.map((part, i) =>
-            part.type === "code" ? (
-              <CodeBlock key={i} language={part.language}>{part.content}</CodeBlock>
-            ) : (
-              <p key={i} className="whitespace-pre-wrap">
-                {renderInlineCode(part.content)}
-              </p>
-            ),
-          )}
-        </div>
+      <div className={`max-w-[80%] space-y-3 ${isUser ? "order-1" : ""}`}>
+        {hasContent && (
+          <div
+            className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed ${
+              isUser
+                ? "rounded-br-sm bg-chat-user text-chat-user-text"
+                : "rounded-bl-sm bg-chat-tutor text-chat-tutor-text shadow-sm"
+            }`}
+          >
+            {parsed.map((part, i) =>
+              part.type === "code" ? (
+                <CodeBlock key={i} language={part.language}>{part.content}</CodeBlock>
+              ) : (
+                <p key={i} className="whitespace-pre-wrap">
+                  {renderInlineCode(part.content)}
+                </p>
+              ),
+            )}
+          </div>
+        )}
+        {!isUser && assessment && <AssessmentCard {...assessment} />}
       </div>
     </div>
   );

@@ -2,6 +2,10 @@
 
 import { useRef, useEffect } from "react";
 import type { Message } from "ai";
+import {
+  isAssessmentCardData,
+  type AssessmentCardProps,
+} from "./assessment-card";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,6 +18,69 @@ interface ChatAreaProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onStop: () => void;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getArrayProperty(value: unknown, key: string) {
+  if (!isObject(value)) {
+    return undefined;
+  }
+
+  const property = value[key];
+  return Array.isArray(property) ? property : undefined;
+}
+
+function getAssessmentFromAnnotations(
+  annotations: unknown[] | undefined,
+): AssessmentCardProps | undefined {
+  for (const annotation of annotations ?? []) {
+    if (!isObject(annotation)) {
+      continue;
+    }
+
+    if (isAssessmentCardData(annotation.assessment)) {
+      return annotation.assessment;
+    }
+
+    if (
+      annotation.toolName === "generateAssessment" &&
+      isAssessmentCardData(annotation.result)
+    ) {
+      return annotation.result;
+    }
+  }
+
+  return undefined;
+}
+
+function getAssessmentFromToolInvocations(
+  toolInvocations: unknown[] | undefined,
+): AssessmentCardProps | undefined {
+  for (const invocation of toolInvocations ?? []) {
+    if (!isObject(invocation)) {
+      continue;
+    }
+
+    if (
+      invocation.toolName === "generateAssessment" &&
+      invocation.state === "result" &&
+      isAssessmentCardData(invocation.result)
+    ) {
+      return invocation.result;
+    }
+  }
+
+  return undefined;
+}
+
+function getAssessmentFromMessage(message: Message) {
+  return (
+    getAssessmentFromAnnotations(getArrayProperty(message, "annotations")) ??
+    getAssessmentFromToolInvocations(getArrayProperty(message, "toolInvocations"))
+  );
 }
 
 export function ChatArea({ messages, input, isLoading, onInputChange, onSubmit, onStop }: ChatAreaProps) {
@@ -34,9 +101,20 @@ export function ChatArea({ messages, input, isLoading, onInputChange, onSubmit, 
             <p className="text-sm">开始你的学习之旅吧</p>
           </div>
         )}
-        {messages.map((msg) => (
-          <ChatMessage key={msg.id} role={msg.role as "user" | "assistant"} content={msg.content} />
-        ))}
+        {messages.map((msg) => {
+          if (msg.role !== "user" && msg.role !== "assistant") {
+            return null;
+          }
+
+          return (
+            <ChatMessage
+              key={msg.id}
+              role={msg.role}
+              content={msg.content}
+              assessment={msg.role === "assistant" ? getAssessmentFromMessage(msg) : undefined}
+            />
+          );
+        })}
         <div ref={bottomRef} />
       </ScrollArea>
       <ChatInput

@@ -9,6 +9,21 @@ export const MessageType = z.enum([
   "system",
 ]);
 
+export const AssessmentPayload = z.object({
+  success: z.boolean(),
+  conceptId: z.string(),
+  summary: z.string(),
+  reviewTable: z.array(
+    z.object({
+      points: z.string(),
+      yourAnswer: z.string(),
+      accuracy: z.string(),
+    }),
+  ),
+  coreTags: z.array(z.string()),
+  nextNodeTitle: z.string(),
+});
+
 export const CreateMessageInput = z.object({
   sessionId: z.string(),
   role: MessageRole,
@@ -19,4 +34,5 @@ export const CreateMessageInput = z.object({
 
 export type MessageRole = z.infer<typeof MessageRole>;
 export type MessageType = z.infer<typeof MessageType>;
+export type AssessmentPayload = z.infer<typeof AssessmentPayload>;
 export type CreateMessageInput = z.infer<typeof CreateMessageInput>;

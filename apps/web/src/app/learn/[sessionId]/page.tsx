@@ -3,6 +3,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ThreeColumnLayout } from "@/components/layout/three-column";
+import {
+  isAssessmentCardData,
+  type AssessmentCardProps,
+} from "@/components/chat/assessment-card";
 import { ChatArea } from "@/components/chat/chat-area";
 import { DiagnosticQuiz } from "@/components/diagnostic/diagnostic-quiz";
 import { useChatStream } from "@/hooks/use-chat-stream";
@@ -40,6 +44,55 @@ interface DiagnosticQuestion {
   type: "choice" | "open";
   options: Array<{ label: string; text: string }>;
   correctAnswer: string;
+}
+
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonObject
+  | JsonValue[];
+
+interface JsonObject {
+  [key: string]: JsonValue;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getAssessmentFromMetadata(metadata: unknown) {
+  if (!isObject(metadata) || !Array.isArray(metadata.toolResults)) {
+    return undefined;
+  }
+
+  for (const toolResult of metadata.toolResults) {
+    if (!isObject(toolResult) || toolResult.toolName !== "generateAssessment") {
+      continue;
+    }
+
+    if (isAssessmentCardData(toolResult.result)) {
+      return toolResult.result;
+    }
+  }
+
+  return undefined;
+}
+
+function toAssessmentAnnotation(assessment: AssessmentCardProps): JsonObject {
+  return {
+    assessment: {
+      summary: assessment.summary,
+      reviewTable: assessment.reviewTable.map((row) => ({
+        points: row.points,
+        yourAnswer: row.yourAnswer,
+        accuracy: row.accuracy,
+      })),
+      coreTags: [...assessment.coreTags],
+      nextNodeTitle: assessment.nextNodeTitle,
+    },
+  };
 }
 
 export default function LearnPage() {
@@ -99,11 +152,17 @@ export default function LearnPage() {
 
         const historyMessages: Message[] = sessionData.session.messages
           .filter((m) => m.role === "learner" || m.role === "tutor")
-          .map((m, i) => ({
-            id: `init-${i}`,
-            role: (m.role === "learner" ? "user" : "assistant") as "user" | "assistant",
-            content: m.content,
-          }));
+          .map((m, i) => {
+            const assessment =
+              m.type === "assessment" ? getAssessmentFromMetadata(m.metadata) : undefined;
+
+            return {
+              id: `init-${i}`,
+              role: (m.role === "learner" ? "user" : "assistant") as "user" | "assistant",
+              content: m.content,
+              annotations: assessment ? [toAssessmentAnnotation(assessment)] : undefined,
+            };
+          });
         chat.setMessages(historyMessages);
 
         if (sessionData.session.status === "diagnosing") {
