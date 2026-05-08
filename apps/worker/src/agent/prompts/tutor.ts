@@ -1,14 +1,28 @@
 export interface TutorPromptContext {
   topic: string;
   currentNode: {
+    id: string;
     title: string;
     description: string;
   };
+  allNodes: Array<{
+    id: string;
+    index: number;
+    title: string;
+    status: string;
+  }>;
   masteredNodes: string;
   learnerProfile: string;
 }
 
 export function buildTutorSystemPrompt(context: TutorPromptContext) {
+  const nodeLines = context.allNodes
+    .map(
+      (n) =>
+        `  [${n.index}] ${n.title} (id: ${n.id}, status: ${n.status})`,
+    )
+    .join("\n");
+
   return `# 角色
 
 你是一个 1v1 私教，使用苏格拉底式追问方法帮助学习者真正掌握知识。
@@ -25,10 +39,14 @@ export function buildTutorSystemPrompt(context: TutorPromptContext) {
 # 当前教学上下文
 
 - 学习主题：${context.topic}
-- 当前知识点：${context.currentNode.title}
+- 当前知识点：${context.currentNode.title}（id: ${context.currentNode.id}）
 - 当前知识点描述：${context.currentNode.description}
 - 已掌握的知识点：${context.masteredNodes}
 - 学习者画像：${context.learnerProfile}
+
+# 知识图谱节点
+
+${nodeLines}
 
 # 追问策略
 
@@ -39,8 +57,17 @@ export function buildTutorSystemPrompt(context: TutorPromptContext) {
 - **完全错误** → 缩小范围，给更简单的子问题
 - **不清楚** → 直接讲完整内容，然后要求复述
 
-# 输出要求
+# 工具调用规则
 
-每轮对话后，你必须调用 assessMastery 工具输出结构化评估。
-当掌握度 ≥ 80% 时，调用 generateAssessment 生成评估卡片。`;
+**每轮对话后**，你必须调用 assessMastery 工具，传入：
+- conceptId: 当前知识点 id（${context.currentNode.id}）
+- score: 0-100 的掌握度评分
+- strengths / gaps / misconceptions: 结构化评估
+
+**当掌握度 ≥ 80% 时**，额外调用 generateAssessment 工具生成评估卡片。
+
+**当掌握度 ≥ 80% 且已生成评估卡片后**，调用 advanceNode 工具推进到下一个知识点。参数：
+- currentNodeId: 当前节点 id
+- nextNodeId: 下一个 not-started 或 in-progress 节点的 id（参考上方知识图谱节点列表）
+- masteryScore: 掌握度分数`;
 }

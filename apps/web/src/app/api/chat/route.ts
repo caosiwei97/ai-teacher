@@ -159,6 +159,27 @@ async function persistChatTurn(
             masteredAt: masteryPayload.score >= 80 ? new Date() : null,
           },
         });
+
+        if (masteryPayload.score >= 80) {
+          const roadmap = await tx.roadmap.findFirst({
+            where: { sessionId },
+            include: { nodes: { orderBy: { index: "asc" } } },
+          });
+          const masteredNode = roadmap?.nodes.find(
+            (n) => n.id === masteryPayload.conceptId,
+          );
+          if (masteredNode) {
+            const nextNode = roadmap?.nodes
+              .filter((n) => n.index > masteredNode.index)
+              .find((n) => n.status === "not-started");
+            if (nextNode) {
+              await tx.node.update({
+                where: { id: nextNode.id },
+                data: { status: "in-progress" },
+              });
+            }
+          }
+        }
       }
 
       if (advancePayload) {
@@ -252,6 +273,12 @@ export async function POST(request: Request) {
       title: currentNode.title,
       description: currentNode.description,
     },
+    allNodes: session.roadmap.nodes.map((n) => ({
+      id: n.id,
+      index: n.index,
+      title: n.title,
+      status: n.status,
+    })),
     masteredNodes,
     learnerProfile: buildLearnerProfile(session.user.profile),
     messages: messages.map((m) => ({
