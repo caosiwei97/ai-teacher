@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+data/
+.env
+.env.local
+!.env.example
+*.log
+.playwright-mcp/
+.DS_Store
+.turbo/
+coverage/

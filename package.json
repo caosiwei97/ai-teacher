@@ -1,0 +1,33 @@
+{
+  "name": "ai-teacher",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter @ai-teacher/web dev",
+    "dev:worker": "pnpm --filter @ai-teacher/worker dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write .",
+    "db:generate": "pnpm --filter @ai-teacher/db generate",
+    "db:migrate": "pnpm --filter @ai-teacher/db migrate"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "msgpackr-extract",
+      "prisma",
+      "sharp"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prettier": "^3.5.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "dotenv-cli": "^11.0.0"
+  }
+}
