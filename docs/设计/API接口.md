@@ -11,8 +11,10 @@
 | 方法 | 路径 | 说明 | 状态 |
 |------|------|------|------|
 | POST | `/api/sessions` | 创建学习会话 | ✅ |
-| GET | `/api/sessions` | 获取会话列表 | ✅ |
+| GET | `/api/sessions` | 获取会话列表（排除已归档） | ✅ |
 | GET | `/api/sessions/:id` | 获取会话详情 | ✅ |
+| PATCH | `/api/sessions/:id` | 更新会话状态 | ✅ |
+| DELETE | `/api/sessions/:id` | 归档会话 | ✅ |
 | POST | `/api/chat` | 流式对话（SSE） | ✅ |
 | POST | `/api/sessions/:id/diagnostic` | 生成诊断题 | ✅ |
 | POST | `/api/sessions/:id/diagnostic/evaluate` | 评估诊断答案 | ✅ |
@@ -70,48 +72,8 @@ POST /api/sessions
 
 ### 说明
 
-- 创建时自动调用 **Roadmap Agent** 生成知识图谱（5-15 个节点）
-- LLM 生成失败时 fallback 到通用 5 节点模板
-- 首个节点自动设为 `in-progress`
-- 会话默认状态为 `diagnosing`
-
----
-
-## 2. 获取会话列表
-
-```
-GET /api/sessions?userId=xxx
-```
-
-### 查询参数
-
-| 参数 | 必填 | 说明 |
-|------|------|------|
-| userId | 是 | 用户 ID |
-
-### 响应 `200`
-
-```json
-{
-  "sessions": [
-    {
-      "id": "clx...",
-      "userId": "seed-user-ai-teacher",
-      "topic": "React Hooks 原理",
-      "status": "active",
-      "createdAt": "...",
-      "updatedAt": "...",
-      "source": { "id": "...", "title": "...", "type": "pdf" },
-      "progress": {
-        "totalNodes": 9,
-        "masteredNodes": 3,
-        "currentNodeId": "clx...",
-        "currentNodeTitle": "useEffect 清理机制"
-      }
-    }
-  ]
-}
-```
+- `GET /api/sessions` 自动排除 `archived` 状态的会话
+- 按会话 `updatedAt` 降序排列
 
 ---
 
@@ -133,7 +95,68 @@ GET /api/sessions/:id
 
 ---
 
-## 4. 流式对话
+## 4. 更新会话状态
+
+```
+PATCH /api/sessions/:id
+```
+
+### 请求体
+
+```json
+{
+  "status": "active | completed | archived"
+}
+```
+
+### 响应 `200`
+
+```json
+{
+  "session": {
+    "id": "clx...",
+    "status": "completed",
+    "topic": "React Hooks 原理",
+    "messages": [...],
+    "roadmap": { ... }
+  }
+}
+```
+
+### 说明
+
+- 用于手动标记会话完成或归档
+- Zod 验证 status 只接受 `active`、`completed`、`archived`
+
+---
+
+## 5. 归档会话
+
+```
+DELETE /api/sessions/:id
+```
+
+### 响应 `200`
+
+```json
+{
+  "success": true,
+  "session": {
+    "id": "clx...",
+    "status": "archived"
+  }
+}
+```
+
+### 说明
+
+- 软删除：将 session 状态设为 `archived`
+- 归档后的会话不会出现在 `GET /api/sessions` 列表中
+- 归档后的会话仍可通过 `GET /api/sessions/:id` 直接访问
+
+---
+
+## 6. 流式对话
 
 ```
 POST /api/chat
@@ -170,7 +193,7 @@ AI SDK `DataDataStreamResponse`（SSE 流式响应），包含：
 
 ---
 
-## 5. 生成诊断题
+## 7. 生成诊断题
 
 ```
 POST /api/sessions/:id/diagnostic
@@ -206,7 +229,7 @@ POST /api/sessions/:id/diagnostic
 
 ---
 
-## 6. 评估诊断答案
+## 8. 评估诊断答案
 
 ```
 POST /api/sessions/:id/diagnostic/evaluate
