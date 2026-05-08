@@ -26,6 +26,8 @@ interface ThreeColumnLayoutProps {
   currentSessionId: string;
   nodes: Node[];
   onSelectSession: (id: string) => void;
+  onNewSession?: () => void;
+  onArchiveSession?: (id: string) => void;
   children: React.ReactNode;
 }
 
@@ -34,6 +36,8 @@ export function ThreeColumnLayout({
   currentSessionId,
   nodes,
   onSelectSession,
+  onNewSession,
+  onArchiveSession,
   children,
 }: ThreeColumnLayoutProps) {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
@@ -47,6 +51,8 @@ export function ThreeColumnLayout({
         onSelect={onSelectSession}
         collapsed={leftCollapsed}
         onToggle={() => setLeftCollapsed(!leftCollapsed)}
+        onNewSession={onNewSession}
+        onArchiveSession={onArchiveSession}
       />
 
       <div className="relative flex flex-1 flex-col">

@@ -15,6 +15,7 @@ import {
   fetchSessions,
   generateDiagnostic,
   evaluateDiagnostic,
+  archiveSession,
 } from "@/lib/api-client";
 import type { Message } from "ai";
 import { Loader2, Sparkles } from "lucide-react";
@@ -185,6 +186,23 @@ export default function LearnPage() {
     [sessionId, router],
   );
 
+  const handleNewSession = useCallback(() => {
+    router.push("/");
+  }, [router]);
+
+  const handleArchiveSession = useCallback(
+    async (id: string) => {
+      try {
+        await archiveSession(id);
+        const data = await fetchSessions(USER_ID);
+        setSessions(data.sessions);
+      } catch (err) {
+        console.error("Failed to archive session:", err);
+      }
+    },
+    [],
+  );
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (chat.input.trim()) {
@@ -255,6 +273,8 @@ export default function LearnPage() {
       currentSessionId={sessionId}
       nodes={nodes}
       onSelectSession={handleSelectSession}
+      onNewSession={handleNewSession}
+      onArchiveSession={handleArchiveSession}
     >
       {showDiagnostic && (
         <div className="flex h-full flex-col">

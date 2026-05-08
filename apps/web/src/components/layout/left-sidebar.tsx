@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, BookOpen, GraduationCap } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, GraduationCap, Plus, Archive } from "lucide-react";
 
 interface Session {
   id: string;
@@ -16,10 +16,20 @@ interface LeftSidebarProps {
   onSelect: (id: string) => void;
   collapsed?: boolean;
   onToggle?: () => void;
+  onNewSession?: () => void;
+  onArchiveSession?: (id: string) => void;
 }
 
-export function LeftSidebar({ sessions, currentSessionId, onSelect, collapsed, onToggle }: LeftSidebarProps) {
-  const active = sessions.filter((s) => s.status === "active");
+export function LeftSidebar({
+  sessions,
+  currentSessionId,
+  onSelect,
+  collapsed,
+  onToggle,
+  onNewSession,
+  onArchiveSession,
+}: LeftSidebarProps) {
+  const active = sessions.filter((s) => s.status === "active" || s.status === "diagnosing");
   const completed = sessions.filter((s) => s.status === "completed");
 
   if (collapsed) {
@@ -50,6 +60,18 @@ export function LeftSidebar({ sessions, currentSessionId, onSelect, collapsed, o
         </button>
       </div>
 
+      {onNewSession && (
+        <div className="px-3 pb-2">
+          <button
+            onClick={onNewSession}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-sidebar-muted px-3 py-2 text-[13px] text-sidebar-muted transition-colors hover:border-sidebar-active hover:text-sidebar-active-text"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            新建会话
+          </button>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-3 pb-4">
         {active.length > 0 && (
           <div className="mb-5">
@@ -62,32 +84,41 @@ export function LeftSidebar({ sessions, currentSessionId, onSelect, collapsed, o
                 ? Math.round((s.progress.masteredNodes / s.progress.totalNodes) * 100)
                 : 0;
               return (
-                <button
-                  key={s.id}
-                  onClick={() => onSelect(s.id)}
-                  className={cn(
-                    "mb-1 w-full rounded-lg px-3 py-2.5 text-left transition-all duration-150",
-                    isActive
-                      ? "bg-sidebar-active text-sidebar-active-text shadow-sm"
-                      : "text-sidebar-text hover:bg-sidebar-hover",
-                  )}
-                >
-                  <p className="truncate text-[13px] font-medium leading-snug">{s.topic}</p>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <div className="h-1 flex-1 rounded-full bg-sidebar-surface">
-                      <div
-                        className={cn(
-                          "h-1 rounded-full transition-all",
-                          isActive ? "bg-white/60" : "bg-sidebar-muted/50",
-                        )}
-                        style={{ width: `${progress}%` }}
-                      />
+                <div key={s.id} className="group relative mb-1">
+                  <button
+                    onClick={() => onSelect(s.id)}
+                    className={cn(
+                      "w-full rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                      isActive
+                        ? "bg-sidebar-active text-sidebar-active-text shadow-sm"
+                        : "text-sidebar-text hover:bg-sidebar-hover",
+                    )}
+                  >
+                    <p className="truncate text-[13px] font-medium leading-snug pr-6">{s.topic}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="h-1 flex-1 rounded-full bg-sidebar-surface">
+                        <div
+                          className={cn(
+                            "h-1 rounded-full transition-all",
+                            isActive ? "bg-white/60" : "bg-sidebar-muted/50",
+                          )}
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                      <span className={cn("text-[10px]", isActive ? "text-white/70" : "text-sidebar-muted")}>
+                        {s.progress.masteredNodes}/{s.progress.totalNodes}
+                      </span>
                     </div>
-                    <span className={cn("text-[10px]", isActive ? "text-white/70" : "text-sidebar-muted")}>
-                      {s.progress.masteredNodes}/{s.progress.totalNodes}
-                    </span>
-                  </div>
-                </button>
+                  </button>
+                  {onArchiveSession && !isActive && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onArchiveSession(s.id); }}
+                      className="absolute right-2 top-2.5 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                    >
+                      <Archive className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -99,21 +130,30 @@ export function LeftSidebar({ sessions, currentSessionId, onSelect, collapsed, o
               已完成
             </h3>
             {completed.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => onSelect(s.id)}
-                className={cn(
-                  "mb-1 w-full rounded-lg px-3 py-2 text-left transition-all duration-150",
-                  s.id === currentSessionId
-                    ? "bg-sidebar-active text-sidebar-active-text"
-                    : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-text",
+              <div key={s.id} className="group relative mb-1">
+                <button
+                  onClick={() => onSelect(s.id)}
+                  className={cn(
+                    "w-full rounded-lg px-3 py-2 text-left transition-all duration-150",
+                    s.id === currentSessionId
+                      ? "bg-sidebar-active text-sidebar-active-text"
+                      : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-text",
+                  )}
+                >
+                  <div className="flex items-center gap-2 pr-6">
+                    <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                    <p className="truncate text-[13px]">{s.topic}</p>
+                  </div>
+                </button>
+                {onArchiveSession && s.id !== currentSessionId && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onArchiveSession(s.id); }}
+                    className="absolute right-2 top-2 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                  >
+                    <Archive className="h-3.5 w-3.5" />
+                  </button>
                 )}
-              >
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                  <p className="truncate text-[13px]">{s.topic}</p>
-                </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

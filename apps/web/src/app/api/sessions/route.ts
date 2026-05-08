@@ -151,7 +151,12 @@ export async function GET(request: Request) {
   }
 
   const sessions = await prisma.session.findMany({
-    where: { userId: parsed.data.userId },
+    where: {
+      userId: parsed.data.userId,
+      status: {
+        notIn: ["archived"],
+      },
+    },
     orderBy: { updatedAt: "desc" },
     include: {
       source: {

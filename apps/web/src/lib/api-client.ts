@@ -27,6 +27,38 @@ export async function fetchSession(sessionId: string) {
   }>;
 }
 
+export async function archiveSession(sessionId: string) {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to archive session");
+  return res.json() as Promise<{
+    success: true;
+    session: {
+      id: string;
+      status: string;
+    };
+  }>;
+}
+
+export async function updateSessionStatus(sessionId: string, status: string) {
+  const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error("Failed to update session status");
+  return res.json() as Promise<{
+    session: {
+      id: string;
+      topic: string;
+      status: string;
+      messages: Array<{ id: string; role: string; type: string; content: string; metadata: unknown; createdAt: string }>;
+      roadmap: { id: string; nodes: Array<{ id: string; index: number; title: string; description: string; status: string; masteryScore: number }> } | null;
+    };
+  }>;
+}
+
 export async function generateDiagnostic(sessionId: string) {
   const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/diagnostic`, {
     method: "POST",
