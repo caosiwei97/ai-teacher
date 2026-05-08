@@ -283,10 +283,40 @@ docs/
 
 ---
 
+#### 2026-05-08 18:00 — 迭代 007：掌握度评分 + 门控
+
+**状态**：✅ 已完成
+
+**事件**：
+- 发现迭代 007 大部分基础设施已在迭代 003 预建（assessMastery/advanceNode/generateAssessment tools + persistChatTurn 中的 masteryPayload/advancePayload 处理）
+- 核心问题：tutor prompt 不包含节点 ID，LLM 无法正确调用 assessMastery（需要 conceptId 参数）
+- 核心问题：节点掌握后下一节点不会自动推进到 in-progress
+- 核心问题：前端对话后不刷新节点状态，右侧栏始终显示初始数据
+
+**技术决策**：
+- Tutor prompt 新增完整知识图谱节点列表（含 ID/status/index），LLM 可正确调用工具
+- 后端自动推进：当节点 masteryScore ≥ 80 时，自动将下一个 not-started 节点设为 in-progress
+- 前端 onFinish 回调：对话流结束后重新 fetchSession 更新右侧栏节点状态
+
+**代码变更**：
+- `apps/worker/src/agent/prompts/tutor.ts` — TutorPromptContext 新增 currentNode.id + allNodes，prompt 展示完整节点列表和工具调用规则
+- `apps/worker/src/agent/tutor.ts` — TutorContext 新增 allNodes 字段，传递给 buildTutorSystemPrompt
+- `apps/web/src/app/api/chat/route.ts` — 新增 allNodes 传递；persistChatTurn 新增自动推进逻辑（masteryScore ≥ 80 时查找下一个 not-started 节点）
+- `apps/web/src/hooks/use-chat-stream.ts` — 新增 onFinish 回调选项
+- `apps/web/src/app/learn/[sessionId]/page.tsx` — useChatStream onFinish 重新获取节点数据
+- `e2e/mastery.spec.ts` — 新增 3 个掌握度 E2E 测试（seed session 状态验证 + UI 渲染 + 新会话结构）
+
+**验证结果**：
+- `pnpm --filter @ai-teacher/web build` → 构建成功 ✅
+- `pnpm --filter @ai-teacher/worker build` → 构建成功 ✅
+- 11/11 E2E 测试通过 ✅
+
+---
+
 ## 下次 Session 应从这里继续
 
-- **当前进度**：迭代 001-006 已完成，8/8 E2E 测试通过
-- **下一步**：迭代 007（掌握度评分 + 门控）— 每轮对话后结构化评估 + 80% 门控逻辑
+- **当前进度**：迭代 001-007 已完成，11/11 E2E 测试通过
+- **下一步**：迭代 008（评估卡片渲染）— 节点掌握后显示总结卡片
 - **注意**：E2E 测试必须通过才能提交代码
 
 ---
