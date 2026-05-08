@@ -28,12 +28,12 @@ function parseContent(text: string) {
   return parts;
 }
 
-function renderText(text: string) {
+function renderInlineCode(text: string) {
   const parts = text.split(/(`[^`]+`)/g);
   return parts.map((part, i) => {
     if (part.startsWith("`") && part.endsWith("`")) {
       return (
-        <code key={i} className="rounded bg-gray-200 px-1.5 py-0.5 text-sm font-mono text-pink-600">
+        <code key={i} className="rounded-md bg-accent/10 px-1.5 py-0.5 text-[13px] font-mono text-code-accent">
           {part.slice(1, -1)}
         </code>
       );
@@ -50,10 +50,10 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
       <div className={`max-w-[80%] ${isUser ? "order-1" : ""}`}>
         <div
-          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+          className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed ${
             isUser
-              ? "rounded-br-sm bg-blue-600 text-white"
-              : "rounded-bl-sm bg-gray-100 text-gray-900"
+              ? "rounded-br-sm bg-chat-user text-chat-user-text"
+              : "rounded-bl-sm bg-chat-tutor text-chat-tutor-text shadow-sm"
           }`}
         >
           {parsed.map((part, i) =>
@@ -61,7 +61,7 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
               <CodeBlock key={i} language={part.language}>{part.content}</CodeBlock>
             ) : (
               <p key={i} className="whitespace-pre-wrap">
-                {renderText(part.content)}
+                {renderInlineCode(part.content)}
               </p>
             ),
           )}

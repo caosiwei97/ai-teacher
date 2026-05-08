@@ -5,6 +5,7 @@ import type { Message } from "ai";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sparkles } from "lucide-react";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -24,10 +25,13 @@ export function ChatArea({ messages, input, isLoading, onInputChange, onSubmit, 
 
   return (
     <div className="flex h-full flex-col">
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 px-5 py-4">
         {messages.length === 0 && (
-          <div className="flex h-full items-center justify-center text-gray-400">
-            <p>开始你的学习之旅吧</p>
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary">
+              <Sparkles className="h-6 w-6 text-roadmap-fill" />
+            </div>
+            <p className="text-sm">开始你的学习之旅吧</p>
           </div>
         )}
         {messages.map((msg) => (

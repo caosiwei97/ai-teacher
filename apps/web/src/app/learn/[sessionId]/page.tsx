@@ -6,6 +6,7 @@ import { ThreeColumnLayout } from "@/components/layout/three-column";
 import { ChatArea } from "@/components/chat/chat-area";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import { fetchSession, fetchSessions } from "@/lib/api-client";
+import type { Message } from "ai";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -32,10 +33,9 @@ export default function LearnPage() {
 
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
-  const [initialMessages, setInitialMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [loaded, setLoaded] = useState(false);
 
-  const chat = useChatStream(sessionId, loaded ? initialMessages : []);
+  const chat = useChatStream(sessionId);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -43,11 +43,16 @@ export default function LearnPage() {
     Promise.all([fetchSessions(USER_ID), fetchSession(sessionId)])
       .then(([sessionsData, sessionData]) => {
         setSessions(sessionsData.sessions);
-        const roadmapNodes = sessionData.session.roadmap?.nodes ?? [];
-        setNodes(roadmapNodes);
-        setInitialMessages(
-          sessionData.session.messages.map((m) => ({ role: m.role, content: m.content }))
-        );
+        setNodes(sessionData.session.roadmap?.nodes ?? []);
+
+        const historyMessages: Message[] = sessionData.session.messages
+          .filter((m) => m.role === "learner" || m.role === "tutor")
+          .map((m, i) => ({
+            id: `init-${i}`,
+            role: (m.role === "learner" ? "user" : "assistant") as "user" | "assistant",
+            content: m.content,
+          }));
+        chat.setMessages(historyMessages);
         setLoaded(true);
       })
       .catch(console.error);
@@ -71,8 +76,11 @@ export default function LearnPage() {
 
   if (!loaded) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-gray-400">加载中...</p>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-pulse-soft rounded-full bg-roadmap-fill" />
+          <p className="text-sm text-muted-foreground">加载中...</p>
+        </div>
       </div>
     );
   }

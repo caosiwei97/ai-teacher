@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { LeftSidebar } from "./left-sidebar";
 import { RightSidebar } from "./right-sidebar";
-import { Menu, Map } from "lucide-react";
+import { PanelLeftOpen, PanelRightClose } from "lucide-react";
 
 interface Session {
   id: string;
@@ -40,7 +40,7 @@ export function ThreeColumnLayout({
   const [rightCollapsed, setRightCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       <LeftSidebar
         sessions={sessions}
         currentSessionId={currentSessionId}
@@ -50,27 +50,29 @@ export function ThreeColumnLayout({
       />
 
       <div className="relative flex flex-1 flex-col">
-        <div className="absolute left-2 top-2 z-10 md:hidden">
+        <div className="absolute left-3 top-3 z-10 lg:hidden">
           <button
             onClick={() => setLeftCollapsed(!leftCollapsed)}
-            className="rounded bg-white p-1.5 shadow-md"
+            className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
           >
-            <Menu className="h-5 w-5" />
+            <PanelLeftOpen className="h-4 w-4 text-foreground" />
           </button>
         </div>
-        <div className="absolute right-2 top-2 z-10 md:hidden">
-          <button
-            onClick={() => setRightCollapsed(!rightCollapsed)}
-            className="rounded bg-white p-1.5 shadow-md"
-          >
-            <Map className="h-5 w-5" />
-          </button>
-        </div>
+        {rightCollapsed && (
+          <div className="absolute right-3 top-3 z-10 lg:hidden">
+            <button
+              onClick={() => setRightCollapsed(!rightCollapsed)}
+              className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
+            >
+              <PanelRightClose className="h-4 w-4 text-foreground" />
+            </button>
+          </div>
+        )}
         {children}
       </div>
 
       {!rightCollapsed && (
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
           <RightSidebar nodes={nodes} />
         </div>
       )}

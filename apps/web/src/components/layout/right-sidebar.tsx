@@ -1,6 +1,7 @@
 "use client";
 
 import { RoadmapNode } from "@/components/roadmap/roadmap-node";
+import { MapPin } from "lucide-react";
 
 interface Node {
   id: string;
@@ -18,32 +19,44 @@ interface RightSidebarProps {
 export function RightSidebar({ nodes }: RightSidebarProps) {
   const mastered = nodes.filter((n) => n.status === "mastered").length;
   const total = nodes.length;
+  const progress = total > 0 ? Math.round((mastered / total) * 100) : 0;
 
   return (
-    <div className="flex h-full w-[300px] flex-col border-l border-gray-200 bg-gray-50">
-      <div className="border-b border-gray-200 px-4 py-3">
+    <div className="flex h-full w-[296px] flex-col border-l border-border bg-card">
+      <div className="border-b border-border px-5 py-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">路线图</h2>
-          <span className="text-sm text-gray-500">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-roadmap-fill" />
+            <h2 className="text-sm font-semibold text-foreground">学习路线</h2>
+          </div>
+          <span className="text-xs font-medium text-muted-foreground">
             {mastered}/{total}
           </span>
         </div>
         {total > 0 && (
-          <div className="mt-2 h-1.5 rounded-full bg-gray-200">
-            <div
-              className="h-1.5 rounded-full bg-green-500 transition-all"
-              style={{ width: `${(mastered / total) * 100}%` }}
-            />
+          <div className="mt-3">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-[11px] text-muted-foreground">总进度</span>
+              <span className="text-[11px] font-medium text-roadmap-fill">{progress}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-roadmap-track">
+              <div
+                className="h-1.5 rounded-full bg-roadmap-fill transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
         )}
       </div>
       <div className="flex-1 overflow-y-auto p-3">
-        {nodes.map((node) => (
+        {nodes.map((node, i) => (
           <RoadmapNode
             key={node.id}
+            index={i + 1}
             title={node.title}
             status={node.status as "mastered" | "in-progress" | "not-started"}
             masteryScore={node.masteryScore}
+            isLast={i === nodes.length - 1}
           />
         ))}
       </div>
