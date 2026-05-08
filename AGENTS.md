@@ -152,7 +152,7 @@ git log --oneline -10
 | `API接口.md` | 接口列表 ↔ `apps/web/src/app/api/` 目录下的 route.ts 文件数量一致 |
 | `技术架构.md` 数据模型 | Prisma Schema ↔ 文档中的 prisma 代码块完全一致 |
 | `技术架构.md` 环境变量 | `.env.example` ↔ 文档中的变量列表完全一致 |
-| `技术架构.md` Docker | `infra/docker/docker-compose.yml` ↔ 文档中的 yaml 代码块一致 |
+| `技术架构.md` Docker | `docker-compose.yml` ↔ 文档中的 yaml 代码块一致 |
 | `Prompt设计.md` 工具 | `apps/worker/src/agent/tools/*.ts` ↔ 文档中的工具定义一致 |
 | `迭代计划.md` | 已完成的迭代 ↔ `git log` 中的实际提交 |
 
@@ -208,7 +208,7 @@ apps/
 packages/
   shared/       — Zod schemas, types
   db/           — Prisma schema + seed
-infra/docker/   — Docker Compose (PG + Redis + MinIO)
+  docker-compose.yml  — Docker Compose (PG + Redis + MinIO)
 e2e/            — Playwright E2E tests
 docs/           — 项目文档（中文）
   产品/         — 产品定位、需求规格

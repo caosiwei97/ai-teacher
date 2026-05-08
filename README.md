@@ -12,7 +12,7 @@ cp .env.example .env
 # 编辑 .env 填入 LLM API Key
 
 # 2. 一键启动中间件（PostgreSQL + Redis + MinIO）
-docker compose -f infra/docker/docker-compose.yml up -d
+docker compose up -d
 
 # 3. 安装依赖 + 初始化数据库
 pnpm install
