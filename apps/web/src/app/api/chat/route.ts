@@ -55,15 +55,21 @@ function buildLearnerProfile(profile: {
   return sections.join("\n") || "首次学习";
 }
 
+const STREAM_TIMEOUT_MS = 120_000;
+
 async function persistMessages(
   sessionId: string,
   userMessage: string,
   result: Awaited<ReturnType<TutorAgent["run"]>>,
 ) {
   try {
-    const [assistantText, toolResults] = await Promise.all([
-      result.text,
-      result.toolResults,
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Stream timeout")), STREAM_TIMEOUT_MS),
+    );
+
+    const [assistantText, toolResults] = await Promise.race([
+      Promise.all([result.text, result.toolResults]),
+      timeoutPromise,
     ]);
 
     const mapped = toolResults.map((tr) => ({
