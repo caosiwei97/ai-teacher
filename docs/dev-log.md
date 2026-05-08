@@ -145,6 +145,23 @@ docs/
 - 首页 HTTP 200 ✅
 - Learn 页面 HTTP 200 ✅
 
+### 2026-05-08 (6) — 迭代 005：知识图谱生成 + 可视化
+
+**事件**：
+- Roadmap Agent 实现，使用 AI SDK `generateObject` + Zod Schema 约束输出
+- Session 创建 API 从 placeholder nodes 改为调用 LLM 动态生成知识图谱
+- LLM 生成失败时自动 fallback 到通用 5 节点模板
+
+**代码变更**：
+- `packages/shared/src/schemas/roadmap.ts` — RoadmapOutput Zod Schema（5-15 节点约束）
+- `apps/worker/src/agent/roadmap.ts` — Roadmap Agent（智谱 glm-4-flash + generateObject）
+- `apps/web/src/app/api/sessions/route.ts` — 创建会话时调用 Roadmap Agent
+
+**验证结果**：
+- 创建 "TypeScript 泛型入门" 会话 → LLM 生成 11 个知识点 ✅
+- 节点按依赖顺序排列，首个自动设为 in-progress ✅
+- 右侧栏路线图展示节点状态（✓/●/○）+ 进度条 ✅
+
 ---
 
 ## 模板

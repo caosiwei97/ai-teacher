@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@ai-teacher/db";
+import { generateRoadmap } from "../../../../../worker/src/agent/roadmap";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ const createSessionSchema = z.object({
   sourceId: z.string().min(1).optional(),
 });
 
-function buildPlaceholderNodes(topic: string) {
+function buildFallbackNodes(topic: string) {
   return [
     {
       index: 0,
@@ -82,6 +83,28 @@ export async function POST(request: Request) {
     }
   }
 
+  let sourceContent: string | undefined;
+  if (sourceId) {
+    const source = await prisma.source.findUnique({
+      where: { id: sourceId },
+      select: { content: true },
+    });
+    sourceContent = source?.content ?? undefined;
+  }
+
+  let nodeData: Array<{ index: number; title: string; description: string; status: string }>;
+  try {
+    const roadmap = await generateRoadmap(topic, sourceContent);
+    nodeData = roadmap.nodes.map((node) => ({
+      index: node.index,
+      title: node.title,
+      description: node.description,
+      status: node.index === 0 ? "in-progress" : "not-started",
+    }));
+  } catch {
+    nodeData = buildFallbackNodes(topic);
+  }
+
   const session = await prisma.session.create({
     data: {
       userId,
@@ -90,7 +113,7 @@ export async function POST(request: Request) {
       roadmap: {
         create: {
           nodes: {
-            create: buildPlaceholderNodes(topic),
+            create: nodeData,
           },
         },
       },
