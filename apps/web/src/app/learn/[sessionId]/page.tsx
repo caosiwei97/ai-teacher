@@ -54,12 +54,32 @@ export default function LearnPage() {
   const [diagnosticState, setDiagnosticState] = useState<
     | { phase: "idle" }
     | { phase: "loading" }
+    | { phase: "error"; message: string }
     | { phase: "quiz"; questions: DiagnosticQuestion[] }
     | { phase: "evaluating" }
     | { phase: "done"; startingNode: { id: string; index: number; title: string } }
   >({ phase: "idle" });
 
   const chat = useChatStream(sessionId);
+
+  function loadDiagnostic() {
+    setDiagnosticState({ phase: "loading" });
+    generateDiagnostic(sessionId)
+      .then((data) => {
+        setDiagnosticState({ phase: "quiz", questions: data.questions });
+      })
+      .catch((err) => {
+        console.error("Failed to generate diagnostic:", err);
+        setDiagnosticState({
+          phase: "error",
+          message: "诊断题目生成失败，可能是网络问题或服务繁忙",
+        });
+      });
+  }
+
+  function handleSkipDiagnostic() {
+    setDiagnosticState({ phase: "idle" });
+  }
 
   useEffect(() => {
     if (!sessionId) return;
@@ -79,15 +99,7 @@ export default function LearnPage() {
         chat.setMessages(historyMessages);
 
         if (sessionData.session.status === "diagnosing") {
-          setDiagnosticState({ phase: "loading" });
-          generateDiagnostic(sessionId)
-            .then((data) => {
-              setDiagnosticState({ phase: "quiz", questions: data.questions });
-            })
-            .catch((err) => {
-              console.error("Failed to generate diagnostic:", err);
-              setDiagnosticState({ phase: "idle" });
-            });
+          loadDiagnostic();
         } else {
           setDiagnosticState({ phase: "idle" });
         }
@@ -164,6 +176,7 @@ export default function LearnPage() {
 
   const showDiagnostic =
     diagnosticState.phase === "loading" ||
+    diagnosticState.phase === "error" ||
     diagnosticState.phase === "quiz" ||
     diagnosticState.phase === "evaluating";
 
@@ -200,6 +213,38 @@ export default function LearnPage() {
                 <p className="text-sm text-muted-foreground">
                   正在生成诊断题目…
                 </p>
+              </div>
+            </div>
+          ) : diagnosticState.phase === "error" ? (
+            <div className="flex flex-1 items-center justify-center">
+              <div className="flex flex-col items-center gap-4 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10">
+                  <Sparkles className="h-6 w-6 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    生成失败
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {diagnosticState.message}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={loadDiagnostic}
+                    className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    重试
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSkipDiagnostic}
+                    className="rounded-xl border border-border px-5 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary"
+                  >
+                    跳过诊断
+                  </button>
+                </div>
               </div>
             </div>
           ) : diagnosticState.phase === "quiz" ? (
