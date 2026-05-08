@@ -84,29 +84,28 @@ test.describe("Session Management — API", () => {
 });
 
 test.describe("Session Management — Home Page", () => {
-  test("should show session cards with status badges", async ({ page }) => {
+  test("should redirect to learn page with session cards in sidebar", async ({ page }) => {
     await page.goto("/");
 
-    const sessionCards = page.locator("button.border-l-\\[3px\\]");
-    await expect(sessionCards.first()).toBeVisible({ timeout: 10000 });
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
-    const cardCount = await sessionCards.count();
-    expect(cardCount).toBeGreaterThanOrEqual(1);
+    const sidebar = page.locator(".bg-sidebar-bg");
+    await expect(sidebar).toBeVisible();
 
-    const badge = page.locator("span.rounded-full");
-    await expect(badge.first()).toBeVisible();
+    const sessionButtons = sidebar.locator("button");
+    const count = await sessionButtons.count();
+    expect(count).toBeGreaterThanOrEqual(1);
   });
 
-  test("should navigate to learn page on session card click", async ({
+  test("should show new session button after redirect", async ({
     page,
   }) => {
     await page.goto("/");
 
-    const sessionCard = page.locator("button.border-l-\\[3px\\]").first();
-    await expect(sessionCard).toBeVisible({ timeout: 10000 });
-    await sessionCard.click();
-
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
+
+    const newBtn = page.locator("button", { hasText: "新建会话" });
+    await expect(newBtn).toBeVisible();
   });
 });
 

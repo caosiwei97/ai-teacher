@@ -19,9 +19,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm dev:web",
+    command: process.env.PNPM_PATH
+      ? `${process.env.PNPM_PATH} --filter @ai-teacher/web dev`
+      : "pnpm dev:web",
     port: 38421,
     reuseExistingServer: true,
-    timeout: 30000,
+    timeout: 60000,
   },
 });
