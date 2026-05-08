@@ -2,9 +2,16 @@
 
 import { useChat } from "ai/react";
 
-export function useChatStream(sessionId: string) {
+interface UseChatStreamOptions {
+  onFinish?: () => void;
+}
+
+export function useChatStream(sessionId: string, options?: UseChatStreamOptions) {
   return useChat({
     api: "/api/chat",
     body: { sessionId },
+    onFinish: () => {
+      options?.onFinish?.();
+    },
   });
 }

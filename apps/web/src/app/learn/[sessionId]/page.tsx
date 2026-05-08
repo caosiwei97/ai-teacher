@@ -60,7 +60,15 @@ export default function LearnPage() {
     | { phase: "done"; startingNode: { id: string; index: number; title: string } }
   >({ phase: "idle" });
 
-  const chat = useChatStream(sessionId);
+  const chat = useChatStream(sessionId, {
+    onFinish: () => {
+      fetchSession(sessionId)
+        .then((data) => {
+          setNodes(data.session.roadmap?.nodes ?? []);
+        })
+        .catch(console.error);
+    },
+  });
 
   function loadDiagnostic() {
     setDiagnosticState({ phase: "loading" });
