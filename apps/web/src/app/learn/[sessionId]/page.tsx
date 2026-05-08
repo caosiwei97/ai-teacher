@@ -8,6 +8,7 @@ import {
   type AssessmentCardProps,
 } from "@/components/chat/assessment-card";
 import { ChatArea } from "@/components/chat/chat-area";
+import { QuickQuestion } from "@/components/chat/quick-question";
 import { DiagnosticQuiz } from "@/components/diagnostic/diagnostic-quiz";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import {
@@ -114,6 +115,9 @@ export default function LearnPage() {
     | { phase: "done"; startingNode: { id: string; index: number; title: string } }
   >({ phase: "idle" });
 
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
+
   const chat = useChatStream(sessionId, {
     onFinish: () => {
       fetchSession(sessionId)
@@ -208,6 +212,59 @@ export default function LearnPage() {
     if (chat.input.trim()) {
       chat.handleSubmit(e);
     }
+  }
+
+  function getLastAssistantMessage() {
+    for (let i = chat.messages.length - 1; i >= 0; i--) {
+      if (chat.messages[i].role === "assistant") {
+        return chat.messages[i].content;
+      }
+    }
+    return "";
+  }
+
+  async function handleSuggest() {
+    const lastAssistantMsg = getLastAssistantMessage();
+    if (!lastAssistantMsg) return;
+
+    setIsSuggesting(true);
+    setSuggestion(undefined);
+
+    try {
+      const response = await fetch("/api/suggest-reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          currentQuestion: lastAssistantMsg,
+        }),
+      });
+
+      if (!response.ok) {
+        setSuggestion("获取提示失败，请重试");
+        return;
+      }
+
+      const data = await response.json();
+      setSuggestion(data.suggestion);
+    } catch {
+      setSuggestion("获取提示失败，请重试");
+    } finally {
+      setIsSuggesting(false);
+    }
+  }
+
+  function handleApplySuggestion() {
+    if (!suggestion) return;
+    const syntheticEvent = {
+      target: { value: suggestion },
+    } as React.ChangeEvent<HTMLTextAreaElement>;
+    chat.handleInputChange(syntheticEvent);
+    setSuggestion(undefined);
+  }
+
+  function handleDismissSuggestion() {
+    setSuggestion(undefined);
   }
 
   async function handleDiagnosticSubmit(
@@ -379,14 +436,22 @@ export default function LearnPage() {
         </div>
       )}
       {!showDiagnostic && !showDone && (
-        <ChatArea
-          messages={chat.messages}
-          input={chat.input}
-          isLoading={chat.isLoading}
-          onInputChange={chat.handleInputChange}
-          onSubmit={handleSubmit}
-          onStop={chat.stop}
-        />
+        <>
+          <ChatArea
+            messages={chat.messages}
+            input={chat.input}
+            isLoading={chat.isLoading}
+            onInputChange={chat.handleInputChange}
+            onSubmit={handleSubmit}
+            onStop={chat.stop}
+            isSuggesting={isSuggesting}
+            suggestion={suggestion}
+            onSuggest={handleSuggest}
+            onApplySuggestion={handleApplySuggestion}
+            onDismissSuggestion={handleDismissSuggestion}
+          />
+          <QuickQuestion sessionId={sessionId} />
+        </>
       )}
     </ThreeColumnLayout>
   );

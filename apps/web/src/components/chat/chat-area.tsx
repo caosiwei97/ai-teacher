@@ -18,6 +18,11 @@ interface ChatAreaProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSubmit: (e: React.FormEvent) => void;
   onStop: () => void;
+  isSuggesting?: boolean;
+  suggestion?: string;
+  onSuggest?: () => void;
+  onApplySuggestion?: () => void;
+  onDismissSuggestion?: () => void;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -83,7 +88,19 @@ function getAssessmentFromMessage(message: Message) {
   );
 }
 
-export function ChatArea({ messages, input, isLoading, onInputChange, onSubmit, onStop }: ChatAreaProps) {
+export function ChatArea({
+  messages,
+  input,
+  isLoading,
+  onInputChange,
+  onSubmit,
+  onStop,
+  isSuggesting,
+  suggestion,
+  onSuggest,
+  onApplySuggestion,
+  onDismissSuggestion,
+}: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -123,6 +140,11 @@ export function ChatArea({ messages, input, isLoading, onInputChange, onSubmit, 
         onSubmit={onSubmit}
         onStop={onStop}
         isLoading={isLoading}
+        isSuggesting={isSuggesting}
+        suggestion={suggestion}
+        onSuggest={onSuggest}
+        onApplySuggestion={onApplySuggestion}
+        onDismissSuggestion={onDismissSuggestion}
       />
     </div>
   );
