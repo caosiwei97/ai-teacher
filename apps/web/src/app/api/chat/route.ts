@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@ai-teacher/db";
-import { streamTutorResponse } from "../../../../../worker/src/agent/tutor";
+import { TutorAgent } from "../../../../../worker/src/agent/tutor";
+import { MessageService } from "../../../../../worker/src/agent/services/message-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,38 +14,6 @@ const chatRequestSchema = z.object({
     content: z.string(),
   })).min(1),
 });
-
-type AssessmentPayload = {
-  success: boolean;
-  conceptId: string;
-  summary: string;
-  reviewTable: Array<{
-    points: string;
-    yourAnswer: string;
-    accuracy: string;
-  }>;
-  coreTags: string[];
-  nextNodeTitle: string;
-};
-
-type MasteryPayload = {
-  success: boolean;
-  conceptId: string;
-  score: number;
-  strengths: string[];
-  gaps: string[];
-  misconceptions: Array<{
-    belief: string;
-    rootCause: string;
-    resolved: boolean;
-  }>;
-};
-
-type AdvancePayload = {
-  currentNodeId: string;
-  nextNodeId: string;
-  masteryScore: number;
-};
 
 function formatProfileValue(value: unknown) {
   if (value == null) {
@@ -86,10 +55,10 @@ function buildLearnerProfile(profile: {
   return sections.join("\n") || "首次学习";
 }
 
-async function persistChatTurn(
+async function persistMessages(
   sessionId: string,
   userMessage: string,
-  result: Awaited<ReturnType<typeof streamTutorResponse>>,
+  result: Awaited<ReturnType<TutorAgent["run"]>>,
 ) {
   try {
     const [assistantText, toolResults] = await Promise.all([
@@ -97,111 +66,14 @@ async function persistChatTurn(
       result.toolResults,
     ]);
 
-    const assistantMetadata =
-      toolResults.length > 0
-        ? {
-            toolResults: toolResults.map((toolResult) => ({
-              toolName: toolResult.toolName,
-              result: toolResult.result,
-            })),
-          }
-        : undefined;
+    const mapped = toolResults.map((tr) => ({
+      toolName: tr.toolName,
+      result: tr.result,
+    }));
 
-    let assessmentPayload: AssessmentPayload | null = null;
-    let masteryPayload: MasteryPayload | null = null;
-    let advancePayload: AdvancePayload | null = null;
-
-    for (const toolResult of toolResults) {
-      if (toolResult.toolName === "generateAssessment") {
-        assessmentPayload = toolResult.result;
-      }
-
-      if (toolResult.toolName === "assessMastery") {
-        masteryPayload = toolResult.result;
-      }
-
-      if (toolResult.toolName === "advanceNode") {
-        advancePayload = {
-          currentNodeId: toolResult.result.currentNodeId,
-          nextNodeId: toolResult.result.nextNodeId,
-          masteryScore: toolResult.result.masteryScore,
-        };
-      }
-    }
-
-    await prisma.$transaction(async (tx) => {
-      await tx.message.create({
-        data: {
-          sessionId,
-          role: "learner",
-          type: "text",
-          content: userMessage,
-        },
-      });
-
-      await tx.message.create({
-        data: {
-          sessionId,
-          role: "tutor",
-          type: assessmentPayload ? "assessment" : "text",
-          content: assistantText,
-          metadata: assistantMetadata,
-        },
-      });
-
-      if (masteryPayload) {
-        await tx.node.update({
-          where: { id: masteryPayload.conceptId },
-          data: {
-            masteryScore: masteryPayload.score,
-            reviewLog: masteryPayload,
-            status: masteryPayload.score >= 80 ? "mastered" : "in-progress",
-            masteredAt: masteryPayload.score >= 80 ? new Date() : null,
-          },
-        });
-
-        if (masteryPayload.score >= 80) {
-          const roadmap = await tx.roadmap.findFirst({
-            where: { sessionId },
-            include: { nodes: { orderBy: { index: "asc" } } },
-          });
-          const masteredNode = roadmap?.nodes.find(
-            (n) => n.id === masteryPayload.conceptId,
-          );
-          if (masteredNode) {
-            const nextNode = roadmap?.nodes
-              .filter((n) => n.index > masteredNode.index)
-              .find((n) => n.status === "not-started");
-            if (nextNode) {
-              await tx.node.update({
-                where: { id: nextNode.id },
-                data: { status: "in-progress" },
-              });
-            }
-          }
-        }
-      }
-
-      if (advancePayload) {
-        await tx.node.update({
-          where: { id: advancePayload.currentNodeId },
-          data: {
-            status: "mastered",
-            masteryScore: advancePayload.masteryScore,
-            masteredAt: new Date(),
-          },
-        });
-
-        await tx.node.update({
-          where: { id: advancePayload.nextNodeId },
-          data: {
-            status: "in-progress",
-          },
-        });
-      }
-    });
+    await MessageService.persistTurn(sessionId, userMessage, assistantText, mapped);
   } catch (error) {
-    console.error("[chat] failed to persist streamed messages", error);
+    console.error("[chat] failed to persist messages", error);
   }
 }
 
@@ -266,7 +138,8 @@ export async function POST(request: Request) {
     .filter((node) => node.status === "mastered" || node.masteryScore >= 80)
     .map((node) => node.title);
 
-  const result = await streamTutorResponse({
+  const agent = new TutorAgent();
+  const result = await agent.run({
     topic: session.topic,
     currentNode: {
       id: currentNode.id,
@@ -287,7 +160,7 @@ export async function POST(request: Request) {
     })),
   });
 
-  void persistChatTurn(sessionId, message, result);
+  void persistMessages(sessionId, message, result);
 
   return result.toDataStreamResponse();
 }
