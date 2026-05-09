@@ -1,9 +1,9 @@
-import type { CoreMessage } from "ai";
+import type { ModelMessage } from "ai";
 
 /** State for a StateGraph execution */
 export interface BaseGraphState {
   sessionId: string;
-  messages: CoreMessage[];
+  messages: ModelMessage[];
   [key: string]: unknown;
 }
 
@@ -17,7 +17,7 @@ export interface TutorState extends BaseGraphState {
   currentNode: { id: string; title: string; description: string };
   summary?: unknown;
   streamResult?: unknown;
-  newMessages?: CoreMessage[];
+  newMessages?: ModelMessage[];
   needsFollowUp?: boolean;
   assistantText?: string;
   toolResults?: Array<{ toolName: string; result: unknown }>;

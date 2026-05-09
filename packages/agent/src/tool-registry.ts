@@ -1,6 +1,6 @@
 import { tool as aiTool } from "ai";
-import type { CoreTool } from "ai";
-import type { z } from "zod";
+import type { Tool } from "ai";
+import { z } from 'zod';
 import type {
   ToolExecutionContext,
   ToolResult,
@@ -10,7 +10,7 @@ import type {
 export interface ToolDefinition {
   name: string;
   description: string;
-  parameters: z.ZodSchema;
+  inputSchema: z.ZodType;
   execute: (params: Record<string, unknown>, ctx: ToolExecutionContext) => Promise<ToolResult>;
   /** Injected into system prompt to describe how to use this tool */
   promptSnippet?: string;
@@ -96,12 +96,12 @@ export class ToolRegistry {
   }
 
   /** Convert to AI SDK tools format for use with streamText/generateText */
-  toAiSdkTools(ctx: ToolExecutionContext): Record<string, CoreTool> {
-    const result: Record<string, CoreTool> = {};
+  toAiSdkTools(ctx: ToolExecutionContext): Record<string, Tool> {
+    const result: Record<string, Tool> = {};
     for (const [name, def] of this.tools) {
       result[name] = aiTool({
         description: def.description,
-        parameters: def.parameters,
+        inputSchema: def.inputSchema,
         execute: async (params) => {
           return this.execute(name, params as Record<string, unknown>, ctx);
         },
