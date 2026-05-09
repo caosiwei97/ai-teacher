@@ -5,6 +5,7 @@ import { PrismaCheckpointStore, type TutorState } from "@ai-teacher/agent";
 import { StructuredSummarySchema } from "@ai-teacher/shared";
 import { getTutorGraph, type TutorGraphContext } from "../graphs/tutor-graph";
 import { createTutorToolRegistry } from "../agent/tools/create-tools";
+import { createSubagentRegistry } from "../agent/subagents";
 import { MessageService } from "../agent/services/message-service";
 import { buildLearnerProfile } from "../lib/learner-profile";
 import { ContextManager } from "../agent/context-manager";
@@ -69,7 +70,8 @@ export function createChatTurnWorker(
           .filter((node) => node.status === "mastered" || node.masteryScore >= 80)
           .map((node) => node.title);
 
-        const toolRegistry = createTutorToolRegistry();
+        const subagentRegistry = createSubagentRegistry();
+        const toolRegistry = createTutorToolRegistry(subagentRegistry);
         const checkpoint = new PrismaCheckpointStore(prisma);
 
         const contextManager = new ContextManager({
@@ -116,6 +118,7 @@ export function createChatTurnWorker(
           publisher,
           channel,
           contextManager,
+          subagentRegistry,
         };
 
         const timeoutPromise = new Promise<never>((_, reject) =>

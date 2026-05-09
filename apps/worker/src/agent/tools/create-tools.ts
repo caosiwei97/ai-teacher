@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { ToolRegistry } from "@ai-teacher/agent";
+import { ToolRegistry, type SubagentRegistry } from "@ai-teacher/agent";
 import { NodeService } from "../services/node-service.js";
 import { assessMasteryTool } from "./assess-mastery";
 import { generateAssessmentTool } from "./generate-assessment";
@@ -8,6 +8,7 @@ import { recordStrengthTool } from "./record-strength";
 import { recordMisconceptionTool } from "./record-misconception";
 import { advanceNodeTool } from "./advance-node";
 import { executeCodeTool } from "./execute-code";
+import { createDelegateTaskTool } from "./delegate-task";
 
 export const tutorToolDefinitions = [
   assessMasteryTool,
@@ -18,9 +19,17 @@ export const tutorToolDefinitions = [
   executeCodeTool,
 ];
 
-export function createTutorToolRegistry(): ToolRegistry {
+export function createTutorToolRegistry(
+  subagentRegistry?: SubagentRegistry,
+): ToolRegistry {
   const registry = new ToolRegistry();
   registry.registerAll(tutorToolDefinitions);
+
+  if (subagentRegistry) {
+    const delegateTaskTool = createDelegateTaskTool(subagentRegistry, registry);
+    registry.register(delegateTaskTool);
+  }
+
   return registry;
 }
 

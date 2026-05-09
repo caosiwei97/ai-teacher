@@ -6,6 +6,7 @@ import {
   type GraphExecutionContext,
   type ToolRegistry,
   type CheckpointStore,
+  type SubagentRegistry,
 } from "@ai-teacher/agent";
 import { buildTutorSystemPrompt } from "../agent/prompts/tutor";
 import { ContextManager } from "../agent/context-manager";
@@ -20,6 +21,7 @@ export interface TutorGraphContext extends GraphExecutionContext {
   publisher: { publish: (channel: string, message: string) => Promise<number> };
   channel: string;
   contextManager: ContextManager;
+  subagentRegistry?: SubagentRegistry;
 }
 
 function createTutorGraph() {

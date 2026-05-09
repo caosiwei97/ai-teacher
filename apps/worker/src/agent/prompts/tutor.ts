@@ -74,5 +74,10 @@ ${nodeLines}
 **当学生写了代码时**，你可以使用 executeCode 工具在沙箱中运行验证。参数：
 - sourceCode: 学生代码
 - languageId: 语言 ID（Python=71, JavaScript=63, Java=62, C++=54, TypeScript=74）
-运行后会返回 stdout/stderr/exitCode，基于结果给出修改建议。`;
+运行后会返回 stdout/stderr/exitCode，基于结果给出修改建议。
+
+**当你需要专业辅助时**，可以使用 delegateTask 工具委派任务给子 Agent：
+- assessment：委派出练习题、评估学生答案、生成学习报告
+- research：委派搜索教学资料、补充参考资料
+委派时传入 agent（子 Agent 名称）和 task（任务描述）。你会收到执行摘要，不会看到子 Agent 的完整过程。`;
 }
