@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v0.5
+> 版本：v0.6
 > 更新日期：2026-05-09
-> 状态：已对齐实际实现（含迭代 011-014 + 首页重设计）
+> 状态：已对齐实际实现（含迭代 021 代码执行沙箱）
 
 ---
 
@@ -21,6 +21,7 @@
 | POST | `/api/quick-question` | 快问（选中文字提问） | ✅ |
 | POST | `/api/suggest-reply` | AI 建议回复 | ✅ |
 | GET | `/api/suggested-topics` | 获取推荐学习话题 | ✅ |
+| POST | `/api/sandbox/execute` | 代码执行（Judge0 沙箱） | ✅ |
 
 > 以下为实际已实现的接口详情。
 
@@ -382,6 +383,46 @@ GET /api/suggested-topics
 - 当前为硬编码，后续可迁移到数据库配置
 - `icon` 字段对应 lucide-react 图标名称
 - 前端有 fallback 硬编码列表，API 不可用时仍可正常显示
+
+---
+
+## 12. 代码执行（沙箱）
+
+```
+POST /api/sandbox/execute
+```
+
+### 请求体
+
+```json
+{
+  "source_code": "string (必填，要执行的代码)",
+  "language_id": 71,
+  "stdin": "string (可选，标准输入)",
+  "expected_output": "string (可选，期望输出，用于自动判定)"
+}
+```
+
+### 响应 `200`
+
+```json
+{
+  "stdout": "hello\n",
+  "stderr": "",
+  "exitCode": 0,
+  "time": "0.12",
+  "memory": 12344,
+  "status": "Accepted"
+}
+```
+
+### 说明
+
+- 前端"编辑并重新运行"按钮直接调用此接口
+- Worker 的 `executeCode` Agent 工具也调用同一底层 `submitCode()` 函数
+- Judge0 资源限制：CPU 5 秒、内存 256MB、墙钟 10 秒
+- 安全检查在 Agent 工具层执行（`execute-code.ts` 的 `DANGEROUS_PATTERNS`），此端点不做安全检查（信任前端传入的用户代码）
+- 语言 ID 映射：Python=71, JavaScript=63, Java=62, C++=54, TypeScript=74 等
 
 ---
 

@@ -1,8 +1,8 @@
 # AI Teacher — 苏格拉底式教学 Prompt 设计
 
-> 版本：v0.3
+> 版本：v0.4
 > 更新日期：2026-05-09
-> 状态：已对齐实际实现（含迭代 011 工具副作用内化）
+> 状态：已对齐实际实现（含迭代 021 executeCode 工具）
 > 参考：Sigma Skill + 同类竞品实际交互分析
 
 ---
@@ -179,6 +179,39 @@ interface TutorPromptContext {
   }
 }
 ```
+
+### 3.5 executeCode
+
+在安全沙箱中执行学生代码，返回运行结果。
+
+```typescript
+{
+  name: "executeCode",
+  description: "在安全沙箱中执行学生代码，返回运行结果（stdout/stderr/exitCode）",
+  parameters: {
+    sourceCode: string,     // 要执行的代码
+    languageId: number,     // Judge0 语言 ID（71=Python, 63=JavaScript, 62=Java, 54=C++, 74=TypeScript）
+    stdin?: string,         // 标准输入
+    expectedOutput?: string // 期望输出，用于自动判定
+  },
+  // 返回: { success, stdout, stderr, exitCode, time, memory, status, language, code }
+  // 资源限制: CPU 5s, 内存 256MB, 墙钟 10s
+  // 安全检查: 禁止文件系统/网络/子进程操作（import os, import socket, require("fs"), child_process 等）
+}
+```
+
+**Prompt 片段**（自动注入 system prompt）：
+
+```
+**executeCode 工具**：你可以在安全沙箱中运行学生的代码。支持 Python(71)、JavaScript(63)、Java(62)、C++(54)、TypeScript(74) 等语言。
+资源限制：CPU 5秒、内存 256MB、墙钟 10秒。运行前会自动检查安全问题（禁止文件系统、网络、子进程操作）。
+```
+
+**使用指引**：
+- 当学生写了代码时，主动运行验证结果
+- 运行前先肉眼检查是否安全，避免不必要的 API 调用
+- 如果执行失败，分析 stderr 并给出具体修改建议
+- 对比 stdout 和期望输出时，注意空白字符和换行的差异
 
 ---
 
