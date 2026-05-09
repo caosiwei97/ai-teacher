@@ -8,7 +8,7 @@ import {
   type CheckpointStore,
 } from "@ai-teacher/agent";
 import { buildTutorSystemPrompt } from "../agent/prompts/tutor";
-import { transformMessages } from "../agent/context";
+import { ContextManager } from "../agent/context-manager";
 import { getProvider } from "../agent/provider";
 
 export interface TutorGraphContext extends GraphExecutionContext {
@@ -19,6 +19,7 @@ export interface TutorGraphContext extends GraphExecutionContext {
   userId: string;
   publisher: { publish: (channel: string, message: string) => Promise<number> };
   channel: string;
+  contextManager: ContextManager;
 }
 
 function createTutorGraph() {
@@ -28,14 +29,16 @@ function createTutorGraph() {
       const graphCtx = ctx as TutorGraphContext;
       await graphCtx.checkpoint.save(state.sessionId, "prepare_context", state);
 
-      const transformedMessages = transformMessages(
-        state.messages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: typeof m.content === "string" ? m.content : "",
-        })),
+      const result = await graphCtx.contextManager.process(
+        state.sessionId,
+        state.messages,
       );
 
-      return { ...state, messages: transformedMessages };
+      return {
+        ...state,
+        messages: result.messages,
+        summary: result.summary ?? state.summary,
+      };
     })
     .addNode("agent_loop", async (state, ctx) => {
       const graphCtx = ctx as TutorGraphContext;

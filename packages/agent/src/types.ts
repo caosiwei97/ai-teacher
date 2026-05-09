@@ -15,6 +15,7 @@ export interface TutorState extends BaseGraphState {
   masteredNodes: string[];
   learnerProfile: string;
   currentNode: { id: string; title: string; description: string };
+  summary?: unknown;
   streamResult?: unknown;
   newMessages?: CoreMessage[];
   needsFollowUp?: boolean;

@@ -2,10 +2,12 @@ import { Worker as BullWorker } from "bullmq";
 import Redis from "ioredis";
 import { prisma } from "@ai-teacher/db";
 import { PrismaCheckpointStore, type TutorState } from "@ai-teacher/agent";
+import { StructuredSummarySchema } from "@ai-teacher/shared";
 import { getTutorGraph, type TutorGraphContext } from "../graphs/tutor-graph";
 import { createTutorToolRegistry } from "../agent/tools/create-tools";
 import { MessageService } from "../agent/services/message-service";
 import { buildLearnerProfile } from "../lib/learner-profile";
+import { ContextManager } from "../agent/context-manager";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
 const STREAM_TIMEOUT_MS = 120_000;
@@ -70,6 +72,18 @@ export function createChatTurnWorker(
         const toolRegistry = createTutorToolRegistry();
         const checkpoint = new PrismaCheckpointStore(prisma);
 
+        const contextManager = new ContextManager({
+          loadSummary: async (sid) => {
+            const s = await prisma.session.findUnique({ where: { id: sid }, select: { summary: true } });
+            if (!s?.summary) return null;
+            const parsed = StructuredSummarySchema.safeParse(s.summary);
+            return parsed.success ? parsed.data : null;
+          },
+          saveSummary: async (sid, summary) => {
+            await prisma.session.update({ where: { id: sid }, data: { summary: JSON.parse(JSON.stringify(summary)) } });
+          },
+        });
+
         const initialState: TutorState = {
           sessionId,
           topic: session.topic,
@@ -101,6 +115,7 @@ export function createChatTurnWorker(
           userId: session.userId,
           publisher,
           channel,
+          contextManager,
         };
 
         const timeoutPromise = new Promise<never>((_, reject) =>
