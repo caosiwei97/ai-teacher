@@ -1,0 +1,799 @@
+apps/web/src/components/editor/language-map.ts
+  3cb61c2113c0cde1 1-33
+apps/web/src/components/ui-blocks/quiz-panel.tsx
+  e44ab71571a68d1a 1-69
+apps/web/src/components/ui-blocks/formula-display.tsx
+  5012395820106677 1-25
+apps/web/src/components/ui-blocks/index.tsx
+  ace96c1db9884d24 1-26
+apps/web/src/components/ui-blocks/text-block.tsx
+  d36b4a066dcfc6d3 1-60
+apps/web/package.json
+  52dd3efdda7ea36b 14-19,23-24
+apps/web/src/components/ui-blocks/diagram-renderer.tsx
+  cea2005dfa9fe4fb 1-18
+apps/web/src/components/ui-blocks/code-result-block.tsx
+  97110e720e7b5cb7 1-43
+apps/web/src/components/editor/code-editor.tsx
+  0d18f52de5ec3f00 5
+  ce5d789a2e4697bf 1-4,6-24,27-30,32-62,64-81
+  1dc63df0f1abf463 63
+  28b84800005d0541 25-26,31
+apps/web/src/components/ui-blocks/assessment-block.tsx
+  ae1fadb7859e6fd5 1-19
+apps/web/src/components/editor/warm-theme.ts
+  86754a8ac0304e03 1-41
+apps/web/src/components/ui-blocks/registry.tsx
+  eb12c679739d6d65 1-17
+packages/shared/src/schemas/ui-block.ts
+  f03c6799d0a431bd 1-69
+packages/shared/src/index.ts
+  145ee137f44b2ca9 6
+apps/web/src/components/chat/chat-message.tsx
+  362ff340cce3790e 3-5,11,14-16,18-23,25-32,35,40,48
+apps/web/src/components/chat/chat-area.tsx
+  7de774e9301f3c7e 9
+  a0eb858837a0dcb7 92-106
+  1247ccc461891728 148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.13",
+  "base_commit_sha": "4be541a85f8fae3465145760499fef18af8a02c0",
+  "prompts": {
+    "0719c051c92456fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f8c1d813ffelRhzSfM6V7Pvrq-75ba6789-f635-4b18-9168-75c5e5b2fe1d",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 150,
+      "overriden_lines": 0
+    },
+    "0d18f52de5ec3f00": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-f13212e2-3171-420b-85e1-af9043699bbd",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "1247ccc461891728": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-82ca538d-07bf-4985-930e-b9f3cd96ab3a",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "145ee137f44b2ca9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-94dd6267-7ab6-43eb-8e8c-a529afc23906",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "1b6f6e0671fc7628": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-86dbf879-1c24-40d3-adc8-76e186449c7f",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "1dc63df0f1abf463": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-47bc63d9-1ffb-4de5-ad76-0e5c6da2a13b",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "1f038b7d7eb6d633": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1fabb48c8ffeRFCpBFUz5iOhKE-3ccb2cf5-bd89-4072-bb7c-bb501f36b242",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "208da36d715ee183": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f91472c7ffeR7Jy5aJTp5vxi9-e7c350a1-3684-4aa0-bb1a-bc438fab7b2e",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 45,
+      "overriden_lines": 0
+    },
+    "224a190efee895b3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f90f7cd0ffeGEtUTHHOhdh4ZQ-d2d59942-a139-4523-a6e4-1280e95c418c",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 28,
+      "overriden_lines": 0
+    },
+    "2262be09b770ecb1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-2e24a306-be11-4ecf-81eb-be56689617a9",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 0,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    },
+    "25d61bd7fb9f2f04": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f5b7e252ffeWnbr84ZhH3sgeP-6a288580-36fe-451c-80c1-8595170b66d0",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 292,
+      "overriden_lines": 0
+    },
+    "28b84800005d0541": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-a570842e-4213-4844-b246-572feac010ff",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 0,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    },
+    "29a94e5dd615f493": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-b2434f60-2264-44a4-b1f8-9e94dd46b088",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "3580ba8dabfb25bb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-2a1e0111-6318-4047-8ae4-b0e8e57c1565",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 2,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "362ff340cce3790e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-32384d9b-8266-4f9a-bd3a-1eec3ebc5c05",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 24,
+      "total_deletions": 48,
+      "accepted_lines": 24,
+      "overriden_lines": 0
+    },
+    "39729ecad089ba96": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-b22a7580-8084-4a23-8157-108383ae02ce",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "3aa64cfc25782be5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f467e8f3ffev4ZGAxNPsTNNGB-a6159dea-27c0-409d-88d3-5921be6f436a",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "3cb61c2113c0cde1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-30783858-9706-4742-81e5-b157b19aaf17",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 33,
+      "total_deletions": 0,
+      "accepted_lines": 33,
+      "overriden_lines": 0
+    },
+    "476a608f58ae6358": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f467e8f3ffev4ZGAxNPsTNNGB-30d35055-a333-4383-8ab3-3e5714bb8c54",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "4ef4828d631320dc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f976a260fferKu0k2O22V7JHQ-76fd52fe-9487-4442-b93c-da3c94c41385",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 235,
+      "overriden_lines": 0
+    },
+    "5012395820106677": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-49f2aee4-bffd-496e-9a8b-076d58e81e5b",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 25,
+      "total_deletions": 0,
+      "accepted_lines": 25,
+      "overriden_lines": 0
+    },
+    "52dd3efdda7ea36b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-f90cda99-fc79-407a-91a7-5ffed3e81918",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 0,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    },
+    "53e7abc985591d0d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-d6f840b2-1419-447d-8c98-eae15b17524e",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 4,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "553e5fd27c3267e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f9253787ffeMXMnS6Rl9zWTkZ-0e832ca2-042a-4fc8-8c56-e1e9a85b1f1d",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1341,
+      "overriden_lines": 0
+    },
+    "5a541e619975cc79": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3e6c45effexCcIdI2XYgyT4t-d71903f4-f429-4b9f-973f-c716779c25b6",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "603e485e68dd8b92": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f976a260fferKu0k2O22V7JHQ-fe95f055-3dd6-4689-98ad-8bd73db2fdbd",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 54,
+      "overriden_lines": 0
+    },
+    "67e28d115471f28f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-a7b29692-5cd8-4f7c-82f4-028f7b5a1d7e",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 10,
+      "total_deletions": 10,
+      "accepted_lines": 10,
+      "overriden_lines": 0
+    },
+    "6944cde5e8e0a57a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-f633694b-18cc-48a7-b4fe-68edaacc4145",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 32,
+      "total_deletions": 0,
+      "accepted_lines": 32,
+      "overriden_lines": 0
+    },
+    "6e0e46b48f4f8aed": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f45b98c2ffeyrCJPqoIws02bD-0783a964-1908-424e-9f78-3132456f7daf",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 14,
+      "overriden_lines": 0
+    },
+    "76b04babe4b32ecc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-4209dae0-a5d5-4dcc-b7c5-03f8afc6d8e6",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 32,
+      "total_deletions": 0,
+      "accepted_lines": 32,
+      "overriden_lines": 0
+    },
+    "77d2e61e9bcda334": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f5c71c28ffeDG6UNWtP3V3uVs-b8e21a38-3fd3-4136-b6df-24e78f1c80b6",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 138,
+      "overriden_lines": 0
+    },
+    "7de774e9301f3c7e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-1578b800-67f3-48f9-b496-8db8b37010aa",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "86754a8ac0304e03": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-9a6412f6-6e7d-46e6-bc18-8ddadc9f605f",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 41,
+      "total_deletions": 0,
+      "accepted_lines": 41,
+      "overriden_lines": 0
+    },
+    "8860bbd99fdc1bc8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f40e7926ffek8m7Ub5eTkXT71-e1044655-3168-44de-b21d-7b76c99f27a4",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "963757b434b4a7b3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f9253787ffeMXMnS6Rl9zWTkZ-e49ca8d0-65ae-46cb-9a1f-177ff169f3aa",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 438,
+      "overriden_lines": 0
+    },
+    "97110e720e7b5cb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-622c7a4e-279f-4c54-a276-d30a23ab1f00",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 43,
+      "total_deletions": 0,
+      "accepted_lines": 43,
+      "overriden_lines": 0
+    },
+    "a0eb858837a0dcb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-575fabed-a741-4d46-aa7e-adac26723ef5",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 15,
+      "total_deletions": 0,
+      "accepted_lines": 15,
+      "overriden_lines": 0
+    },
+    "a10870ad5076a819": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3e6c45effexCcIdI2XYgyT4t-2b01e1f9-e24d-4917-8dfa-9c6f73055798",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "ac490ad4d6157138": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-44f14721-1e3b-4678-9cff-404eeda9cc5a",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "acda7c7158713887": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f467e8f3ffev4ZGAxNPsTNNGB-90bb5220-a493-4dad-9ccc-548820c49baf",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "ace96c1db9884d24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-4884c4e0-96ed-44bb-86a4-6d529fe8e758",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 26,
+      "total_deletions": 0,
+      "accepted_lines": 26,
+      "overriden_lines": 0
+    },
+    "ae1fadb7859e6fd5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-44204f27-388e-43c3-880f-c67ad9366669",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 19,
+      "total_deletions": 0,
+      "accepted_lines": 19,
+      "overriden_lines": 0
+    },
+    "aeec5dc50feaf59c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f976a260fferKu0k2O22V7JHQ-6d663261-c874-4420-b588-14d79e43bf7e",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    },
+    "b37f5e44847c681e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-8238b149-af0d-4893-aa94-d0cce7a2fb1c",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "c23363c348d1c893": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-7404a48b-9ecc-4dad-99dd-6e0780e6269d",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 2,
+      "accepted_lines": 16,
+      "overriden_lines": 0
+    },
+    "c382ca4de4b774b9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-f8f09986-2a54-4e1a-801c-c83c813d72a3",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 2,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "ca52d7c14eb6f0e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f90f7cd0ffeGEtUTHHOhdh4ZQ-b5ed60a7-66d6-461c-8d0f-32b18269d513",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 37,
+      "overriden_lines": 0
+    },
+    "ce5d789a2e4697bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-d7d3534c-3474-4695-8d50-13b44831a27a",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 78,
+      "total_deletions": 0,
+      "accepted_lines": 76,
+      "overriden_lines": 0
+    },
+    "cea2005dfa9fe4fb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-ca7d2d0b-e8ec-4715-ab20-79bf50306f80",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 18,
+      "total_deletions": 0,
+      "accepted_lines": 18,
+      "overriden_lines": 0
+    },
+    "d36b4a066dcfc6d3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-e6d99996-c8d8-461a-a765-2bc1c796260e",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 60,
+      "total_deletions": 0,
+      "accepted_lines": 60,
+      "overriden_lines": 0
+    },
+    "df893a10e1557209": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f8be14e0ffekQSXbIuFJgvUDB-6490b22b-1dd0-47f3-80d3-810cf8ef3112",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 20,
+      "overriden_lines": 0
+    },
+    "e44ab71571a68d1a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-88cd4b23-77f3-47ba-9998-6d2cfd8d1015",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 69,
+      "total_deletions": 0,
+      "accepted_lines": 69,
+      "overriden_lines": 0
+    },
+    "e558ebf211333327": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f55e7656ffewdwnQFTAX1o4t3-65287937-79f1-4a58-b4db-0457dc89a82d",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 40,
+      "overriden_lines": 0
+    },
+    "eb12c679739d6d65": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3aac509ffeb6l4rmb8BsCxhv-a5180ffa-1b77-4020-b8dd-9006f850a788",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 17,
+      "total_deletions": 0,
+      "accepted_lines": 17,
+      "overriden_lines": 0
+    },
+    "f03c6799d0a431bd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-c87c489f-9024-4778-8ee9-a37f6463149e",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 69,
+      "total_deletions": 0,
+      "accepted_lines": 69,
+      "overriden_lines": 0
+    },
+    "f09b78faf4f06154": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f467e8f3ffev4ZGAxNPsTNNGB-5152a1e2-54d2-43c3-ba57-bfefd10e2499",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "f5be3718adaabab0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f3b43348ffeW4fJ3rLRYMul9r-065cde50-befd-4f87-8d6d-de0406ebc155",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "fc076f6354fe4159": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1f467e8f3ffev4ZGAxNPsTNNGB-b4c01ac7-6b3c-4718-9170-86a421dd3f80",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
