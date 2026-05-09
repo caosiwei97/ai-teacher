@@ -1,8 +1,8 @@
 # AI Teacher — 苏格拉底式教学 Prompt 设计
 
-> 版本：v0.4
+> 版本：v0.5
 > 更新日期：2026-05-09
-> 状态：已对齐实际实现（含迭代 021 executeCode 工具）
+> 状态：已对齐实际实现（含迭代 022 delegateTask 工具）
 > 参考：Sigma Skill + 同类竞品实际交互分析
 
 ---
@@ -212,6 +212,44 @@ interface TutorPromptContext {
 - 运行前先肉眼检查是否安全，避免不必要的 API 调用
 - 如果执行失败，分析 stderr 并给出具体修改建议
 - 对比 stdout 和期望输出时，注意空白字符和换行的差异
+
+### 3.6 delegateTask
+
+将任务委派给专业子 Agent 执行（迭代 022 新增）。
+
+```typescript
+{
+  name: "delegateTask",
+  description: "将任务委派给专业子 Agent 执行",
+  parameters: {
+    agent: string,   // 子 Agent 名称：assessment | research
+    task: string,    // 任务描述
+  },
+  // 返回: { success, content } — content 为子 Agent 执行摘要
+}
+```
+
+**可选子 Agent**：
+
+| 名称 | 能力 | 工具 | 步数限制 |
+|------|------|------|---------|
+| `assessment` | 出练习题、评估答案、学习报告 | assessMastery, generateAssessment | 3 |
+| `research` | 搜索教学资料、补充参考 | assessMastery | 5 |
+
+**Prompt 片段**（自动注入 system prompt）：
+
+```
+**delegateTask 工具**：你可以委派任务给专业子 Agent：
+- assessment: 生成练习题、评估学生答案、出具阶段性学习报告
+- research: 检索知识库，搜索教学资料，提供补充参考资料
+委派后你会收到子 Agent 的执行摘要，不会看到完整过程。
+```
+
+**使用指引**：
+- 当需要出练习题或评估学生时，委派给 assessment Agent
+- 当需要补充教学资料时，委派给 research Agent
+- 委派的 task 参数要清晰具体
+- 不要频繁委派，只在确实需要专业处理时使用
 
 ---
 

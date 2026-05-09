@@ -1,6 +1,6 @@
 # 022 — 多 Agent 协作 + Subagent
 
-> 状态：⬜ 待开始 | 分类：🟠 优化 | 优先级：P2 | 依赖：018
+> 状态：✅ 已完成 | 分类：🟠 优化 | 优先级：P2 | 依赖：018
 
 **目标**：实现 Subagent Registry + 任务委派模式
 
@@ -154,15 +154,15 @@ ${registry.getAgentDescriptions()}
 
 #### Checklist
 
-- [ ] 定义 SubagentDefinition 接口（name, description, agent, tools）
-- [ ] 实现 SUBAGENT_REGISTRY（TutorAgent, ResearchAgent, AssessmentAgent）
-- [ ] ResearchAgent: 只读工具（search, read），5 步限制
-- [ ] AssessmentAgent: 生成练习题 + 评估答案，3 步限制
-- [ ] 实现 `delegateTask` 工具（async generator streaming + toModelOutput）
-- [ ] TutorAgent 可通过 delegateTask 委派任务给子 Agent
-- [ ] 子 Agent 使用更便宜的模型（glm-4-flash）
-- [ ] 实现 `toModelOutput` 控制返回给主 Agent 的内容（防止上下文污染）
-- [ ] 文档更新：技术架构.md（多 Agent 章节）、Prompt设计.md
+- [x] 定义 SubagentDefinition 接口（name, description, agent, tools）
+- [x] 实现 SUBAGENT_REGISTRY（AssessmentAgent, ResearchAgent）
+- [x] ResearchAgent: 只读工具（search, read），5 步限制
+- [x] AssessmentAgent: 生成练习题 + 评估答案，3 步限制
+- [x] 实现 `delegateTask` 工具（async generator streaming + toModelOutput）
+- [x] TutorAgent 可通过 delegateTask 委派任务给子 Agent
+- [x] 子 Agent 使用更便宜的模型（glm-4-flash）
+- [x] 实现 `toModelOutput` 控制返回给主 Agent 的内容（防止上下文污染）
+- [x] 文档更新：技术架构.md（多 Agent 章节）、Prompt设计.md
 
 #### 验证标准
 
