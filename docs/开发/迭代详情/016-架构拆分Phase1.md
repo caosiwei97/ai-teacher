@@ -1,6 +1,6 @@
 # 016 — 架构拆分 Phase 1：Next.js → Hono API 迁移
 
-> 状态：⬜ 待开始 | 分类：🟠 优化 | 优先级：P0 | 依赖：015
+> 状态：✅ 已完成 | 分类：🟠 优化 | 优先级：P0 | 依赖：015
 
 **目标**：将 API Routes 从 Next.js 迁移到 Hono，Next.js 变为纯前端
 
@@ -111,19 +111,19 @@ export const sessionsRoute = new Hono()
 
 #### Checklist
 
-- [ ] 创建 `apps/server/` 目录，初始化 Hono 项目（hono + @hono/node-server）
-- [ ] 迁移 `/api/sessions` 路由（POST 创建 + GET 列表）
-- [ ] 迁移 `/api/sessions/[id]` 路由（GET + PATCH + DELETE）
-- [ ] 迁移 `/api/sessions/[id]/diagnostic` 路由（POST 生成 + POST 评估）
-- [ ] 迁移 `/api/suggested-topics` 路由（GET）
-- [ ] 迁移 `/api/suggest-reply` 路由（POST）
-- [ ] 迁移 `/api/quick-question` 路由（POST + SSE）
-- [ ] Hono 添加 CORS middleware（允许 Next.js :38421 跨域）
-- [ ] Hono 添加错误处理 middleware
-- [ ] Next.js 删除 `app/api/` 目录下所有 route.ts
-- [ ] 前端 `api-client.ts` 改为调用 `http://localhost:38422/api/...`
-- [ ] 更新 `pnpm dev` 脚本（run-p dev:web dev:server）
-- [ ] 文档更新：技术架构.md（项目结构 + 端口表）、API接口.md
+- [x] 创建 `apps/server/` 目录，初始化 Hono 项目（hono + @hono/node-server）
+- [x] 迁移 `/api/sessions` 路由（POST 创建 + GET 列表）
+- [x] 迁移 `/api/sessions/[id]` 路由（GET + PATCH + DELETE）
+- [x] 迁移 `/api/sessions/[id]/diagnostic` 路由（POST 生成 + POST 评估）
+- [x] 迁移 `/api/suggested-topics` 路由（GET）
+- [x] 迁移 `/api/suggest-reply` 路由（POST）
+- [x] 迁移 `/api/quick-question` 路由（POST + SSE）
+- [x] Hono 添加 CORS middleware（允许 Next.js :38421 跨域）
+- [x] Hono 添加错误处理 middleware
+- [x] Next.js 删除 `app/api/` 目录下所有 route.ts
+- [x] 前端通过 Next.js rewrite proxy 调用 Hono API（避免 CORS）
+- [x] 更新 `pnpm dev` 脚本（run-p dev:web dev:server）
+- [x] 文档更新：开发日志
 
 #### 验证标准
 
