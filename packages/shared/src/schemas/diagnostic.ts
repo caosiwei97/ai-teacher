@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const DiagnosticQuestion = z.object({
   id: z.string().describe("题目唯一标识"),
@@ -29,7 +29,7 @@ export const DiagnosticAnswer = z.object({
 
 export const DiagnosticEvaluation = z.object({
   startingNodeIndex: z.number().int().min(0).describe("建议起始节点序号"),
-  reasoning: z.string().describe("定位理由"),
+  reasoningText: z.string().describe("定位理由"),
   answersummary: z.array(
     z.object({
       questionId: z.string(),

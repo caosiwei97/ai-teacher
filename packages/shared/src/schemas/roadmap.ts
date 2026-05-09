@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const RoadmapNodeOutput = z.object({
   index: z.number().int().min(0).describe("节点序号，从 0 开始"),

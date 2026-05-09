@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const MessageRole = z.enum(["tutor", "learner", "system"]);
 export const MessageType = z.enum([
@@ -35,7 +35,7 @@ export const CreateMessageInput = z.object({
   role: MessageRole,
   type: MessageType,
   content: z.string(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type MessageRole = z.infer<typeof MessageRole>;

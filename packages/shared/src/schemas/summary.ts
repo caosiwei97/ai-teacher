@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const StructuredSummarySchema = z.object({
   completedTopics: z.array(z.string()).describe("已完成的知识点列表"),
