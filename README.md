@@ -41,7 +41,7 @@ pnpm dev
 apps/
   web/        — Next.js App Router (Chat UI，纯前端)
   server/     — Hono API Server (REST API + SSE)
-  worker/     — Agent 核心 (AI SDK streamText + 5 tools)
+  worker/     — Agent Worker (BullMQ 队列消费 + AI SDK streamText + 5 tools)
 packages/
   shared/     — 共享类型、Zod Schema
   db/         — Prisma Schema + 数据库访问
@@ -68,6 +68,7 @@ data/
 |------|------|------|
 | Web | 38421 | Next.js 开发服务器（纯前端） |
 | API Server | 38422 | Hono API Server |
+| Worker | 38423 | BullMQ Worker（Agent 执行） |
 | PostgreSQL | 25432 | 数据库（非标准端口避免冲突） |
 | Redis | 26379 | 缓存（非标准端口） |
 | MinIO API | 29000 | 对象存储 |
