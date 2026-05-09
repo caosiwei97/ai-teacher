@@ -1,0 +1,90 @@
+import { streamText, tool as aiTool } from "ai";
+import type { CoreTool } from "ai";
+import type { ToolDefinition, SubagentRegistry, AgentResult } from "@ai-teacher/agent";
+import { z } from "zod";
+import { getProvider } from "../provider";
+
+export function createDelegateTaskTool(
+  subagentRegistry: SubagentRegistry,
+  toolRegistry: { get: (name: string) => ToolDefinition | undefined; getAll: () => ToolDefinition[] },
+): ToolDefinition {
+  const agentDescriptions = subagentRegistry.getAgentDescriptions();
+
+  return {
+    name: "delegateTask",
+    description: "将任务委派给专业子 Agent 执行，可选子 Agent：assessment（出题评估）、research（资料检索）",
+    parameters: z.object({
+      agent: z.string().describe("子 Agent 名称（assessment 或 research）"),
+      task: z.string().describe("任务描述，子 Agent 会独立执行"),
+    }),
+    execute: async (params) => {
+      const p = params as { agent: string; task: string };
+
+      const agentDef = subagentRegistry.get(p.agent);
+      if (!agentDef) {
+        return {
+          success: false,
+          error: `未知的子 Agent：${p.agent}。可选：${agentDescriptions}`,
+        };
+      }
+
+      const subToolDefs = agentDef.tools.reduce<Record<string, ToolDefinition>>((acc, name) => {
+        const tool = toolRegistry.get(name);
+        if (tool) acc[name] = tool;
+        return acc;
+      }, {});
+
+      const subTools: Record<string, CoreTool> = {};
+      for (const [name, def] of Object.entries(subToolDefs)) {
+        subTools[name] = aiTool({
+          description: def.description,
+          parameters: def.parameters,
+          execute: async (toolParams: Record<string, unknown>) => {
+            return def.execute(toolParams, { prisma: null, sessionId: "", userId: "" });
+          },
+        });
+      }
+
+      try {
+        const model = getProvider()(agentDef.model ?? "glm-4-flash");
+        const result = await streamText({
+          model,
+          system: agentDef.systemPrompt,
+          prompt: p.task,
+          tools: subTools,
+          maxSteps: agentDef.maxSteps,
+        });
+
+        const fullText = await result.text;
+
+        const agentResult: AgentResult = {
+          content: fullText,
+          steps: 0,
+          toolCalls: [],
+        };
+
+        const summary = agentDef.toModelOutput(agentResult);
+
+        return {
+          success: true,
+          content: summary,
+        };
+      } catch (e) {
+        return {
+          success: false,
+          error: e instanceof Error ? e.message : "子 Agent 执行失败",
+        };
+      }
+    },
+    promptSnippet: `**delegateTask 工具**：你可以委派任务给专业子 Agent：
+${agentDescriptions}
+
+委派后你会收到子 Agent 的执行摘要，不会看到完整过程。适合用于：出练习题、评估答案、检索教学资料等。`,
+    promptGuidelines: [
+      "当你需要出练习题或评估学生时，委派给 assessment Agent",
+      "当你需要补充教学资料时，委派给 research Agent",
+      "委派的 task 参数要清晰具体，描述你期望子 Agent 完成什么",
+      "不要频繁委派，只在确实需要专业处理时使用",
+    ],
+  };
+}
