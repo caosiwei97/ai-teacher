@@ -37,10 +37,11 @@ model Session {
   sourceId  String?   @db.Text
   source    Source?   @relation(fields: [sourceId], references: [id])
   status    String    @default("active") @db.Text
-  roadmap   Roadmap?
-  messages  Message[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  roadmap     Roadmap?
+  messages    Message[]
+  checkpoints Checkpoint[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Roadmap {
@@ -74,6 +75,17 @@ model Message {
   status    String   @default("completed") @db.Text
   metadata  Json?
   createdAt DateTime @default(now())
+}
+
+model Checkpoint {
+  id        String   @id @default(cuid()) @db.Text
+  sessionId String   @db.Text
+  session   Session  @relation(fields: [sessionId], references: [id])
+  graphNode String   @db.Text
+  state     Json
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, createdAt])
 }
 
 model LearnerProfile {
