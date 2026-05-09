@@ -44,6 +44,11 @@
     "typescript": "^5.7.0"
   },
   "dependencies": {
-    "dotenv-cli": "^11.0.0"
+    "@ai-sdk/openai": "^3.0.63",
+    "@ai-sdk/react": "^3.0.179",
+    "@hono/zod-validator": "^0.8.0",
+    "ai": "^6.0.177",
+    "dotenv-cli": "^11.0.0",
+    "zod": "^4.4.3"
   }
 }
