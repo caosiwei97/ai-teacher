@@ -1,0 +1,60 @@
+"use client";
+
+import { CodeBlock } from "@/components/chat/code-block";
+
+interface TextBlockProps {
+  block: { type: "text"; content: string };
+}
+
+function parseContent(text: string) {
+  const parts: Array<{ type: "text" | "code"; content: string; language?: string }> = [];
+  const codeRegex = /```(\w*)\n?([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = codeRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ type: "text", content: text.slice(lastIndex, match.index) });
+    }
+    parts.push({ type: "code", content: match[2].trim(), language: match[1] || undefined });
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push({ type: "text", content: text.slice(lastIndex) });
+  }
+
+  return parts;
+}
+
+function renderInlineCode(text: string) {
+  const parts = text.split(/(`[^`]+`)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return (
+        <code key={i} className="rounded-md bg-accent/10 px-1.5 py-0.5 text-[13px] font-mono text-code-accent">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+export function TextBlock({ block }: TextBlockProps) {
+  const parsed = parseContent(block.content);
+
+  return (
+    <>
+      {parsed.map((part, i) =>
+        part.type === "code" ? (
+          <CodeBlock key={i} language={part.language}>{part.content}</CodeBlock>
+        ) : (
+          <p key={i} className="whitespace-pre-wrap">
+            {renderInlineCode(part.content)}
+          </p>
+        ),
+      )}
+    </>
+  );
+}

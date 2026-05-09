@@ -6,6 +6,7 @@ import {
   isAssessmentCardData,
   type AssessmentCardProps,
 } from "./assessment-card";
+import type { UIBlock } from "@ai-teacher/shared";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -88,6 +89,21 @@ function getAssessmentFromMessage(message: Message) {
   );
 }
 
+function getUIBlocksFromMessage(message: Message): UIBlock[] | undefined {
+  const annotations = getArrayProperty(message, "annotations");
+  if (annotations) {
+    for (const annotation of annotations) {
+      if (isObject(annotation)) {
+        const blocks = annotation.uiBlocks;
+        if (Array.isArray(blocks) && blocks.length > 0) {
+          return blocks as UIBlock[];
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
 export function ChatArea({
   messages,
   input,
@@ -129,6 +145,7 @@ export function ChatArea({
               role={msg.role}
               content={msg.content}
               assessment={msg.role === "assistant" ? getAssessmentFromMessage(msg) : undefined}
+              uiBlocks={msg.role === "assistant" ? getUIBlocksFromMessage(msg) : undefined}
             />
           );
         })}
