@@ -15,7 +15,6 @@
     "format": "prettier --write .",
     "db:generate": "pnpm --filter @ai-teacher/db generate",
     "db:migrate": "pnpm --filter @ai-teacher/db migrate",
-    "db:seed": "pnpm --filter @ai-teacher/db seed",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "setup:env": "node scripts/setup-env.mjs",
