@@ -59,7 +59,7 @@ function createTutorGraph() {
       };
       const tools = graphCtx.toolRegistry.toAiSdkTools(toolCtx);
 
-      const model = getProvider()("glm-4-flash");
+      const model = getProvider()("glm-5-turbo");
       const result = await streamText({
         model,
         system: systemPrompt,

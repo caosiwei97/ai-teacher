@@ -18,7 +18,7 @@ export const quickQuestionRoute = new Hono().post(
     const { selectedText, question, context } = c.req.valid("json");
 
     const result = streamText({
-      model: getProvider()("glm-4-flash"),
+      model: getProvider()("glm-5-turbo"),
       system: `你是一个1v1私教。用户选中了一段文字并提出了问题。请基于选中的内容，用苏格拉底式追问的方式回答。语言简洁，1-3句话。`,
       prompt: `选中内容：「${selectedText}」
 ${context ? `上下文：${context}` : ""}

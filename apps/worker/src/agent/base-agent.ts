@@ -11,9 +11,9 @@ export abstract class BaseAgent {
 
   constructor(config?: AgentConfig) {
     this.config = {
-      model: config?.model ?? "glm-4-flash",
+      model: config?.model ?? "glm-5-turbo",
       maxRetries: config?.maxRetries ?? 3,
-      fallbackModel: config?.fallbackModel ?? "glm-4-flash",
+      fallbackModel: config?.fallbackModel ?? "glm-5-turbo",
     };
   }
 
