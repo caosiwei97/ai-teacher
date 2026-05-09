@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v0.4
+> 版本：v0.5
 > 更新日期：2026-05-09
-> 状态：已对齐实际实现（含迭代 011-014 全部接口）
+> 状态：已对齐实际实现（含迭代 011-014 + 首页重设计）
 
 ---
 
@@ -20,6 +20,7 @@
 | POST | `/api/sessions/:id/diagnostic/evaluate` | 评估诊断答案 | ✅ |
 | POST | `/api/quick-question` | 快问（选中文字提问） | ✅ |
 | POST | `/api/suggest-reply` | AI 建议回复 | ✅ |
+| GET | `/api/suggested-topics` | 获取推荐学习话题 | ✅ |
 
 > 以下为实际已实现的接口详情。
 
@@ -351,6 +352,36 @@ POST /api/suggest-reply
 - 用户不知道怎么回答时，点击输入框旁灯泡按钮触发
 - 返回的是**思考方向提示**（不是完整答案），帮助用户找到思路
 - 使用 `generateText`（非流式），直接返回 JSON
+
+---
+
+## 11. 获取推荐学习话题
+
+```
+GET /api/suggested-topics
+```
+
+### 响应 `200`
+
+```json
+{
+  "topics": [
+    { "id": "topic-1", "icon": "Brain", "title": "深入理解 JavaScript 闭包" },
+    { "id": "topic-2", "icon": "Heart", "title": "认知行为疗法入门与实践" },
+    { "id": "topic-3", "icon": "Utensils", "title": "营养学基础：科学搭配三餐" },
+    { "id": "topic-4", "icon": "Landmark", "title": "文艺复兴：艺术与科学交汇" },
+    { "id": "topic-5", "icon": "MessageSquare", "title": "高效沟通：用逻辑说服他人" },
+    { "id": "topic-6", "icon": "TrendingUp", "title": "概率思维：做出更明智的决策" }
+  ]
+}
+```
+
+### 说明
+
+- 首页欢迎页使用的推荐话题列表
+- 当前为硬编码，后续可迁移到数据库配置
+- `icon` 字段对应 lucide-react 图标名称
+- 前端有 fallback 硬编码列表，API 不可用时仍可正常显示
 
 ---
 
