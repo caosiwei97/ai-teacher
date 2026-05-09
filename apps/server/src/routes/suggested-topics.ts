@@ -1,7 +1,4 @@
-import { NextResponse } from "next/server";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+import { Hono } from "hono";
 
 const suggestedTopics = [
   { id: "topic-1", icon: "Brain", title: "深入理解 JavaScript 闭包" },
@@ -12,6 +9,6 @@ const suggestedTopics = [
   { id: "topic-6", icon: "TrendingUp", title: "概率思维：做出更明智的决策" },
 ];
 
-export async function GET() {
-  return NextResponse.json({ topics: suggestedTopics });
-}
+export const suggestedTopicsRoute = new Hono().get("/", (c) => {
+  return c.json({ topics: suggestedTopics });
+});

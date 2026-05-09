@@ -47,18 +47,31 @@ interface Topic {
   title: string;
 }
 
+const USER_ID = "seed-user-ai-teacher";
+
 interface WelcomeContentProps {
   sessions: Session[];
 }
 
 export function WelcomeContent({ sessions }: WelcomeContentProps) {
   const router = useRouter();
+  const [sessionList, setSessionList] = useState<Session[]>(sessions);
   const [topics, setTopics] = useState<Topic[]>(fallbackTopics);
   const [input, setInput] = useState("");
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    fetch("/api/suggested-topics")
+    fetch(`/api/sessions?userId=${USER_ID}`)
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => setSessionList(data.sessions))
+      .catch(() => setSessionList([]));
+  }, []);
+
+  useEffect(() => {
+    fetch(`/api/suggested-topics`)
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
@@ -72,7 +85,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
       if (creating || !topic.trim()) return;
       setCreating(true);
       try {
-        const res = await fetch("/api/sessions", {
+        const res = await fetch(`/api/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: "seed-user-ai-teacher", topic: topic.trim() }),
@@ -116,7 +129,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
 
   return (
     <ThreeColumnLayout
-      sessions={sessions}
+      sessions={sessionList}
       onSelectSession={handleSelectSession}
       onNewSession={handleNewSession}
     >
