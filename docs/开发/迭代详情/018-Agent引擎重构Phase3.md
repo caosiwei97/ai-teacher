@@ -1,6 +1,6 @@
 # 018 — Agent 引擎重构 Phase 3：StateGraph + Tool Registry
 
-> 状态：⬜ 待开始 | 分类：🟠 优化 | 优先级：P0 | 依赖：017
+> 状态：✅ 已完成 | 分类：🟠 优化 | 优先级：P0 | 依赖：017
 
 **目标**：实现轻量 StateGraph 引擎 + Tool Registry DI 系统
 
@@ -206,17 +206,17 @@ const tutorGraph = new StateGraph<TutorState>()
 
 #### Checklist
 
-- [ ] 创建 `packages/agent/` 共享包（Worker 依赖）
-- [ ] 实现 `StateGraph` 类（节点注册 + 条件边 + 执行循环）
-- [ ] 实现 `CheckpointStore` 接口（Prisma 实现，每步自动保存状态）
-- [ ] 实现 `ToolRegistry` 类（register + toAiSdkTools + toPromptSection）
-- [ ] 重构 5 个工具为独立 ToolDefinition（带 promptSnippet + promptGuidelines）
-- [ ] 工具 execute 接收 `ToolExecutionContext`（prisma, sessionId, userId）
-- [ ] 实现 beforeToolCall / afterToolCall 钩子
-- [ ] TutorAgent 改用 StateGraph 定义流程（process_message → assess → [conditional] → generate_assessment → advance → check_completion）
-- [ ] RoadmapAgent / DiagnosticAgent 保持 BaseAgent（不需要 StateGraph）
-- [ ] 实现 AgentEvent 遥测（step_start/step_end/tool_call/tool_result/error/compact）
-- [ ] 文档更新：技术架构.md（Agent 架构）、Prompt设计.md（工具自描述）
+- [x] 创建 `packages/agent/` 共享包（Worker 依赖）
+- [x] 实现 `StateGraph` 类（节点注册 + 条件边 + 执行循环）
+- [x] 实现 `CheckpointStore` 接口（Prisma 实现，每步自动保存状态）
+- [x] 实现 `ToolRegistry` 类（register + toAiSdkTools + toPromptSection）
+- [x] 重构 5 个工具为独立 ToolDefinition（带 promptSnippet + promptGuidelines）
+- [x] 工具 execute 接收 `ToolExecutionContext`（prisma, sessionId, userId）
+- [x] 实现 beforeToolCall / afterToolCall 钩子
+- [x] TutorAgent 改用 StateGraph 定义流程（prepare_context → agent_loop → post_process）
+- [x] RoadmapAgent / DiagnosticAgent 保持 BaseAgent（不需要 StateGraph）
+- [x] 实现 AgentEvent 遥测（AgentEventEmitter）
+- [x] 文档更新：技术架构.md（Agent 架构）
 
 #### 验证标准
 
