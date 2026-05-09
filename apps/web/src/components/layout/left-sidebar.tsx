@@ -12,7 +12,7 @@ interface Session {
 
 interface LeftSidebarProps {
   sessions: Session[];
-  currentSessionId: string;
+  currentSessionId?: string;
   onSelect: (id: string) => void;
   collapsed?: boolean;
   onToggle?: () => void;

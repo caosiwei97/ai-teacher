@@ -3,56 +3,56 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-background: #fafaf8;
-  --color-foreground: #1c1917;
+  --color-background: #1a1918;
+  --color-foreground: #e8e4dd;
 
-  --color-card: #ffffff;
-  --color-card-foreground: #1c1917;
+  --color-card: #252420;
+  --color-card-foreground: #e8e4dd;
 
-  --color-popover: #ffffff;
-  --color-popover-foreground: #1c1917;
+  --color-popover: #252420;
+  --color-popover-foreground: #e8e4dd;
 
-  --color-primary: #292524;
+  --color-primary: #d97706;
   --color-primary-foreground: #fafaf9;
 
-  --color-secondary: #f5f5f4;
-  --color-secondary-foreground: #1c1917;
+  --color-secondary: #2e2d2a;
+  --color-secondary-foreground: #e8e4dd;
 
-  --color-muted: #f5f5f4;
-  --color-muted-foreground: #78716c;
+  --color-muted: #2e2d2a;
+  --color-muted-foreground: #9c9890;
 
   --color-accent: #f59e0b;
-  --color-accent-foreground: #1c1917;
+  --color-accent-foreground: #1a1918;
 
   --color-destructive: #ef4444;
   --color-destructive-foreground: #fafaf9;
 
-  --color-border: #e7e5e4;
-  --color-input: #d6d3d1;
-  --color-ring: #292524;
+  --color-border: #3a3835;
+  --color-input: #4a4845;
+  --color-ring: #d97706;
 
-  --color-sidebar-bg: #1c1917;
-  --color-sidebar-surface: #292524;
-  --color-sidebar-text: #e7e5e4;
+  --color-sidebar-bg: #161514;
+  --color-sidebar-surface: #252420;
+  --color-sidebar-text: #e8e4dd;
   --color-sidebar-muted: #a8a29e;
   --color-sidebar-active: #d97706;
-  --color-sidebar-active-text: #ffffff;
-  --color-sidebar-hover: #44403c;
+  --color-sidebar-active-text: #fafaf9;
+  --color-sidebar-hover: #3a3835;
 
-  --color-chat-user: #1c1917;
+  --color-chat-user: #d97706;
   --color-chat-user-text: #fafaf9;
-  --color-chat-tutor: #f5f5f4;
-  --color-chat-tutor-text: #1c1917;
+  --color-chat-tutor: #252420;
+  --color-chat-tutor-text: #e8e4dd;
 
-  --color-roadmap-track: #e7e5e4;
+  --color-roadmap-track: #3a3835;
   --color-roadmap-fill: #d97706;
-  --color-roadmap-mastered: #16a34a;
+  --color-roadmap-mastered: #5cb87a;
   --color-roadmap-active: #d97706;
   --color-roadmap-idle: #a8a29e;
 
-  --color-code-bg: #1c1917;
-  --color-code-border: #44403c;
-  --color-code-text: #e7e5e4;
+  --color-code-bg: #161514;
+  --color-code-border: #3a3835;
+  --color-code-text: #e8e4dd;
   --color-code-lang: #a8a29e;
   --color-code-accent: #f59e0b;
 

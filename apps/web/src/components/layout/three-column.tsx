@@ -23,8 +23,8 @@ interface Node {
 
 interface ThreeColumnLayoutProps {
   sessions: Session[];
-  currentSessionId: string;
-  nodes: Node[];
+  currentSessionId?: string;
+  nodes?: Node[];
   onSelectSession: (id: string) => void;
   onNewSession?: () => void;
   onArchiveSession?: (id: string) => void;
@@ -34,7 +34,7 @@ interface ThreeColumnLayoutProps {
 export function ThreeColumnLayout({
   sessions,
   currentSessionId,
-  nodes,
+  nodes = [],
   onSelectSession,
   onNewSession,
   onArchiveSession,
@@ -64,7 +64,7 @@ export function ThreeColumnLayout({
             <PanelLeftOpen className="h-4 w-4 text-foreground" />
           </button>
         </div>
-        {rightCollapsed && (
+        {nodes.length > 0 && rightCollapsed && (
           <div className="absolute right-3 top-3 z-10 lg:hidden">
             <button
               onClick={() => setRightCollapsed(!rightCollapsed)}
@@ -77,7 +77,7 @@ export function ThreeColumnLayout({
         {children}
       </div>
 
-      {!rightCollapsed && (
+      {nodes.length > 0 && !rightCollapsed && (
         <div className="hidden lg:block">
           <RightSidebar nodes={nodes} />
         </div>

@@ -1,24 +1,38 @@
-import { redirect } from "next/navigation";
 import { prisma } from "@ai-teacher/db";
-import { NewSessionForm } from "./new-session-form";
+import { WelcomeContent } from "./welcome-content";
 
 const USER_ID = "seed-user-ai-teacher";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const activeSession = await prisma.session.findFirst({
-    where: {
-      userId: USER_ID,
-      status: { in: ["diagnosing", "active"] },
-    },
-    orderBy: { updatedAt: "desc" },
-    select: { id: true },
-  });
+  let sessionCards: Array<{
+    id: string;
+    topic: string;
+    status: string;
+    progress: { totalNodes: number; masteredNodes: number };
+  }> = [];
 
-  if (activeSession) {
-    redirect(`/learn/${activeSession.id}`);
+  try {
+    const sessions = await prisma.session.findMany({
+      where: { userId: USER_ID, status: { notIn: ["archived"] } },
+      orderBy: { updatedAt: "desc" },
+      include: { roadmap: { include: { nodes: { orderBy: { index: "asc" } } } } },
+    });
+
+    sessionCards = sessions.map((s) => ({
+      id: s.id,
+      topic: s.topic,
+      status: s.status,
+      progress: {
+        totalNodes: s.roadmap?.nodes.length ?? 0,
+        masteredNodes:
+          s.roadmap?.nodes.filter((n) => n.status === "mastered" || n.masteryScore >= 80).length ?? 0,
+      },
+    }));
+  } catch {
+    sessionCards = [];
   }
 
-  return <NewSessionForm />;
+  return <WelcomeContent sessions={sessionCards} />;
 }
