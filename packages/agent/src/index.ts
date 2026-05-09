@@ -6,6 +6,9 @@ export type { GraphNode, ConditionalEdge, StreamEvent, GraphExecutionContext } f
 export { ToolRegistry } from "./tool-registry";
 export type { ToolDefinition } from "./tool-registry";
 
+// Subagent system
+export { SubagentRegistry } from "./subagent-registry";
+
 // Checkpoint
 export { PrismaCheckpointStore } from "./checkpoint";
 
@@ -23,4 +26,6 @@ export type {
   ToolHooks,
   CheckpointStore,
   CheckpointMetadata,
+  SubagentDefinition,
+  AgentResult,
 } from "./types";

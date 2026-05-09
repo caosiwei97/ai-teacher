@@ -72,3 +72,21 @@ export interface CheckpointMetadata {
   graphNode: string;
   createdAt: Date;
 }
+
+/** Result from a subagent execution */
+export interface AgentResult {
+  content: string;
+  steps: number;
+  toolCalls: Array<{ toolName: string; args: unknown; result: unknown }>;
+}
+
+/** Definition of a subagent that can be delegated tasks */
+export interface SubagentDefinition {
+  name: string;
+  description: string;
+  systemPrompt: string;
+  tools: string[];
+  maxSteps: number;
+  model?: string;
+  toModelOutput: (result: AgentResult) => string;
+}
