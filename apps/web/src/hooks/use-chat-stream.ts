@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import type { Message } from "ai";
+import type { UIMessage } from "ai";
 
 interface UseChatStreamOptions {
   onFinish?: () => void;
@@ -13,8 +13,26 @@ interface SSEEvent {
   data?: unknown;
 }
 
+export interface AnnotationData {
+  toolName: string;
+  args?: unknown;
+  result?: unknown;
+}
+
+export interface MessageMetadata {
+  annotations?: AnnotationData[];
+}
+
+function getTextFromParts(parts: UIMessage["parts"]): string {
+  if (!parts) return "";
+  return parts
+    .filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("");
+}
+
 export function useChatStream(sessionId: string, options?: UseChatStreamOptions) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<UIMessage<MessageMetadata>[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -31,17 +49,17 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
       e?.preventDefault();
       if (!input.trim() || isLoading) return;
 
-      const userMessage: Message = {
+      const userMessage: UIMessage<MessageMetadata> = {
         id: `user-${Date.now()}`,
         role: "user",
-        content: input.trim(),
+        parts: [{ type: "text" as const, text: input.trim() }],
       };
 
-      const assistantMessage: Message = {
+      const assistantMessage: UIMessage<MessageMetadata> = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "",
-        annotations: [],
+        parts: [{ type: "text" as const, text: "" }],
+        metadata: { annotations: [] },
       };
 
       const newMessages = [...messages, userMessage, assistantMessage];
@@ -62,7 +80,7 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
             sessionId,
             messages: [...messages, userMessage].map((m) => ({
               role: m.role,
-              content: m.content,
+              content: getTextFromParts(m.parts),
             })),
           }),
           signal: controller.signal,
@@ -94,10 +112,10 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
 
           // SSE format: events separated by double newlines
           // Each event line starts with "data: "
-          const parts = buffer.split("\n\n");
-          buffer = parts.pop() || ""; // Keep potentially incomplete event in buffer
+          const sseParts = buffer.split("\n\n");
+          buffer = sseParts.pop() || ""; // Keep potentially incomplete event in buffer
 
-          for (const part of parts) {
+          for (const part of sseParts) {
             const lines = part.split("\n");
             for (const line of lines) {
               if (!line.startsWith("data: ")) continue;
@@ -114,31 +132,37 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
               const assistantIdx = newMessages.length - 1;
 
               if (event.type === "text-delta" && typeof event.content === "string") {
+                const prevText = getTextFromParts(newMessages[assistantIdx].parts);
+                const updatedText = prevText + event.content;
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
-                  content: newMessages[assistantIdx].content + event.content,
+                  parts: [{ type: "text" as const, text: updatedText }],
                 };
                 setMessages([...newMessages]);
               } else if (event.type === "tool-call" && event.data) {
                 const data = event.data as Record<string, unknown>;
-                const existing = newMessages[assistantIdx].annotations ?? [];
+                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                const toolName = String(data.toolName);
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
-                  annotations: [
-                    ...existing,
-                    { toolName: data.toolName, args: data.args },
-                  ] as Message["annotations"],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: [...existing, { toolName, args: data.args }],
+                  },
                 };
                 setMessages([...newMessages]);
               } else if (event.type === "tool-result" && event.data) {
                 const data = event.data as Record<string, unknown>;
-                const existing = newMessages[assistantIdx].annotations ?? [];
+                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                const toolName = String(data.toolName);
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
-                  annotations: [
-                    ...existing,
-                    { toolName: data.toolName, result: data.result },
-                  ] as Message["annotations"],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: [...existing, { toolName, result: data.result }],
+                  },
                 };
                 setMessages([...newMessages]);
               } else if (event.type === "error") {

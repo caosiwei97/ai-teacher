@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { z } from "zod";
+import { z } from 'zod';
 import { zValidator } from "@hono/zod-validator";
 import { prisma } from "@ai-teacher/db";
 import { generateRoadmap } from "../../../worker/src/agent/roadmap";
@@ -124,7 +124,7 @@ export const sessionsRoute = new Hono()
     const parsed = z.object({ userId: z.string().min(1) }).safeParse({ userId });
     if (!parsed.success) {
       return c.json(
-        { error: "userId is required", details: parsed.error.flatten() },
+        { error: "userId is required", details: z.flattenError(parsed.error) },
         400,
       );
     }

@@ -1,19 +1,28 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import type { Message } from "ai";
+import type { UIMessage } from "ai";
 import {
   isAssessmentCardData,
   type AssessmentCardProps,
 } from "./assessment-card";
 import type { UIBlock } from "@ai-teacher/shared";
+import type { MessageMetadata } from "@/hooks/use-chat-stream";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sparkles } from "lucide-react";
 
+function getTextFromParts(parts: UIMessage["parts"]): string {
+  if (!parts) return "";
+  return parts
+    .filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("");
+}
+
 interface ChatAreaProps {
-  messages: Message[];
+  messages: UIMessage<MessageMetadata>[];
   input: string;
   isLoading: boolean;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -30,17 +39,8 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function getArrayProperty(value: unknown, key: string) {
-  if (!isObject(value)) {
-    return undefined;
-  }
-
-  const property = value[key];
-  return Array.isArray(property) ? property : undefined;
-}
-
 function getAssessmentFromAnnotations(
-  annotations: unknown[] | undefined,
+  annotations: MessageMetadata["annotations"],
 ): AssessmentCardProps | undefined {
   for (const annotation of annotations ?? []) {
     if (!isObject(annotation)) {
@@ -62,35 +62,12 @@ function getAssessmentFromAnnotations(
   return undefined;
 }
 
-function getAssessmentFromToolInvocations(
-  toolInvocations: unknown[] | undefined,
-): AssessmentCardProps | undefined {
-  for (const invocation of toolInvocations ?? []) {
-    if (!isObject(invocation)) {
-      continue;
-    }
-
-    if (
-      invocation.toolName === "generateAssessment" &&
-      invocation.state === "result" &&
-      isAssessmentCardData(invocation.result)
-    ) {
-      return invocation.result;
-    }
-  }
-
-  return undefined;
+function getAssessmentFromMessage(message: UIMessage<MessageMetadata>) {
+  return getAssessmentFromAnnotations(message.metadata?.annotations);
 }
 
-function getAssessmentFromMessage(message: Message) {
-  return (
-    getAssessmentFromAnnotations(getArrayProperty(message, "annotations")) ??
-    getAssessmentFromToolInvocations(getArrayProperty(message, "toolInvocations"))
-  );
-}
-
-function getUIBlocksFromMessage(message: Message): UIBlock[] | undefined {
-  const annotations = getArrayProperty(message, "annotations");
+function getUIBlocksFromMessage(message: UIMessage<MessageMetadata>): UIBlock[] | undefined {
+  const annotations = message.metadata?.annotations;
   if (annotations) {
     for (const annotation of annotations) {
       if (isObject(annotation)) {
@@ -143,7 +120,7 @@ export function ChatArea({
             <ChatMessage
               key={msg.id}
               role={msg.role}
-              content={msg.content}
+              content={getTextFromParts(msg.parts)}
               assessment={msg.role === "assistant" ? getAssessmentFromMessage(msg) : undefined}
               uiBlocks={msg.role === "assistant" ? getUIBlocksFromMessage(msg) : undefined}
             />

@@ -98,7 +98,7 @@ export async function evaluateDiagnostic(
   return res.json() as Promise<{
     evaluation: {
       startingNodeIndex: number;
-      reasoning: string;
+      reasoningText: string;
       answersummary: Array<{ questionId: string; correct: boolean; brief: string }>;
     };
     startingNode: { id: string; index: number; title: string };

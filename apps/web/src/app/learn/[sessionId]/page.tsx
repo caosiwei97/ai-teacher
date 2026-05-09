@@ -11,6 +11,7 @@ import { ChatArea } from "@/components/chat/chat-area";
 import { QuickQuestion } from "@/components/chat/quick-question";
 import { DiagnosticQuiz } from "@/components/diagnostic/diagnostic-quiz";
 import { useChatStream } from "@/hooks/use-chat-stream";
+import type { MessageMetadata } from "@/hooks/use-chat-stream";
 import {
   fetchSession,
   fetchSessions,
@@ -18,7 +19,7 @@ import {
   evaluateDiagnostic,
   archiveSession,
 } from "@/lib/api-client";
-import type { Message } from "ai";
+import type { UIMessage } from "ai";
 import { Loader2, Sparkles, FileQuestion } from "lucide-react";
 
 const USER_ID = "seed-user-ai-teacher";
@@ -162,7 +163,7 @@ export default function LearnPage() {
         setSessions(sessionsData.sessions);
         setNodes(sessionData.session.roadmap?.nodes ?? []);
 
-        const historyMessages: Message[] = sessionData.session.messages
+        const historyMessages: UIMessage<MessageMetadata>[] = sessionData.session.messages
           .filter((m) => m.role === "learner" || m.role === "tutor")
           .map((m, i) => {
             const assessment =
@@ -171,9 +172,9 @@ export default function LearnPage() {
             return {
               id: `init-${i}`,
               role: (m.role === "learner" ? "user" : "assistant") as "user" | "assistant",
-              content: m.content,
-              annotations: assessment ? [toAssessmentAnnotation(assessment)] : undefined,
-            };
+              parts: [{ type: "text" as const, text: m.content || "" }],
+              metadata: assessment ? { annotations: [toAssessmentAnnotation(assessment) as unknown as import("@/hooks/use-chat-stream").AnnotationData] } : undefined,
+            } satisfies UIMessage<MessageMetadata>;
           });
         chat.setMessages(historyMessages);
 
@@ -228,7 +229,14 @@ export default function LearnPage() {
   function getLastAssistantMessage() {
     for (let i = chat.messages.length - 1; i >= 0; i--) {
       if (chat.messages[i].role === "assistant") {
-        return chat.messages[i].content;
+        const parts = chat.messages[i].parts;
+        if (parts) {
+          return parts
+            .filter((p): p is { type: "text"; text: string } => p.type === "text")
+            .map((p) => p.text)
+            .join("");
+        }
+        return "";
       }
     }
     return "";

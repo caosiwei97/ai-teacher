@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { z } from "zod";
+import { z } from 'zod';
 import { zValidator } from "@hono/zod-validator";
 import { streamText } from "ai";
 import { getProvider } from "../../../worker/src/agent/provider";
@@ -27,6 +27,6 @@ ${context ? `上下文：${context}` : ""}
 请基于选中的内容回答。`,
     });
 
-    return result.toDataStreamResponse();
+    return result.toUIMessageStreamResponse();
   },
 );
