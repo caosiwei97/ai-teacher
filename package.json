@@ -9,6 +9,7 @@
     "preinstall": "npx only-allow pnpm",
     "dev:web": "pnpm --filter @ai-teacher/web dev",
     "dev:server": "pnpm --filter @ai-teacher/server dev",
+    "dev:worker": "pnpm --filter @ai-teacher/worker dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",

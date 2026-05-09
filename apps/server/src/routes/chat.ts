@@ -1,158 +1,122 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
+import { streamSSE } from "hono/streaming";
+import Redis from "ioredis";
 import { prisma } from "@ai-teacher/db";
-import { TutorAgent } from "../../../worker/src/agent/tutor";
-import { MessageService } from "../../../worker/src/agent/services/message-service";
+import { chatQueue } from "../services/queue";
+
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
 
 const chatRequestSchema = z.object({
   sessionId: z.string().min(1),
-  messages: z.array(z.object({
-    role: z.enum(["user", "assistant"]),
-    content: z.string(),
-  })).min(1),
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string(),
+      }),
+    )
+    .min(1),
 });
 
-function formatProfileValue(value: unknown) {
-  if (value == null) {
-    return null;
-  }
-
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return JSON.stringify(value, null, 2);
-}
-
-function buildLearnerProfile(profile: {
-  learningStyle: unknown;
-  strengths: unknown;
-  weaknesses: unknown;
-  misconceptionPatterns: unknown;
-  sessionsSummary: unknown;
-} | null) {
-  if (!profile) {
-    return "首次学习";
-  }
-
-  const sections = [
-    profile.learningStyle
-      ? `学习偏好：${formatProfileValue(profile.learningStyle)}`
-      : null,
-    profile.strengths ? `已有优势：${formatProfileValue(profile.strengths)}` : null,
-    profile.weaknesses ? `薄弱点：${formatProfileValue(profile.weaknesses)}` : null,
-    profile.misconceptionPatterns
-      ? `常见误解：${formatProfileValue(profile.misconceptionPatterns)}`
-      : null,
-    profile.sessionsSummary
-      ? `历史学习摘要：${formatProfileValue(profile.sessionsSummary)}`
-      : null,
-  ].filter((value): value is string => Boolean(value));
-
-  return sections.join("\n") || "首次学习";
-}
-
-const STREAM_TIMEOUT_MS = 120_000;
-
-async function persistMessages(
-  sessionId: string,
-  userMessage: string,
-  result: Awaited<ReturnType<TutorAgent["run"]>>,
-) {
-  try {
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("Stream timeout")), STREAM_TIMEOUT_MS),
-    );
-
-    const [assistantText, toolResults] = await Promise.race([
-      Promise.all([result.text, result.toolResults]),
-      timeoutPromise,
-    ]);
-
-    const mapped = toolResults.map((tr) => ({
-      toolName: tr.toolName,
-      result: tr.result,
-    }));
-
-    await MessageService.persistTurn(sessionId, userMessage, assistantText, mapped);
-  } catch (error) {
-    console.error("[chat] failed to persist messages", error);
-  }
-}
-
-export const chatRoute = new Hono().post(
-  "/",
-  zValidator("json", chatRequestSchema),
-  async (c) => {
+export const chatRoute = new Hono()
+  .post("/", zValidator("json", chatRequestSchema), async (c) => {
     const { sessionId, messages } = c.req.valid("json");
-    const message = messages[messages.length - 1].content;
+    const userMessage = messages[messages.length - 1].content;
 
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
-      include: {
-        messages: {
-          orderBy: { createdAt: "asc" },
-        },
-        roadmap: {
-          include: {
-            nodes: {
-              orderBy: { index: "asc" },
-            },
-          },
-        },
-        user: {
-          include: {
-            profile: true,
-          },
-        },
-      },
     });
 
     if (!session) {
       return c.json({ error: "Session not found" }, 404);
     }
 
-    if (!session.roadmap || session.roadmap.nodes.length === 0) {
-      return c.json({ error: "Session roadmap not found" }, 409);
-    }
-
-    const currentNode =
-      session.roadmap.nodes.find((node) => node.status !== "mastered") ??
-      session.roadmap.nodes.at(-1);
-
-    if (!currentNode) {
-      return c.json({ error: "Current node not found" }, 409);
-    }
-
-    const masteredNodes = session.roadmap.nodes
-      .filter((node) => node.status === "mastered" || node.masteryScore >= 80)
-      .map((node) => node.title);
-
-    const agent = new TutorAgent();
-    const result = await agent.run({
-      topic: session.topic,
-      currentNode: {
-        id: currentNode.id,
-        title: currentNode.title,
-        description: currentNode.description,
+    const message = await prisma.message.create({
+      data: {
+        sessionId,
+        role: "learner",
+        type: "text",
+        content: userMessage,
+        status: "sending",
       },
-      allNodes: session.roadmap.nodes.map((n) => ({
-        id: n.id,
-        index: n.index,
-        title: n.title,
-        status: n.status,
-      })),
-      masteredNodes,
-      learnerProfile: buildLearnerProfile(session.user.profile),
-      messages: messages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
     });
 
-    void persistMessages(sessionId, message, result);
+    await chatQueue.add("chat-turn", {
+      messageId: message.id,
+      sessionId,
+      userContent: userMessage,
+      messages,
+    });
 
-    return result.toDataStreamResponse();
-  },
-);
+    return c.json({ messageId: message.id }, 202);
+  })
+  .get("/:sessionId/stream", async (c) => {
+    const sessionId = c.req.param("sessionId");
+
+    return streamSSE(c, async (stream) => {
+      const subscriber = new Redis(REDIS_URL);
+      const channel = `chat:${sessionId}`;
+
+      const incoming: Array<{ ch: string; payload: string }> = [];
+      let wake: (() => void) | null = null;
+      let closed = false;
+
+      const onMessage = (ch: string, payload: string) => {
+        incoming.push({ ch, payload });
+        wake?.();
+      };
+
+      subscriber.on("message", onMessage);
+      await subscriber.subscribe(channel);
+
+      stream.onAbort(() => {
+        closed = true;
+        subscriber.off("message", onMessage);
+        subscriber.disconnect();
+        wake?.();
+      });
+
+      const next = (): Promise<void> =>
+        new Promise((resolve) => {
+          if (incoming.length > 0 || closed) {
+            resolve();
+            return;
+          }
+          wake = resolve;
+        });
+
+      while (!closed) {
+        await next();
+
+        while (incoming.length > 0 && !closed) {
+          const { ch, payload } = incoming.shift()!;
+
+          if (ch !== channel) continue;
+
+          let parsed: Record<string, unknown>;
+          try {
+            parsed = JSON.parse(payload);
+          } catch {
+            continue;
+          }
+
+          const type = parsed.type as string | undefined;
+
+          await stream.writeSSE({
+            event: "message",
+            data: JSON.stringify(parsed),
+          });
+
+          if (type === "done" || type === "error") {
+            closed = true;
+            break;
+          }
+        }
+      }
+
+      subscriber.off("message", onMessage);
+      subscriber.disconnect();
+    });
+  });

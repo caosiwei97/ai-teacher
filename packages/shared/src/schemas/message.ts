@@ -8,6 +8,12 @@ export const MessageType = z.enum([
   "assessment",
   "system",
 ]);
+export const MessageStatus = z.enum([
+  "sending",
+  "processing",
+  "completed",
+  "failed",
+]);
 
 export const AssessmentPayload = z.object({
   success: z.boolean(),
@@ -34,5 +40,6 @@ export const CreateMessageInput = z.object({
 
 export type MessageRole = z.infer<typeof MessageRole>;
 export type MessageType = z.infer<typeof MessageType>;
+export type MessageStatus = z.infer<typeof MessageStatus>;
 export type AssessmentPayload = z.infer<typeof AssessmentPayload>;
 export type CreateMessageInput = z.infer<typeof CreateMessageInput>;

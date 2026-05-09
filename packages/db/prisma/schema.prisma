@@ -71,6 +71,7 @@ model Message {
   role      String   @db.Text
   type      String   @db.Text
   content   String   @db.Text
+  status    String   @default("completed") @db.Text
   metadata  Json?
   createdAt DateTime @default(now())
 }
