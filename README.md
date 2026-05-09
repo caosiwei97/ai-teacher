@@ -93,7 +93,7 @@ data/
 | 层 | 技术 |
 |---|------|
 | Web | Next.js 15, React 19, shadcn/ui, Tailwind CSS 4 |
-| Agent | AI SDK v4 (streamText + tool calling) |
+| Agent | AI SDK v6 (streamText + tool calling) |
 | LLM | 智谱 GLM（OpenAI 兼容接口） |
 | DB | PostgreSQL 16 + pgvector + Prisma ORM |
 | Cache | Redis 7 |

@@ -10,7 +10,7 @@ test.describe("Quick Features — API", () => {
       },
     });
     expect(response.ok()).toBeTruthy();
-    expect(response.headers()["content-type"]).toContain("text/plain");
+    expect(response.headers()["content-type"]).toContain("text/event-stream");
   });
 
   test("suggest reply API should return suggestion", async ({ request }) => {
