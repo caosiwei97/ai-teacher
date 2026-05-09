@@ -84,8 +84,12 @@ test.describe("Session Management — API", () => {
 });
 
 test.describe("Session Management — Home Page", () => {
-  test("should redirect to learn page with session cards in sidebar", async ({ page }) => {
+  test("should show session cards in sidebar on learn page", async ({ page }) => {
     await page.goto("/");
+
+    const sessionItem = page.locator("button", { hasText: "React Hooks" });
+    await expect(sessionItem).toBeVisible({ timeout: 10000 });
+    await sessionItem.click();
 
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
@@ -97,10 +101,14 @@ test.describe("Session Management — Home Page", () => {
     expect(count).toBeGreaterThanOrEqual(1);
   });
 
-  test("should show new session button after redirect", async ({
+  test("should show new session button on learn page", async ({
     page,
   }) => {
     await page.goto("/");
+
+    const sessionItem = page.locator("button", { hasText: "React Hooks" });
+    await expect(sessionItem).toBeVisible({ timeout: 10000 });
+    await sessionItem.click();
 
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 

@@ -50,8 +50,6 @@ test.describe("Mastery — Node State Transitions", () => {
 
     const nodes = session.roadmap.nodes;
     expect(nodes.length).toBeGreaterThanOrEqual(5);
-    expect(
-      nodes.some((n: { status: string }) => n.status === "in-progress"),
-    ).toBeTruthy();
+    expect(nodes[0].status).toBe("in-progress");
   });
 });

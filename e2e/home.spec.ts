@@ -20,7 +20,7 @@ test.describe("Home Page", () => {
       page.getByText("或者试试这些"),
     ).toBeVisible({ timeout: 10000 });
 
-    const topicCards = page.locator("button", { hasText: "罗马帝国" });
+    const topicCards = page.locator("button", { hasText: "文艺复兴" });
     await expect(topicCards.first()).toBeVisible();
   });
 
