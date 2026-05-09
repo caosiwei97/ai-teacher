@@ -1,7 +1,7 @@
-import { streamText, tool as aiTool } from "ai";
-import type { CoreTool } from "ai";
+import { streamText, stepCountIs, tool as aiTool } from "ai";
+import type { Tool } from "ai";
 import type { ToolDefinition, SubagentRegistry, AgentResult } from "@ai-teacher/agent";
-import { z } from "zod";
+import { z } from 'zod';
 import { getProvider } from "../provider";
 
 export function createDelegateTaskTool(
@@ -13,7 +13,7 @@ export function createDelegateTaskTool(
   return {
     name: "delegateTask",
     description: "将任务委派给专业子 Agent 执行，可选子 Agent：assessment（出题评估）、research（资料检索）",
-    parameters: z.object({
+    inputSchema: z.object({
       agent: z.string().describe("子 Agent 名称（assessment 或 research）"),
       task: z.string().describe("任务描述，子 Agent 会独立执行"),
     }),
@@ -34,11 +34,13 @@ export function createDelegateTaskTool(
         return acc;
       }, {});
 
-      const subTools: Record<string, CoreTool> = {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const subTools: Record<string, Tool<any, any>> = {};
       for (const [name, def] of Object.entries(subToolDefs)) {
         subTools[name] = aiTool({
           description: def.description,
-          parameters: def.parameters,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          inputSchema: def.inputSchema as any,
           execute: async (toolParams: Record<string, unknown>) => {
             return def.execute(toolParams, { prisma: null, sessionId: "", userId: "" });
           },
@@ -47,12 +49,12 @@ export function createDelegateTaskTool(
 
       try {
         const model = getProvider()(agentDef.model ?? "glm-4-flash");
-        const result = await streamText({
+        const result = streamText({
           model,
           system: agentDef.systemPrompt,
           prompt: p.task,
           tools: subTools,
-          maxSteps: agentDef.maxSteps,
+          stopWhen: stepCountIs(agentDef.maxSteps),
         });
 
         const fullText = await result.text;

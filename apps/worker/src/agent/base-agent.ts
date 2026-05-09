@@ -1,3 +1,4 @@
+import type { LanguageModel } from "ai";
 import { getProvider } from "./provider.js";
 
 export interface AgentConfig {
@@ -17,11 +18,11 @@ export abstract class BaseAgent {
     };
   }
 
-  protected getModel() {
+  protected getModel(): LanguageModel {
     return getProvider()(this.config.model);
   }
 
-  protected getFallbackModel() {
+  protected getFallbackModel(): LanguageModel {
     return getProvider()(this.config.fallbackModel);
   }
 

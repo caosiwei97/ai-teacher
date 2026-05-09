@@ -1,10 +1,10 @@
 import type { ToolDefinition } from "@ai-teacher/agent";
-import { z } from "zod";
+import { z } from 'zod';
 
 export const recordStrengthTool: ToolDefinition = {
   name: "recordStrength",
   description: "记录学习者在当前知识点上的擅长项",
-  parameters: z.object({
+  inputSchema: z.object({
     area: z.string().describe("擅长领域"),
     evidence: z.string().describe("证据"),
   }),

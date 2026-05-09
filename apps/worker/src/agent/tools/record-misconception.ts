@@ -1,10 +1,10 @@
 import type { ToolDefinition } from "@ai-teacher/agent";
-import { z } from "zod";
+import { z } from 'zod';
 
 export const recordMisconceptionTool: ToolDefinition = {
   name: "recordMisconception",
   description: "记录学习者的误解与根因",
-  parameters: z.object({
+  inputSchema: z.object({
     area: z.string().describe("误解领域"),
     misconception: z.string().describe("错误认知"),
     rootCause: z.string().describe("误解根因"),

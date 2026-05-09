@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from 'zod';
 import { ToolRegistry, type SubagentRegistry } from "@ai-teacher/agent";
 import { NodeService } from "../services/node-service.js";
 import { assessMasteryTool } from "./assess-mastery";
@@ -38,7 +38,7 @@ export function createTutorTools() {
   return {
     assessMastery: tool({
       description: "评估学习者对当前知识点的掌握程度",
-      parameters: z.object({
+      inputSchema: z.object({
         conceptId: z.string().describe("知识点 ID"),
         score: z.number().min(0).max(100).describe("掌握度分数"),
         strengths: z.array(z.string()).describe("展示的理解亮点"),
@@ -65,7 +65,7 @@ export function createTutorTools() {
 
     generateAssessment: tool({
       description: "节点掌握后生成评估总结卡片",
-      parameters: z.object({
+      inputSchema: z.object({
         conceptId: z.string().describe("知识点 ID"),
         summary: z.string().describe("总结性评价"),
         reviewTable: z
@@ -87,7 +87,7 @@ export function createTutorTools() {
 
     recordStrength: tool({
       description: "记录学习者在当前知识点上的擅长项",
-      parameters: z.object({
+      inputSchema: z.object({
         area: z.string().describe("擅长领域"),
         evidence: z.string().describe("证据"),
       }),
@@ -98,7 +98,7 @@ export function createTutorTools() {
 
     recordMisconception: tool({
       description: "记录学习者的误解与根因",
-      parameters: z.object({
+      inputSchema: z.object({
         area: z.string().describe("误解领域"),
         misconception: z.string().describe("错误认知"),
         rootCause: z.string().describe("误解根因"),
@@ -110,7 +110,7 @@ export function createTutorTools() {
 
     advanceNode: tool({
       description: "推进到下一个知识点",
-      parameters: z.object({
+      inputSchema: z.object({
         currentNodeId: z.string().describe("当前知识点 ID"),
         nextNodeId: z.string().describe("下一个知识点 ID"),
         masteryScore: z.number().describe("当前节点掌握度"),

@@ -1,10 +1,10 @@
 import type { ToolDefinition } from "@ai-teacher/agent";
-import { z } from "zod";
+import { z } from 'zod';
 
 export const assessMasteryTool: ToolDefinition = {
   name: "assessMastery",
   description: "评估学习者对当前知识点的掌握程度",
-  parameters: z.object({
+  inputSchema: z.object({
     conceptId: z.string().describe("知识点 ID"),
     score: z.number().min(0).max(100).describe("掌握度分数"),
     strengths: z.array(z.string()).describe("展示的理解亮点"),

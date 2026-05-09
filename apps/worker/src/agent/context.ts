@@ -1,4 +1,4 @@
-import type { CoreMessage } from "ai";
+import type { ModelMessage } from "ai";
 
 export interface MessageTransformOptions {
   maxMessages?: number;
@@ -13,9 +13,9 @@ const DEFAULT_OPTIONS: Required<MessageTransformOptions> = {
 };
 
 function truncateMessageContent(
-  msg: CoreMessage,
+  msg: ModelMessage,
   maxChars: number,
-): CoreMessage {
+): ModelMessage {
   if (
     (msg.role === "user" || msg.role === "assistant") &&
     typeof msg.content === "string" &&
@@ -27,9 +27,9 @@ function truncateMessageContent(
 }
 
 export function transformMessages(
-  messages: CoreMessage[],
+  messages: ModelMessage[],
   options?: MessageTransformOptions,
-): CoreMessage[] {
+): ModelMessage[] {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   const truncated = messages.map((msg) =>
@@ -43,7 +43,7 @@ export function transformMessages(
   const recentMessages = truncated.slice(-opts.recentTurns * 2);
   const olderMessages = truncated.slice(0, -opts.recentTurns * 2);
 
-  const summaryMessage: CoreMessage = {
+  const summaryMessage: ModelMessage = {
     role: "user",
     content: `[系统：前方有 ${olderMessages.length} 条历史消息已压缩。以下是最近的对话继续。]`,
   };
@@ -65,7 +65,7 @@ export function estimateTokens(text: string): number {
   return Math.ceil(tokens);
 }
 
-export function estimateMessagesTokens(messages: CoreMessage[]): number {
+export function estimateMessagesTokens(messages: ModelMessage[]): number {
   return messages.reduce((total, msg) => {
     const content =
       typeof msg.content === "string" ? msg.content : "";

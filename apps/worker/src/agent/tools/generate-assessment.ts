@@ -1,10 +1,10 @@
 import type { ToolDefinition } from "@ai-teacher/agent";
-import { z } from "zod";
+import { z } from 'zod';
 
 export const generateAssessmentTool: ToolDefinition = {
   name: "generateAssessment",
   description: "节点掌握后生成评估总结卡片",
-  parameters: z.object({
+  inputSchema: z.object({
     conceptId: z.string().describe("知识点 ID"),
     summary: z.string().describe("总结性评价"),
     reviewTable: z

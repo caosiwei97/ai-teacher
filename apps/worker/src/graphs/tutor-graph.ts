@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, stepCountIs } from "ai";
 import {
   StateGraph,
   END,
@@ -62,12 +62,12 @@ function createTutorGraph() {
       const tools = graphCtx.toolRegistry.toAiSdkTools(toolCtx);
 
       const model = getProvider()("glm-5-turbo");
-      const result = await streamText({
+      const result = streamText({
         model,
         system: systemPrompt,
         messages: state.messages,
         tools,
-        maxSteps: 3,
+        stopWhen: stepCountIs(3)
       });
 
       let assistantText = "";
@@ -75,28 +75,28 @@ function createTutorGraph() {
 
       for await (const event of result.fullStream) {
         const eventType = event.type as string;
-        if (eventType === "text-delta" && "textDelta" in event) {
-          assistantText += (event as { textDelta: string }).textDelta;
+        if (eventType === "text-delta" && "text" in event) {
+          assistantText += (event as { text: string }).text;
           await graphCtx.publisher.publish(
             graphCtx.channel,
-            JSON.stringify({ type: "text-delta", content: (event as { textDelta: string }).textDelta }),
+            JSON.stringify({ type: "text-delta", content: (event as { text: string }).text }),
           );
         } else if (eventType === "tool-call" && "toolName" in event) {
           await graphCtx.publisher.publish(
             graphCtx.channel,
             JSON.stringify({
               type: "tool-call",
-              data: { toolName: (event as { toolName: string; args: unknown }).toolName, args: (event as { args: unknown }).args },
+              data: { toolName: (event as { toolName: string; input: unknown }).toolName, input: (event as { input: unknown }).input },
             }),
           );
         } else if (eventType === "tool-result" && "toolName" in event) {
-          const toolEvent = event as unknown as { toolName: string; result: unknown };
-          toolResults.push({ toolName: toolEvent.toolName, result: toolEvent.result });
+          const toolEvent = event as unknown as { toolName: string; output: unknown };
+          toolResults.push({ toolName: toolEvent.toolName, result: toolEvent.output });
           await graphCtx.publisher.publish(
             graphCtx.channel,
             JSON.stringify({
               type: "tool-result",
-              data: { toolName: toolEvent.toolName, result: toolEvent.result },
+              data: { toolName: toolEvent.toolName, result: toolEvent.output },
             }),
           );
         } else if (eventType === "error" && "error" in event) {

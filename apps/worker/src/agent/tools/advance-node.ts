@@ -1,10 +1,10 @@
 import type { ToolDefinition } from "@ai-teacher/agent";
-import { z } from "zod";
+import { z } from 'zod';
 
 export const advanceNodeTool: ToolDefinition = {
   name: "advanceNode",
   description: "推进到下一个知识点",
-  parameters: z.object({
+  inputSchema: z.object({
     currentNodeId: z.string().describe("当前知识点 ID"),
     nextNodeId: z.string().describe("下一个知识点 ID"),
     masteryScore: z.number().describe("当前节点掌握度"),

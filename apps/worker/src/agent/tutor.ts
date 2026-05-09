@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, stepCountIs } from "ai";
 import { buildTutorSystemPrompt } from "./prompts/tutor.js";
 import { BaseAgent } from "./base-agent.js";
 import { createTutorTools } from "./tools/create-tools.js";
@@ -15,7 +15,8 @@ export interface TutorContext {
 
 /** @deprecated Use getTutorGraph() from ../graphs/tutor-graph instead */
 export class TutorAgent extends BaseAgent {
-  async run(context: TutorContext) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async run(context: TutorContext): Promise<any> {
     const systemPrompt = buildTutorSystemPrompt({
       topic: context.topic,
       currentNode: context.currentNode,
@@ -31,12 +32,13 @@ export class TutorAgent extends BaseAgent {
       system: systemPrompt,
       messages: transformedMessages,
       tools: createTutorTools(),
-      maxSteps: 3,
+      stopWhen: stepCountIs(3)
     });
   }
 }
 
-export async function streamTutorResponse(context: TutorContext) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function streamTutorResponse(context: TutorContext): Promise<any> {
   const agent = new TutorAgent();
   return agent.run(context);
 }

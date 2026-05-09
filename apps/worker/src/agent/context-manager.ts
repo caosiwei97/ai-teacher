@@ -1,4 +1,4 @@
-import type { CoreMessage } from "ai";
+import type { ModelMessage } from "ai";
 import type { StructuredSummary } from "@ai-teacher/shared";
 import {
   type AgentMessage,
@@ -15,7 +15,7 @@ import {
 } from "./compaction";
 
 export interface ContextResult {
-  messages: CoreMessage[];
+  messages: ModelMessage[];
   tokenCount: number;
   summary: StructuredSummary | null;
   compacted: boolean;
@@ -42,7 +42,7 @@ export class ContextManager {
 
   async process(
     sessionId: string,
-    rawMessages: CoreMessage[],
+    rawMessages: ModelMessage[],
   ): Promise<ContextResult> {
     const agentMessages = coreMessagesToAgentMessages(rawMessages);
     const transformed = this.transformContext(agentMessages);

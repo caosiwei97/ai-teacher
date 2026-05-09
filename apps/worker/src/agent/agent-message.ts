@@ -1,4 +1,4 @@
-import type { CoreMessage } from "ai";
+import type { ModelMessage } from "ai";
 
 // ── AgentMessage 分层类型 ──────────────────────────────────
 
@@ -54,7 +54,7 @@ export function isSystemEvent(msg: AgentMessage): msg is SystemEventMessage {
 // ── 转换工具 ──────────────────────────────────
 
 /** CoreMessage[] → AgentMessage[]（全部标记为 llm 类型） */
-export function coreMessagesToAgentMessages(messages: CoreMessage[]): AgentMessage[] {
+export function coreMessagesToAgentMessages(messages: ModelMessage[]): AgentMessage[] {
   return messages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
@@ -65,7 +65,7 @@ export function coreMessagesToAgentMessages(messages: CoreMessage[]): AgentMessa
 }
 
 /** AgentMessage[] → CoreMessage[]（只保留 llm 类型） */
-export function agentMessagesToCoreMessages(messages: AgentMessage[]): CoreMessage[] {
+export function agentMessagesToCoreMessages(messages: AgentMessage[]): ModelMessage[] {
   return messages
     .filter(isLlmMessage)
     .map((m) => ({ role: m.role, content: m.content }));

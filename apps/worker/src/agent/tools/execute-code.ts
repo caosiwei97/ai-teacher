@@ -1,5 +1,5 @@
 import type { ToolDefinition } from "@ai-teacher/agent";
-import { z } from "zod";
+import { z } from 'zod';
 import { submitCode } from "../../sandbox/client.js";
 import { getLanguageName } from "../../sandbox/languages.js";
 
@@ -16,7 +16,7 @@ const DANGEROUS_PATTERNS = [
 export const executeCodeTool: ToolDefinition = {
   name: "executeCode",
   description: "在安全沙箱中执行学生代码，返回运行结果（stdout/stderr/exitCode）",
-  parameters: z.object({
+  inputSchema: z.object({
     sourceCode: z.string().describe("要执行的代码"),
     languageId: z.number().describe("Judge0 语言 ID（如 71=Python 3, 63=JavaScript, 62=Java）"),
     stdin: z.string().optional().describe("标准输入"),
