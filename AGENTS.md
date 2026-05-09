@@ -450,7 +450,7 @@ pnpm dev   # 重启 dev server
 - **中文 UI 文本**
 - **注释仅在必要时添加**
 - **端口**：Web 38421, Worker 38422, PG 25432, Redis 26379, MinIO 29000/29001
-- **LLM**：智谱 OpenAI 兼容接口，默认 `glm-4-flash`
+- **LLM**：智谱 OpenAI 兼容接口，默认 `glm-5-turbo`
 - **PostCSS**：必须用 `module.exports`（不用 `export default`）
 - **.env**：通过 symlink `apps/web/.env → ../../.env` 共享
 - **Tailwind CSS 4**：颜色用 `@theme` CSS 变量，不用硬编码色值
