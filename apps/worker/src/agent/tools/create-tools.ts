@@ -7,6 +7,7 @@ import { generateAssessmentTool } from "./generate-assessment";
 import { recordStrengthTool } from "./record-strength";
 import { recordMisconceptionTool } from "./record-misconception";
 import { advanceNodeTool } from "./advance-node";
+import { executeCodeTool } from "./execute-code";
 
 export const tutorToolDefinitions = [
   assessMasteryTool,
@@ -14,6 +15,7 @@ export const tutorToolDefinitions = [
   recordStrengthTool,
   recordMisconceptionTool,
   advanceNodeTool,
+  executeCodeTool,
 ];
 
 export function createTutorToolRegistry(): ToolRegistry {

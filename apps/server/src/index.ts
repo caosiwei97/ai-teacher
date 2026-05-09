@@ -11,6 +11,7 @@ import { suggestedTopicsRoute } from "./routes/suggested-topics";
 import { suggestReplyRoute } from "./routes/suggest-reply";
 import { quickQuestionRoute } from "./routes/quick-question";
 import { chatRoute } from "./routes/chat";
+import { sandboxRoute } from "./routes/sandbox";
 
 const app = new Hono();
 
@@ -26,6 +27,7 @@ app.route("/api/suggested-topics", suggestedTopicsRoute);
 app.route("/api/suggest-reply", suggestReplyRoute);
 app.route("/api/quick-question", quickQuestionRoute);
 app.route("/api/chat", chatRoute);
+app.route("/api/sandbox", sandboxRoute);
 
 const port = Number(process.env.SERVER_PORT) || 38422;
 

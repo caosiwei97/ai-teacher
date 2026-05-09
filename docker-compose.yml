@@ -43,3 +43,31 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Judge0 — 代码执行沙箱
+  judge0-server:
+    image: judge0/judge0:latest
+    ports:
+      - "2358:2358"
+    environment:
+      REDIS_HOST: redis-judge0
+    depends_on:
+      redis-judge0:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2358/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis-judge0:
+    image: redis:7-alpine
+    volumes:
+      - ./data/redis-judge0:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped

@@ -69,5 +69,10 @@ ${nodeLines}
 **当掌握度 ≥ 80% 且已生成评估卡片后**，调用 advanceNode 工具推进到下一个知识点。参数：
 - currentNodeId: 当前节点 id
 - nextNodeId: 下一个 not-started 或 in-progress 节点的 id（参考上方知识图谱节点列表）
-- masteryScore: 掌握度分数`;
+- masteryScore: 掌握度分数
+
+**当学生写了代码时**，你可以使用 executeCode 工具在沙箱中运行验证。参数：
+- sourceCode: 学生代码
+- languageId: 语言 ID（Python=71, JavaScript=63, Java=62, C++=54, TypeScript=74）
+运行后会返回 stdout/stderr/exitCode，基于结果给出修改建议。`;
 }
