@@ -19,7 +19,7 @@ import {
   archiveSession,
 } from "@/lib/api-client";
 import type { Message } from "ai";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, FileQuestion } from "lucide-react";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -105,6 +105,7 @@ export default function LearnPage() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   const [diagnosticState, setDiagnosticState] = useState<
     | { phase: "idle" }
@@ -152,6 +153,12 @@ export default function LearnPage() {
 
     Promise.all([fetchSessions(USER_ID), fetchSession(sessionId)])
       .then(([sessionsData, sessionData]) => {
+        if (sessionData.session.status === "archived") {
+          setPageError("该学习会话已被归档");
+          setLoaded(true);
+          return;
+        }
+
         setSessions(sessionsData.sessions);
         setNodes(sessionData.session.roadmap?.nodes ?? []);
 
@@ -178,7 +185,11 @@ export default function LearnPage() {
 
         setLoaded(true);
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error("Failed to load session:", err);
+        setPageError("找不到该学习会话，可能已被删除");
+        setLoaded(true);
+      });
   }, [sessionId]);
 
   const handleSelectSession = useCallback(
@@ -311,6 +322,33 @@ export default function LearnPage() {
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-pulse-soft rounded-full bg-roadmap-fill" />
           <p className="text-sm text-muted-foreground">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (pageError) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+            <FileQuestion className="h-7 w-7 text-muted-foreground" />
+          </div>
+          <div>
+            <h2 className="text-lg font-medium text-foreground">
+              会话不存在
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {pageError}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="mt-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            返回首页
+          </button>
         </div>
       </div>
     );
