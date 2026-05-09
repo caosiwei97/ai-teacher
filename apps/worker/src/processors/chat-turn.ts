@@ -1,7 +1,9 @@
 import { Worker as BullWorker } from "bullmq";
 import Redis from "ioredis";
 import { prisma } from "@ai-teacher/db";
-import { TutorAgent } from "../agent/tutor";
+import { PrismaCheckpointStore, type TutorState } from "@ai-teacher/agent";
+import { getTutorGraph, type TutorGraphContext } from "../graphs/tutor-graph";
+import { createTutorToolRegistry } from "../agent/tools/create-tools";
 import { MessageService } from "../agent/services/message-service";
 import { buildLearnerProfile } from "../lib/learner-profile";
 
@@ -43,28 +45,15 @@ export function createChatTurnWorker(
         const session = await prisma.session.findUnique({
           where: { id: sessionId },
           include: {
-            messages: {
-              orderBy: { createdAt: "asc" },
-            },
+            messages: { orderBy: { createdAt: "asc" } },
             roadmap: {
-              include: {
-                nodes: {
-                  orderBy: { index: "asc" },
-                },
-              },
+              include: { nodes: { orderBy: { index: "asc" } } },
             },
-            user: {
-              include: {
-                profile: true,
-              },
-            },
+            user: { include: { profile: true } },
           },
         });
 
-        if (!session) {
-          throw new Error(`Session ${sessionId} not found`);
-        }
-
+        if (!session) throw new Error(`Session ${sessionId} not found`);
         if (!session.roadmap || session.roadmap.nodes.length === 0) {
           throw new Error(`Session ${sessionId} has no roadmap`);
         }
@@ -72,20 +61,19 @@ export function createChatTurnWorker(
         const currentNode =
           session.roadmap.nodes.find((node) => node.status !== "mastered") ??
           session.roadmap.nodes.at(-1);
-
-        if (!currentNode) {
-          throw new Error(`Session ${sessionId} has no current node`);
-        }
+        if (!currentNode) throw new Error(`Session ${sessionId} has no current node`);
 
         const masteredNodes = session.roadmap.nodes
-          .filter(
-            (node) => node.status === "mastered" || node.masteryScore >= 80,
-          )
+          .filter((node) => node.status === "mastered" || node.masteryScore >= 80)
           .map((node) => node.title);
 
-        const agent = new TutorAgent();
-        const result = agent.run({
+        const toolRegistry = createTutorToolRegistry();
+        const checkpoint = new PrismaCheckpointStore(prisma);
+
+        const initialState: TutorState = {
+          sessionId,
           topic: session.topic,
+          currentNodeId: currentNode.id,
           currentNode: {
             id: currentNode.id,
             title: currentNode.title,
@@ -100,80 +88,35 @@ export function createChatTurnWorker(
           masteredNodes,
           learnerProfile: buildLearnerProfile(session.user.profile),
           messages: messages.map((m) => ({
-            role: m.role,
+            role: m.role as "user" | "assistant",
             content: m.content,
           })),
-        });
+        };
+
+        const graphCtx: TutorGraphContext = {
+          toolRegistry,
+          checkpoint,
+          prisma,
+          sessionId,
+          userId: session.userId,
+          publisher,
+          channel,
+        };
 
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error("Stream timeout")),
-            STREAM_TIMEOUT_MS,
-          ),
+          setTimeout(() => reject(new Error("Stream timeout")), STREAM_TIMEOUT_MS),
         );
 
-        let assistantText = "";
-        const toolResults: Array<{ toolName: string; result: unknown }> = [];
-
-        await Promise.race([
-          (async () => {
-            for await (const event of (await result).fullStream) {
-              switch (event.type) {
-                case "text-delta": {
-                  assistantText += event.textDelta;
-                  await publisher.publish(
-                    channel,
-                    JSON.stringify({
-                      type: "text-delta",
-                      content: event.textDelta,
-                    }),
-                  );
-                  break;
-                }
-                case "tool-call": {
-                  await publisher.publish(
-                    channel,
-                    JSON.stringify({
-                      type: "tool-call",
-                      data: {
-                        toolName: event.toolName,
-                        args: event.args,
-                      },
-                    }),
-                  );
-                  break;
-                }
-                case "tool-result": {
-                  toolResults.push({
-                    toolName: event.toolName,
-                    result: event.result,
-                  });
-                  await publisher.publish(
-                    channel,
-                    JSON.stringify({
-                      type: "tool-result",
-                      data: {
-                        toolName: event.toolName,
-                        result: event.result,
-                      },
-                    }),
-                  );
-                  break;
-                }
-                case "error": {
-                  throw event.error;
-                }
-              }
-            }
-          })(),
+        const graphResult = await Promise.race([
+          getTutorGraph().execute(initialState, graphCtx),
           timeoutPromise,
         ]);
 
         await MessageService.persistTurn(
           sessionId,
           userContent,
-          assistantText,
-          toolResults,
+          graphResult.assistantText ?? "",
+          graphResult.toolResults ?? [],
         );
 
         await prisma.message.update({
@@ -181,14 +124,9 @@ export function createChatTurnWorker(
           data: { status: "completed" },
         });
 
-        await publisher.publish(
-          channel,
-          JSON.stringify({ type: "done" }),
-        );
+        await publisher.publish(channel, JSON.stringify({ type: "done" }));
 
-        console.log(
-          `[chat-turn] completed job ${job.id} for session ${sessionId}`,
-        );
+        console.log(`[chat-turn] completed job ${job.id} for session ${sessionId}`);
       } catch (error) {
         console.error(
           `[chat-turn] error in job ${job.id} for session ${sessionId}:`,
@@ -200,8 +138,7 @@ export function createChatTurnWorker(
           data: { status: "failed" },
         });
 
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
         await publisher.publish(
           channel,
           JSON.stringify({ type: "error", message: errorMessage }),
@@ -220,10 +157,7 @@ export function createChatTurnWorker(
   );
 
   worker.on("failed", (job, err) => {
-    console.error(
-      `[chat-turn] job ${job?.id} failed:`,
-      err.message,
-    );
+    console.error(`[chat-turn] job ${job?.id} failed:`, err.message);
   });
 
   worker.on("completed", (job) => {

@@ -13,6 +13,7 @@ export interface TutorContext {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
+/** @deprecated Use getTutorGraph() from ../graphs/tutor-graph instead */
 export class TutorAgent extends BaseAgent {
   async run(context: TutorContext) {
     const systemPrompt = buildTutorSystemPrompt({
