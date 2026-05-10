@@ -70,7 +70,6 @@ export function AssessmentCard({
   summary,
   reviewTable,
   coreTags,
-  nextNodeTitle,
 }: AssessmentCardProps) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
@@ -136,12 +135,6 @@ export function AssessmentCard({
         </div>
       </div>
 
-      <button
-        type="button"
-        className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-      >
-        下一节：{nextNodeTitle}
-      </button>
     </div>
   );
 }
