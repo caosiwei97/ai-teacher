@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import type { UIMessage } from "ai";
 import {
   isAssessmentCardData,
@@ -10,7 +10,6 @@ import type { UIBlock } from "@ai-teacher/shared";
 import type { MessageMetadata } from "@/hooks/use-chat-stream";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sparkles } from "lucide-react";
 
 function getTextFromParts(parts: UIMessage["parts"]): string {
@@ -95,14 +94,29 @@ export function ChatArea({
   onDismissSuggestion,
 }: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const threshold = 80;
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+  }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isAtBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   return (
     <div className="flex h-full flex-col">
-      <ScrollArea className="flex-1 px-5 py-4">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-5 py-4"
+      >
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary">
@@ -127,7 +141,7 @@ export function ChatArea({
           );
         })}
         <div ref={bottomRef} />
-      </ScrollArea>
+      </div>
       <ChatInput
         value={input}
         onChange={onInputChange}
