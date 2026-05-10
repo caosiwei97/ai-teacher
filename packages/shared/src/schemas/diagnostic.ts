@@ -39,6 +39,34 @@ export const DiagnosticEvaluation = z.object({
   ),
 });
 
+/** Chat-inline diagnostic: askQuestion tool parameter schema */
+export const AskQuestionParams = z.object({
+  questions: z
+    .array(
+      z.object({
+        id: z.string().describe("题目唯一标识，如 d1"),
+        question: z.string().describe("题目内容"),
+        title: z.string().describe("Tab 标题，如'核心定义'、'背景调查'"),
+        options: z
+          .array(
+            z.object({
+              id: z.string().describe("选项 ID，如 a/b/c/d"),
+              text: z.string().describe("选项内容"),
+            }),
+          )
+          .min(2)
+          .describe("选项列表"),
+      }),
+    )
+    .min(1)
+    .max(5)
+    .describe("诊断题目列表"),
+  nodeId: z.string().describe("固定为 'diagnosis'"),
+  question: z.string().describe("整体标题，如'让我们了解一下你的基础'"),
+});
+
+export type AskQuestionParams = z.infer<typeof AskQuestionParams>;
+
 export type DiagnosticQuestion = z.infer<typeof DiagnosticQuestion>;
 export type DiagnosticOutput = z.infer<typeof DiagnosticOutput>;
 export type DiagnosticAnswer = z.infer<typeof DiagnosticAnswer>;

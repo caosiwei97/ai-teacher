@@ -36,6 +36,7 @@ export const CreateMessageInput = z.object({
   type: MessageType,
   content: z.string(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  hidden: z.boolean().optional().default(false),
 });
 
 export type MessageRole = z.infer<typeof MessageRole>;
