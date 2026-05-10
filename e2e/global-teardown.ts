@@ -4,6 +4,7 @@ const TEST_DATABASE_URL =
   "postgresql://postgres:postgres@localhost:25432/ai_teacher_test";
 
 async function resetTestDb(prisma: PrismaClient) {
+  await prisma.checkpoint.deleteMany();
   await prisma.message.deleteMany();
   await prisma.node.deleteMany();
   await prisma.roadmap.deleteMany();

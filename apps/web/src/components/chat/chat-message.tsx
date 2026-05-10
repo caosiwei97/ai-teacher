@@ -2,16 +2,29 @@
 
 import type { UIBlock } from "@ai-teacher/shared";
 import type { AssessmentCardProps } from "./assessment-card";
+import type { DiagnosticQuestionsData } from "@/hooks/use-chat-stream";
 import { MessageContent } from "@/components/ui-blocks";
+import { DiagnosticQuizCard } from "./diagnostic-quiz-card";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
   assessment?: AssessmentCardProps;
   uiBlocks?: UIBlock[];
+  diagnosticQuestions?: DiagnosticQuestionsData;
+  onDiagnosticSubmit?: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
+  diagnosticSubmitted?: boolean;
 }
 
-export function ChatMessage({ role, content, assessment, uiBlocks }: ChatMessageProps) {
+export function ChatMessage({
+  role,
+  content,
+  assessment,
+  uiBlocks,
+  diagnosticQuestions,
+  onDiagnosticSubmit,
+  diagnosticSubmitted,
+}: ChatMessageProps) {
   const isUser = role === "user";
   const hasContent = content.trim().length > 0;
 
@@ -47,6 +60,14 @@ export function ChatMessage({ role, content, assessment, uiBlocks }: ChatMessage
           >
             <MessageContent content={content} uiBlocks={effectiveBlocks} />
           </div>
+        )}
+        {!isUser && diagnosticQuestions && onDiagnosticSubmit && (
+          <DiagnosticQuizCard
+            questions={diagnosticQuestions.questions}
+            title={diagnosticQuestions.question}
+            onSubmit={onDiagnosticSubmit}
+            submitted={diagnosticSubmitted}
+          />
         )}
       </div>
     </div>

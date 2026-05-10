@@ -9,18 +9,15 @@ import {
 } from "@/components/chat/assessment-card";
 import { ChatArea } from "@/components/chat/chat-area";
 import { QuickQuestion } from "@/components/chat/quick-question";
-import { DiagnosticQuiz } from "@/components/diagnostic/diagnostic-quiz";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import type { MessageMetadata } from "@/hooks/use-chat-stream";
 import {
   fetchSession,
   fetchSessions,
-  generateDiagnostic,
-  evaluateDiagnostic,
   archiveSession,
 } from "@/lib/api-client";
 import type { UIMessage } from "ai";
-import { Loader2, Sparkles, GraduationCap, ArrowUp } from "lucide-react";
+import { Loader2, GraduationCap, ArrowUp } from "lucide-react";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -47,15 +44,6 @@ interface NodeInfo {
   description: string;
   status: string;
   masteryScore: number;
-}
-
-interface DiagnosticQuestion {
-  id: string;
-  nodeIndex: number;
-  question: string;
-  type: "choice" | "open";
-  options: Array<{ label: string; text: string }>;
-  correctAnswer: string;
 }
 
 type JsonValue =
@@ -119,15 +107,7 @@ export default function LearnPage() {
   const [isNewSession, setIsNewSession] = useState(false);
   const [newSessionInput, setNewSessionInput] = useState("");
   const [creating, setCreating] = useState(false);
-
-  const [diagnosticState, setDiagnosticState] = useState<
-    | { phase: "idle" }
-    | { phase: "loading" }
-    | { phase: "error"; message: string }
-    | { phase: "quiz"; questions: DiagnosticQuestion[] }
-    | { phase: "evaluating" }
-    | { phase: "done"; startingNode: { id: string; index: number; title: string } }
-  >({ phase: "idle" });
+  const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
 
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
@@ -162,25 +142,6 @@ export default function LearnPage() {
     }
   }, [chat.messages]);
 
-  function loadDiagnostic() {
-    setDiagnosticState({ phase: "loading" });
-    generateDiagnostic(sessionId)
-      .then((data) => {
-        setDiagnosticState({ phase: "quiz", questions: data.questions });
-      })
-      .catch((err) => {
-        console.error("Failed to generate diagnostic:", err);
-        setDiagnosticState({
-          phase: "error",
-          message: "诊断题目生成失败，可能是网络问题或服务繁忙",
-        });
-      });
-  }
-
-  function handleSkipDiagnostic() {
-    setDiagnosticState({ phase: "idle" });
-  }
-
   useEffect(() => {
     if (!sessionId) return;
 
@@ -198,7 +159,6 @@ export default function LearnPage() {
           };
           setSessions([virtualSession, ...sessionsList]);
           setNodes([]);
-          setDiagnosticState({ phase: "idle" });
           setIsNewSession(true);
           setLoaded(true);
           return;
@@ -208,7 +168,6 @@ export default function LearnPage() {
           if (!sessionData) {
             setSessions(sessionsList);
             setIsNewSession(false);
-            setDiagnosticState({ phase: "idle" });
             setLoaded(true);
             return;
           }
@@ -224,7 +183,7 @@ export default function LearnPage() {
           setIsNewSession(false);
 
           const historyMessages: UIMessage<MessageMetadata>[] = sessionData.session.messages
-            .filter((m) => m.role === "learner" || m.role === "tutor")
+            .filter((m) => (m.role === "learner" || m.role === "tutor") && !m.hidden)
             .map((m, i) => {
               const assessment =
                 m.type === "assessment" ? getAssessmentFromMetadata(m.metadata) : undefined;
@@ -237,12 +196,6 @@ export default function LearnPage() {
               } satisfies UIMessage<MessageMetadata>;
             });
           chat.setMessages(historyMessages);
-
-          if (sessionData.session.status === "diagnosing") {
-            loadDiagnostic();
-          } else {
-            setDiagnosticState({ phase: "idle" });
-          }
 
           setLoaded(true);
         });
@@ -375,43 +328,103 @@ export default function LearnPage() {
   }
 
   async function handleDiagnosticSubmit(
-    answers: Array<{ questionId: string; answer: string }>,
+    answers: Array<{ questionId: string; optionId: string; optionText: string }>,
   ) {
-    if (diagnosticState.phase !== "quiz") return;
+    setDiagnosticSubmitted(true);
 
-    setDiagnosticState({ phase: "evaluating" });
+    const answerLines = answers.map(
+      (a) => `${a.questionId}: ${a.optionId} (${a.optionText})`,
+    );
+    const hiddenContent = `[Quiz Response] ${answerLines.join(" | ")}`;
+
+    const userMessage: UIMessage<MessageMetadata> = {
+      id: `user-diag-${Date.now()}`,
+      role: "user",
+      parts: [{ type: "text" as const, text: "诊断答案已提交" }],
+    };
+
+    const assistantMessage: UIMessage<MessageMetadata> = {
+      id: `assistant-diag-${Date.now()}`,
+      role: "assistant",
+      parts: [{ type: "text" as const, text: "" }],
+      metadata: { annotations: [] },
+    };
+
+    const newMessages = [...chat.messages, userMessage, assistantMessage];
+    chat.setMessages(newMessages);
 
     try {
-      const questions = diagnosticState.questions.map((q) => ({
-        id: q.id,
-        question: q.question,
-        type: q.type,
-        correctAnswer: q.correctAnswer,
-        nodeIndex: q.nodeIndex,
-      }));
-
-      const result = await evaluateDiagnostic(sessionId, {
-        questions,
-        answers,
+      const postRes = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          messages: [{ role: "user", content: hiddenContent }],
+          hidden: true,
+        }),
       });
 
-      const sessionData = await fetchSession(sessionId);
-      if (sessionData) {
-        setNodes(sessionData.session.roadmap?.nodes ?? []);
+      if (!postRes.ok) throw new Error(`Failed: ${postRes.status}`);
+
+      const sseRes = await fetch(`/api/chat/${sessionId}/stream`);
+      if (!sseRes.ok) throw new Error(`Stream failed: ${sseRes.status}`);
+
+      const reader = sseRes.body?.getReader();
+      if (!reader) throw new Error("No stream body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const sseParts = buffer.split("\n\n");
+        buffer = sseParts.pop() || "";
+
+        for (const part of sseParts) {
+          const lines = part.split("\n");
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6);
+            if (jsonStr === "[DONE]") continue;
+
+            let event: { type: string; content?: string; data?: unknown };
+            try {
+              event = JSON.parse(jsonStr);
+            } catch {
+              continue;
+            }
+
+            const assistantIdx = newMessages.length - 1;
+
+            if (event.type === "text-delta" && typeof event.content === "string") {
+              const prevText = newMessages[assistantIdx].parts
+                ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+                .map((p) => p.text)
+                .join("") ?? "";
+              const updatedText = prevText + event.content;
+              newMessages[assistantIdx] = {
+                ...newMessages[assistantIdx],
+                parts: [{ type: "text" as const, text: updatedText }],
+              };
+              chat.setMessages([...newMessages]);
+            }
+          }
+        }
       }
-
-      setDiagnosticState({
-        phase: "done",
-        startingNode: result.startingNode,
-      });
     } catch (err) {
-      console.error("Failed to evaluate diagnostic:", err);
-      setDiagnosticState({ phase: "quiz", questions: diagnosticState.questions });
+      console.error("Diagnostic submit error:", err);
     }
-  }
 
-  function handleStartLearning() {
-    setDiagnosticState({ phase: "idle" });
+    fetchSession(sessionId)
+      .then((data) => {
+        if (data) {
+          setNodes(data.session.roadmap?.nodes ?? []);
+        }
+      })
+      .catch(console.error);
   }
 
   if (!loaded) {
@@ -451,14 +464,6 @@ export default function LearnPage() {
       </div>
     );
   }
-
-  const showDiagnostic =
-    diagnosticState.phase === "loading" ||
-    diagnosticState.phase === "error" ||
-    diagnosticState.phase === "quiz" ||
-    diagnosticState.phase === "evaluating";
-
-  const showDone = diagnosticState.phase === "done";
 
   return (
     <ThreeColumnLayout
@@ -524,106 +529,6 @@ export default function LearnPage() {
             </button>
           </form>
         </div>
-      ) : showDiagnostic ? (
-        <div className="flex h-full flex-col">
-          <div className="border-b border-border bg-card px-5 py-4">
-            <div className="mx-auto flex max-w-2xl items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-roadmap-fill/10">
-                <Sparkles className="h-5 w-5 text-roadmap-fill" />
-              </div>
-              <div>
-                <h2 className="text-sm font-medium text-foreground">
-                  诊断摸底
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  回答几个问题，帮你找到合适的学习起点
-                </p>
-              </div>
-            </div>
-          </div>
-          {diagnosticState.phase === "loading" ? (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-roadmap-fill" />
-                <p className="text-sm text-muted-foreground">
-                  正在生成诊断题目…
-                </p>
-              </div>
-            </div>
-          ) : diagnosticState.phase === "error" ? (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="flex flex-col items-center gap-4 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10">
-                  <Sparkles className="h-6 w-6 text-destructive" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    生成失败
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {diagnosticState.message}
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={loadDiagnostic}
-                    className="rounded-xl bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                  >
-                    重试
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSkipDiagnostic}
-                    className="rounded-xl border border-border px-5 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary"
-                  >
-                    跳过诊断
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : diagnosticState.phase === "quiz" ? (
-            <DiagnosticQuiz
-              questions={diagnosticState.questions}
-              onSubmit={handleDiagnosticSubmit}
-              isSubmitting={false}
-            />
-          ) : (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-roadmap-fill" />
-                <p className="text-sm text-muted-foreground">
-                  正在评估你的水平…
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : showDone ? (
-        <div className="flex h-full flex-col">
-          <div className="flex flex-1 items-center justify-center">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-roadmap-mastered/10">
-                <Sparkles className="h-7 w-7 text-roadmap-mastered" />
-              </div>
-              <div>
-                <h2 className="text-lg font-medium text-foreground">
-                  诊断完成！
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  建议从「{diagnosticState.startingNode.title}」开始学习
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleStartLearning}
-                className="mt-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                开始学习
-              </button>
-            </div>
-          </div>
-        </div>
       ) : (
         <>
           <ChatArea
@@ -638,6 +543,8 @@ export default function LearnPage() {
             onSuggest={handleSuggest}
             onApplySuggestion={handleApplySuggestion}
             onDismissSuggestion={handleDismissSuggestion}
+            onDiagnosticSubmit={handleDiagnosticSubmit}
+            diagnosticSubmitted={diagnosticSubmitted}
           />
           <QuickQuestion sessionId={sessionId} />
         </>

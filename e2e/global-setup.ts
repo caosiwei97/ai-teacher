@@ -7,6 +7,7 @@ const DEFAULT_DATABASE_URL =
   "postgresql://postgres:postgres@localhost:25432/ai_teacher";
 
 async function resetTestDb(prisma: PrismaClient) {
+  await prisma.checkpoint.deleteMany();
   await prisma.message.deleteMany();
   await prisma.node.deleteMany();
   await prisma.roadmap.deleteMany();
@@ -37,7 +38,7 @@ export default async function globalSetup() {
   await testPrisma.$disconnect();
 
   execSync(
-    `DATABASE_URL=${TEST_DATABASE_URL} npx prisma db seed --schema packages/db/prisma/schema.prisma`,
+    `DATABASE_URL=${TEST_DATABASE_URL} npx tsx packages/db/prisma/seed.ts`,
     { stdio: "inherit" },
   );
 }

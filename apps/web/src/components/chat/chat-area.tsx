@@ -7,7 +7,7 @@ import {
   type AssessmentCardProps,
 } from "./assessment-card";
 import type { UIBlock } from "@ai-teacher/shared";
-import type { MessageMetadata } from "@/hooks/use-chat-stream";
+import type { MessageMetadata, DiagnosticQuestionsData } from "@/hooks/use-chat-stream";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { Sparkles } from "lucide-react";
@@ -32,6 +32,8 @@ interface ChatAreaProps {
   onSuggest?: () => void;
   onApplySuggestion?: () => void;
   onDismissSuggestion?: () => void;
+  onDiagnosticSubmit?: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
+  diagnosticSubmitted?: boolean;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -80,6 +82,21 @@ function getUIBlocksFromMessage(message: UIMessage<MessageMetadata>): UIBlock[] 
   return undefined;
 }
 
+function getDiagnosticQuestionsFromMessage(message: UIMessage<MessageMetadata>): DiagnosticQuestionsData | undefined {
+  const annotations = message.metadata?.annotations;
+  if (annotations) {
+    for (const annotation of annotations) {
+      if ("diagnosticQuestions" in annotation && annotation.diagnosticQuestions) {
+        const dq = annotation.diagnosticQuestions as DiagnosticQuestionsData;
+        if (dq && Array.isArray(dq.questions) && dq.questions.length > 0) {
+          return dq;
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
 export function ChatArea({
   messages,
   input,
@@ -92,6 +109,8 @@ export function ChatArea({
   onSuggest,
   onApplySuggestion,
   onDismissSuggestion,
+  onDiagnosticSubmit,
+  diagnosticSubmitted,
 }: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -130,6 +149,8 @@ export function ChatArea({
             return null;
           }
 
+          const diagnosticQuestions = msg.role === "assistant" ? getDiagnosticQuestionsFromMessage(msg) : undefined;
+
           return (
             <ChatMessage
               key={msg.id}
@@ -137,6 +158,9 @@ export function ChatArea({
               content={getTextFromParts(msg.parts)}
               assessment={msg.role === "assistant" ? getAssessmentFromMessage(msg) : undefined}
               uiBlocks={msg.role === "assistant" ? getUIBlocksFromMessage(msg) : undefined}
+              diagnosticQuestions={diagnosticQuestions}
+              onDiagnosticSubmit={diagnosticQuestions ? onDiagnosticSubmit : undefined}
+              diagnosticSubmitted={diagnosticSubmitted}
             />
           );
         })}

@@ -13,12 +13,24 @@ interface SSEEvent {
   data?: unknown;
 }
 
+export interface DiagnosticQuestionsData {
+  questions: Array<{
+    id: string;
+    question: string;
+    title: string;
+    options: Array<{ id: string; text: string }>;
+  }>;
+  question: string;
+  nodeId: string;
+}
+
 export interface AnnotationData {
   toolName?: string;
   args?: unknown;
   result?: unknown;
   uiBlocks?: unknown[];
   codePush?: { code: string; language: string; instruction?: string };
+  diagnosticQuestions?: DiagnosticQuestionsData;
 }
 
 export interface MessageMetadata {
@@ -188,6 +200,24 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   metadata: {
                     ...newMessages[assistantIdx].metadata,
                     annotations: [...existing, { codePush: data }],
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === "ask-question" && event.data) {
+                const data = event.data as { questions: unknown[]; question: string; nodeId: string };
+                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: [...existing, {
+                      diagnosticQuestions: {
+                        questions: data.questions as DiagnosticQuestionsData["questions"],
+                        question: data.question,
+                        nodeId: data.nodeId,
+                      },
+                    }],
                   },
                 };
                 setMessages([...newMessages]);

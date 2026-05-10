@@ -24,7 +24,7 @@ export async function fetchSession(sessionId: string) {
       id: string;
       topic: string;
       status: string;
-      messages: Array<{ id: string; role: string; type: string; content: string; metadata: unknown; createdAt: string }>;
+      messages: Array<{ id: string; role: string; type: string; content: string; metadata: unknown; hidden?: boolean; createdAt: string }>;
       roadmap: { id: string; nodes: Array<{ id: string; index: number; title: string; description: string; status: string; masteryScore: number }> } | null;
     };
   }>;
@@ -56,7 +56,7 @@ export async function updateSessionStatus(sessionId: string, status: string) {
       id: string;
       topic: string;
       status: string;
-      messages: Array<{ id: string; role: string; type: string; content: string; metadata: unknown; createdAt: string }>;
+      messages: Array<{ id: string; role: string; type: string; content: string; metadata: unknown; hidden?: boolean; createdAt: string }>;
       roadmap: { id: string; nodes: Array<{ id: string; index: number; title: string; description: string; status: string; masteryScore: number }> } | null;
     };
   }>;

@@ -46,10 +46,10 @@ test.describe("Mastery — Node State Transitions", () => {
     expect(createResponse.ok()).toBeTruthy();
 
     const { session } = await createResponse.json();
-    expect(session.status).toBe("diagnosing");
+    expect(session.status).toBe("active");
 
     const nodes = session.roadmap.nodes;
-    expect(nodes.length).toBeGreaterThanOrEqual(5);
-    expect(nodes[0].status).toBe("in-progress");
+    expect(nodes.length).toBe(5);
+    expect(nodes.every((n: { status: string }) => n.status === "not-started")).toBeTruthy();
   });
 });
