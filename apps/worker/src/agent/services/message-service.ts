@@ -11,6 +11,7 @@ export const MessageService = {
     userMessage: string,
     assistantContent: string,
     toolResults: ToolResultEntry[],
+    hidden = false,
   ) {
     const assistantMetadata =
       toolResults.length > 0
@@ -30,7 +31,7 @@ export const MessageService = {
 
     await prisma.$transaction([
       prisma.message.create({
-        data: { sessionId, role: "learner", type: "text", content: userMessage },
+        data: { sessionId, role: "learner", type: "text", content: userMessage, hidden },
       }),
       prisma.message.create({
         data: {

@@ -46,6 +46,10 @@ function createTutorGraph() {
       const graphCtx = ctx as TutorGraphContext;
       await graphCtx.checkpoint.save(state.sessionId, "agent_loop", state);
 
+      const isDiagnosisPhase = state.allNodes.every(
+        (n) => n.status === "not-started",
+      );
+
       const systemPrompt = buildTutorSystemPrompt({
         topic: state.topic,
         currentNode: state.currentNode,
@@ -53,6 +57,7 @@ function createTutorGraph() {
         masteredNodes: state.masteredNodes.join(", ") || "无",
         learnerProfile: state.learnerProfile || "首次学习",
         teachingMode: state.teachingMode,
+        isDiagnosisPhase,
       });
 
       const toolPromptSection = graphCtx.toolRegistry.toPromptSection();
@@ -120,6 +125,15 @@ function createTutorGraph() {
               await graphCtx.publisher.publish(
                 graphCtx.channel,
                 JSON.stringify({ type: "code-push", data: { code: output.code, language: output.language, instruction: output.instruction } }),
+              );
+            }
+          }
+          if (toolEvent.toolName === "askQuestion") {
+            const output = toolEvent.output as { success: boolean; questions?: unknown[]; question?: string; nodeId?: string };
+            if (output.questions && Array.isArray(output.questions)) {
+              await graphCtx.publisher.publish(
+                graphCtx.channel,
+                JSON.stringify({ type: "ask-question", data: { questions: output.questions, question: output.question, nodeId: output.nodeId } }),
               );
             }
           }

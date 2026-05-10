@@ -18,6 +18,7 @@ export interface ChatTurnJobData {
   sessionId: string;
   userContent: string;
   messages: Array<{ role: "user" | "assistant"; content: string }>;
+  hidden?: boolean;
 }
 
 function createPublisher(): Redis {
@@ -32,7 +33,7 @@ export function createChatTurnWorker(
   const worker = new BullWorker<ChatTurnJobData>(
     "chat-turn",
     async (job) => {
-      const { messageId, sessionId, userContent, messages } = job.data;
+      const { messageId, sessionId, userContent, messages, hidden } = job.data;
       const channel = `chat:${sessionId}`;
 
       console.log(
@@ -62,6 +63,8 @@ export function createChatTurnWorker(
         }
 
         const currentNode =
+          session.roadmap.nodes.find((node) => node.status === "in-progress") ??
+          session.roadmap.nodes.find((node) => node.status === "not-started") ??
           session.roadmap.nodes.find((node) => node.status !== "mastered") ??
           session.roadmap.nodes.at(-1);
         if (!currentNode) throw new Error(`Session ${sessionId} has no current node`);
@@ -136,6 +139,7 @@ export function createChatTurnWorker(
           userContent,
           graphResult.assistantText ?? "",
           graphResult.toolResults ?? [],
+          hidden,
         );
 
         await prisma.message.update({

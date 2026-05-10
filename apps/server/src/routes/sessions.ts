@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { z } from 'zod';
 import { zValidator } from "@hono/zod-validator";
 import { prisma } from "@ai-teacher/db";
-import { generateRoadmap } from "../../../worker/src/agent/roadmap";
 
 const createSessionSchema = z.object({
   userId: z.string().min(1),
@@ -17,7 +16,7 @@ function buildFallbackNodes(topic: string) {
       index: 0,
       title: `${topic} 的整体框架`,
       description: `先建立 ${topic} 的整体地图，知道这个主题在解决什么问题。`,
-      status: "in-progress",
+      status: "not-started",
     },
     {
       index: 1,
@@ -70,31 +69,7 @@ export const sessionsRoute = new Hono()
       }
     }
 
-    let sourceContent: string | undefined;
-    if (sourceId) {
-      const source = await prisma.source.findUnique({
-        where: { id: sourceId },
-        select: { content: true },
-      });
-      sourceContent = source?.content ?? undefined;
-    }
-
-    let nodeData: Array<{ index: number; title: string; description: string; status: string }>;
-    if (process.env.MOCK_LLM === "true") {
-      nodeData = buildFallbackNodes(topic);
-    } else {
-      try {
-        const roadmap = await generateRoadmap(topic, sourceContent);
-        nodeData = roadmap.nodes.map((node) => ({
-          index: node.index,
-          title: node.title,
-          description: node.description,
-          status: node.index === 0 ? "in-progress" : "not-started",
-        }));
-      } catch {
-        nodeData = buildFallbackNodes(topic);
-      }
-    }
+    const nodeData = buildFallbackNodes(topic);
 
     const session = await prisma.session.create({
       data: {
@@ -102,7 +77,7 @@ export const sessionsRoute = new Hono()
         topic,
         sourceId,
         teachingMode: teachingMode ?? "warm",
-        status: "diagnosing",
+        status: "active",
         roadmap: {
           create: {
             nodes: {

@@ -14,6 +14,7 @@ export interface TutorPromptContext {
   masteredNodes: string;
   learnerProfile: string;
   teachingMode?: "warm" | "strict";
+  isDiagnosisPhase?: boolean;
 }
 
 export function buildTutorSystemPrompt(context: TutorPromptContext) {
@@ -42,6 +43,16 @@ export function buildTutorSystemPrompt(context: TutorPromptContext) {
 - 出错时给充分提示和引导
 `;
 
+  const diagnosisSection = context.isDiagnosisPhase ? `
+
+# 诊断阶段
+
+当前是新会话的第一轮对话。你需要：
+1. 简短打招呼（1-2 句），然后立即调用 askQuestion 工具生成 2 个诊断选择题
+2. 等待学习者回答后，根据答案评估水平
+3. 评估完成后，说"诊断完成！让我们开始学习"，然后从第一个知识点开始教学
+` : "";
+
   return `# 角色
 
 你是一个 1v1 私教，使用苏格拉底式追问方法帮助学习者真正掌握知识。
@@ -54,7 +65,7 @@ ${teachingModeStrategies}
 4. **用户坦诚不清楚时，直接讲**。不讲 hint、不绕弯，完整讲清楚，然后要求用户用自己的话复述。
 5. **追问 2-3 轮后总结**。确认用户理解正确才放行到下一个知识点。
 6. **语气自然**。用口语化的表达（"你说到点子上了"、"你的逻辑卡在了一个地方"），不要机械式模板回复。
-
+${diagnosisSection}
 # 当前教学上下文
 
 - 学习主题：${context.topic}

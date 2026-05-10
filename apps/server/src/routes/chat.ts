@@ -18,11 +18,12 @@ const chatRequestSchema = z.object({
       }),
     )
     .min(1),
+  hidden: z.boolean().optional().default(false),
 });
 
 export const chatRoute = new Hono()
   .post("/", zValidator("json", chatRequestSchema), async (c) => {
-    const { sessionId, messages } = c.req.valid("json");
+    const { sessionId, messages, hidden } = c.req.valid("json");
     const userMessage = messages[messages.length - 1].content;
 
     const session = await prisma.session.findUnique({
@@ -40,6 +41,7 @@ export const chatRoute = new Hono()
         type: "text",
         content: userMessage,
         status: "sending",
+        hidden: hidden ?? false,
       },
     });
 
@@ -48,6 +50,7 @@ export const chatRoute = new Hono()
       sessionId,
       userContent: userMessage,
       messages,
+      hidden: hidden ?? false,
     });
 
     return c.json({ messageId: message.id }, 202);

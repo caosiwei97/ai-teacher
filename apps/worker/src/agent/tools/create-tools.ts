@@ -11,6 +11,7 @@ import { executeCodeTool } from "./execute-code";
 import { createDelegateTaskTool } from "./delegate-task";
 import { renderUITool } from "./render-ui";
 import { pushCodeTool } from "./push-code";
+import { askQuestionTool } from "./ask-question";
 
 export const tutorToolDefinitions = [
   assessMasteryTool,
@@ -21,6 +22,7 @@ export const tutorToolDefinitions = [
   executeCodeTool,
   renderUITool,
   pushCodeTool,
+  askQuestionTool,
 ];
 
 export function createTutorToolRegistry(
