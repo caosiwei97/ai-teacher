@@ -1,8 +1,8 @@
 # AI Teacher — 苏格拉底式教学 Prompt 设计
 
-> 版本：v0.7
+> 版本：v0.8
 > 更新日期：2026-05-10
-> 状态：已对齐实际实现（含迭代 026 Prompt 工程优化 + 教学模式切换）
+> 状态：已对齐实际实现（含迭代 029 掌握报告与自动过渡）
 > 参考：Sigma Skill + 同类竞品实际交互分析
 
 ---
@@ -108,7 +108,12 @@ interface TutorPromptContext {
 # 工具调用规则
 
 - 每 2-3 轮充分互动后调用 assessMastery 工具，conceptId 传当前节点的 ID
-- 当掌握度 ≥ 80% 时，调用 generateAssessment 生成评估卡片
+- 当 assessMastery 返回 `instruction` 字段时（掌握通过），执行自动过渡：
+  1. 用 renderUI 生成总结报告（heading + table + badge）
+  2. 写 1 句庆祝 + 1 句桥接
+  3. 立即开始下一个知识点的苏格拉底式教学
+  4. 不要等待用户操作
+- 当 assessMastery 没有返回 instruction（分数 < 80），继续当前节点的追问教学
 - 不要编造节点 ID，使用上面列表中提供的真实 ID
 ```
 
@@ -136,13 +141,18 @@ interface TutorPromptContext {
       rootCause: string,    // 根因
       resolved: boolean,    // 是否已纠正
     }[]
-  }
+  },
+  // 返回值（迭代 029 新增）：
+  // score ≥ 80 + 有下一节点 → { instruction, activatedNextNode, roadmapUpdate, sessionUpdate }
+  //   instruction 指导 Agent 自动过渡（庆祝 → renderUI → 桥接 → 开始教学）
+  // score ≥ 80 + 全部掌握 → { instruction: "总结整体学习旅程" }
+  // score < 80 → { success: true } （继续追问教学）
 }
 ```
 
 ### 3.2 generateAssessment
 
-节点掌握后调用，生成评估卡片。
+节点掌握后调用，生成评估卡片（迭代 029 移除 `nextNodeTitle`，由 assessMastery 的 `instruction` 驱动自动过渡）。
 
 ```typescript
 {
@@ -157,7 +167,6 @@ interface TutorPromptContext {
       accuracy: string,       // 准确/需修正
     }[],
     coreTags: string[],       // 核心要点标签
-    nextNodeTitle: string,    // 下一节标题
   }
 }
 ```
@@ -266,18 +275,21 @@ interface TutorPromptContext {
 
 ### 3.7 renderUI
 
-生成结构化教学组件（表格、对比卡、提示卡），让教学内容更直观（迭代 024 新增）。
+生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告），让教学内容更直观（迭代 024 新增，迭代 029 扩展）。
 
 ```typescript
 {
   name: "renderUI",
-  description: "生成结构化教学组件（表格、对比卡、提示卡）",
+  description: "生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告）",
   parameters: {
     blocks: [{
-      type: "table" | "callout" | "comparison",
+      type: "table" | "callout" | "comparison" | "heading" | "badge" | "mastery-report",
       // table: { title?, headers: string[], rows: string[][] }
       // callout: { variant: "tip"|"warning"|"key", title?, content: string }
       // comparison: { title?, items: { label, left, right }[] }
+      // heading: { level: 2|3, text: string }
+      // badge: { items: { text, variant: "success"|"warning"|"info" }[] }
+      // mastery-report: { nodeId, nodeName, score, summary, table: { columns, rows }, badges: string[] }
     }]
   },
   // 返回: { success: true, uiBlocks: Block[] } — 前端自动渲染对应组件
@@ -291,6 +303,9 @@ interface TutorPromptContext {
 | `table` | 表格，适合对比属性、罗列要点 | `headers`, `rows` |
 | `callout` | 提示卡，强调核心概念或陷阱 | `variant`: tip/warning/key, `content` |
 | `comparison` | 对比卡，两种方案横向比较 | `items`: [{label, left, right}] |
+| `heading` | 标题，分隔内容段落 | `level`: 2/3, `text` |
+| `badge` | 徽章标签，展示关键要点 | `items`: [{text, variant}] |
+| `mastery-report` | 掌握总结报告（迭代 029） | `nodeId`, `nodeName`, `score`, `summary`, `table`, `badges` |
 
 **Prompt 片段**（注入 system prompt）：
 
