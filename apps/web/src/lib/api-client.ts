@@ -13,9 +13,19 @@ export async function fetchSessions(userId: string) {
   }>;
 }
 
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotFoundError";
+  }
+}
+
 export async function fetchSession(sessionId: string) {
   const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`);
-  if (!res.ok) throw new Error("Failed to fetch session");
+  if (!res.ok) {
+    if (res.status === 404) throw new NotFoundError("Session not found");
+    throw new Error("Failed to fetch session");
+  }
   return res.json() as Promise<{
     session: {
       id: string;

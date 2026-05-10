@@ -18,6 +18,7 @@ import {
   generateDiagnostic,
   evaluateDiagnostic,
   archiveSession,
+  NotFoundError,
 } from "@/lib/api-client";
 import type { UIMessage } from "ai";
 import { Loader2, Sparkles, FileQuestion } from "lucide-react";
@@ -152,15 +153,21 @@ export default function LearnPage() {
   useEffect(() => {
     if (!sessionId) return;
 
-    Promise.all([fetchSessions(USER_ID), fetchSession(sessionId)])
-      .then(([sessionsData, sessionData]) => {
+    let sessionsList: SessionInfo[] = [];
+
+    fetchSessions(USER_ID)
+      .then((data) => {
+        sessionsList = data.sessions;
+        return fetchSession(sessionId);
+      })
+      .then((sessionData) => {
         if (sessionData.session.status === "archived") {
           setPageError("该学习会话已被归档");
           setLoaded(true);
           return;
         }
 
-        setSessions(sessionsData.sessions);
+        setSessions(sessionsList);
         setNodes(sessionData.session.roadmap?.nodes ?? []);
 
         const historyMessages: UIMessage<MessageMetadata>[] = sessionData.session.messages
@@ -188,8 +195,21 @@ export default function LearnPage() {
       })
       .catch((err) => {
         console.error("Failed to load session:", err);
-        setPageError("找不到该学习会话，可能已被删除");
-        setLoaded(true);
+        if (err instanceof NotFoundError) {
+          const virtualSession: SessionInfo = {
+            id: sessionId,
+            topic: "新对话",
+            status: "active",
+            progress: { totalNodes: 0, masteredNodes: 0, currentNodeId: null },
+          };
+          setSessions([virtualSession, ...sessionsList]);
+          setNodes([]);
+          setDiagnosticState({ phase: "idle" });
+          setLoaded(true);
+        } else {
+          setPageError("加载会话失败，请稍后重试");
+          setLoaded(true);
+        }
       });
   }, [sessionId]);
 
