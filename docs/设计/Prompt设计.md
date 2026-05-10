@@ -251,6 +251,51 @@ interface TutorPromptContext {
 - 委派的 task 参数要清晰具体
 - 不要频繁委派，只在确实需要专业处理时使用
 
+### 3.7 renderUI
+
+生成结构化教学组件（表格、对比卡、提示卡），让教学内容更直观（迭代 024 新增）。
+
+```typescript
+{
+  name: "renderUI",
+  description: "生成结构化教学组件（表格、对比卡、提示卡）",
+  parameters: {
+    blocks: [{
+      type: "table" | "callout" | "comparison",
+      // table: { title?, headers: string[], rows: string[][] }
+      // callout: { variant: "tip"|"warning"|"key", title?, content: string }
+      // comparison: { title?, items: { label, left, right }[] }
+    }]
+  },
+  // 返回: { success: true, uiBlocks: Block[] } — 前端自动渲染对应组件
+}
+```
+
+**Block 类型说明**：
+
+| 类型 | 用途 | 关键字段 |
+|------|------|---------|
+| `table` | 表格，适合对比属性、罗列要点 | `headers`, `rows` |
+| `callout` | 提示卡，强调核心概念或陷阱 | `variant`: tip/warning/key, `content` |
+| `comparison` | 对比卡，两种方案横向比较 | `items`: [{label, left, right}] |
+
+**Prompt 片段**（注入 system prompt）：
+
+```
+**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持三种类型：
+- table: 表格（适合对比多个属性、罗列要点）
+- callout: 提示卡（tip=提示, warning=注意事项, key=核心要点）
+- comparison: 对比卡（适合两种方案的横向比较）
+每次调用可以生成多个 block，它们会按顺序显示在你的回复中。
+```
+
+**使用指引**：
+- 讲对比类知识时（如浅拷贝vs深拷贝、同步vs异步），用 comparison 类型
+- 总结多个要点时，用 table 类型
+- 强调核心概念或常见陷阱时，用 callout 类型（variant=key 核心要点，variant=warning 常见陷阱）
+- 不要在 renderUI 中重复文字内容，而是补充视觉化呈现
+- 每个知识点最多 1-2 次 renderUI 调用
+
 ---
 
 ## 4. 对话示例
