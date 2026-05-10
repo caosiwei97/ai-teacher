@@ -79,16 +79,20 @@ export const sessionsRoute = new Hono()
     }
 
     let nodeData: Array<{ index: number; title: string; description: string; status: string }>;
-    try {
-      const roadmap = await generateRoadmap(topic, sourceContent);
-      nodeData = roadmap.nodes.map((node) => ({
-        index: node.index,
-        title: node.title,
-        description: node.description,
-        status: node.index === 0 ? "in-progress" : "not-started",
-      }));
-    } catch {
+    if (process.env.MOCK_LLM === "true") {
       nodeData = buildFallbackNodes(topic);
+    } else {
+      try {
+        const roadmap = await generateRoadmap(topic, sourceContent);
+        nodeData = roadmap.nodes.map((node) => ({
+          index: node.index,
+          title: node.title,
+          description: node.description,
+          status: node.index === 0 ? "in-progress" : "not-started",
+        }));
+      } catch {
+        nodeData = buildFallbackNodes(topic);
+      }
     }
 
     const session = await prisma.session.create({

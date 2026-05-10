@@ -17,6 +17,10 @@ export const suggestReplyRoute = new Hono().post(
   async (c) => {
     const { currentQuestion, topic, hint } = c.req.valid("json");
 
+    if (process.env.MOCK_LLM === "true") {
+      return c.json({ suggestion: "试着把它和日常生活中的例子联系起来。" });
+    }
+
     const result = await generateText({
       model: getProvider()("glm-5-turbo"),
       system: `你是一个苏格拉底式私教。用户正在思考你的问题，但不知道怎么回答。提供一个简短的提示或建议回复方向（不是完整答案），帮助用户找到思路。回复 1-2 句话。`,
