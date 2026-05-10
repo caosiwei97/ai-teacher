@@ -21,7 +21,7 @@
     "docker:down": "docker compose down",
     "setup:env": "node scripts/setup-env.mjs",
     "bootstrap": "run-s setup:env docker:up \"db:*\"",
-    "dev": "run-p dev:*",
+    "dev": "node scripts/kill-ports.mjs && run-p dev:*",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

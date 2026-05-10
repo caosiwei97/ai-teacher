@@ -29,6 +29,7 @@ export function LeftSidebar({
   onNewSession,
   onArchiveSession,
 }: LeftSidebarProps) {
+  const newSessions = sessions.filter((s) => s.status === "new");
   const active = sessions.filter((s) => s.status === "active" || s.status === "diagnosing");
   const completed = sessions.filter((s) => s.status === "completed");
 
@@ -73,6 +74,31 @@ export function LeftSidebar({
       )}
 
       <div className="flex-1 overflow-y-auto px-3 pb-4">
+        {newSessions.length > 0 && (
+          <div className="mb-5">
+            <h3 className="mb-2 px-2 text-[11px] font-medium uppercase tracking-widest text-sidebar-muted">
+              新对话
+            </h3>
+            {newSessions.map((s) => {
+              const isActive = s.id === currentSessionId;
+              return (
+                <div key={s.id} className="mb-1">
+                  <button
+                    onClick={() => onSelect(s.id)}
+                    className={cn(
+                      "w-full rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                      isActive
+                        ? "bg-sidebar-active text-sidebar-active-text shadow-sm"
+                        : "text-sidebar-text hover:bg-sidebar-hover",
+                    )}
+                  >
+                    <p className="truncate text-[13px] font-medium leading-snug">{s.topic}</p>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
         {active.length > 0 && (
           <div className="mb-5">
             <h3 className="mb-2 px-2 text-[11px] font-medium uppercase tracking-widest text-sidebar-muted">

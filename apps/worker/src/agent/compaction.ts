@@ -36,7 +36,7 @@ const UPDATE_SYSTEM = `你是一个教学对话分析专家。请基于已有摘
 export async function generateCompactSummary(
   messages: AgentMessage[],
 ): Promise<StructuredSummary> {
-  const model = getProvider()("glm-5-turbo");
+  const model = getProvider()("deepseek-v4-flash");
   const conversation = formatMessagesForPrompt(messages);
 
   const { object } = await generateObject({
@@ -53,7 +53,7 @@ export async function updateCompactSummary(
   existingSummary: StructuredSummary,
   newMessages: AgentMessage[],
 ): Promise<StructuredSummary> {
-  const model = getProvider()("glm-5-turbo");
+  const model = getProvider()("deepseek-v4-flash");
   const conversation = formatMessagesForPrompt(newMessages);
 
   const { object } = await generateObject({

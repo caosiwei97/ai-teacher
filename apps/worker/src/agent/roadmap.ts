@@ -25,11 +25,11 @@ export class RoadmapAgent extends BaseAgent {
 
     return this.executeWithRetry(async () => {
       const result = await generateObject({
-        model: this.getModel(),
-        schema: RoadmapOutput,
-        system: ROADMAP_SYSTEM_PROMPT,
-        prompt: userPrompt,
-      });
+              model: this.getModel(),
+              schema: RoadmapOutput,
+              system: ROADMAP_SYSTEM_PROMPT,
+              prompt: userPrompt,
+            });
       return result.object;
     });
   }

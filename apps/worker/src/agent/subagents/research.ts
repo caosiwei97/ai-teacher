@@ -15,7 +15,7 @@ export const researchSubagent: SubagentDefinition = {
 - 如果找不到相关资料，明确说明`,
   tools: ["assessMastery"],
   maxSteps: 5,
-  model: "glm-5-turbo",
+  model: "deepseek-v4-flash",
   toModelOutput: (result) => {
     const content = result.content.slice(0, 500);
     return `ResearchAgent 找到以下资料：${content}`;

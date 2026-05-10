@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/deepseek": "^2.0.34",
     "@ai-sdk/openai": "^3.0.0",
     "@ai-teacher/db": "workspace:*",
     "@ai-teacher/shared": "workspace:*",

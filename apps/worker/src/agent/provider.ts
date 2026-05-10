@@ -1,8 +1,8 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { createDeepSeek } from "@ai-sdk/deepseek";
 import { MockLanguageModelV3, simulateReadableStream } from "ai/test";
 import type { LanguageModel } from "ai";
 
-let _provider: ReturnType<typeof createOpenAI> | null = null;
+let _provider: ReturnType<typeof createDeepSeek> | null = null;
 let _mockProvider: ((modelId: string) => LanguageModel) | null = null;
 
 function getMockProvider(): (modelId: string) => LanguageModel {
@@ -47,11 +47,9 @@ export function getProvider(): (modelId: string) => LanguageModel {
   }
 
   if (!_provider) {
-    _provider = createOpenAI({
+    _provider = createDeepSeek({
       apiKey: process.env.OPENAI_API_KEY,
-      baseURL:
-        process.env.OPENAI_BASE_URL ?? "https://open.bigmodel.cn/api/coding/paas/v4",
     });
   }
-  return _provider.chat.bind(_provider) as (modelId: string) => LanguageModel;
+  return _provider as unknown as (modelId: string) => LanguageModel;
 }

@@ -16,7 +16,7 @@ export const assessmentSubagent: SubagentDefinition = {
 - 语言简洁明了，适合学习者理解`,
   tools: ["assessMastery", "generateAssessment"],
   maxSteps: 3,
-  model: "glm-5-turbo",
+  model: "deepseek-v4-flash",
   toModelOutput: (result) => {
     const content = result.content.slice(0, 300);
     return `AssessmentAgent 完成：${content}`;

@@ -48,7 +48,7 @@ export function createDelegateTaskTool(
       }
 
       try {
-        const model = getProvider()(agentDef.model ?? "glm-5-turbo");
+        const model = getProvider()(agentDef.model ?? "deepseek-v4-flash");
         const result = streamText({
           model,
           system: agentDef.systemPrompt,

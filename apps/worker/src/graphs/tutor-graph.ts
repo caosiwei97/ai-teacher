@@ -67,7 +67,7 @@ function createTutorGraph() {
       };
       const tools = graphCtx.toolRegistry.toAiSdkTools(toolCtx);
 
-      const model = getProvider()("glm-5-turbo");
+      const model = getProvider()("deepseek-v4-flash");
       const result = streamText({
         model,
         system: fullSystemPrompt,

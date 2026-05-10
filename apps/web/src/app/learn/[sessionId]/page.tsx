@@ -18,12 +18,20 @@ import {
   generateDiagnostic,
   evaluateDiagnostic,
   archiveSession,
-  NotFoundError,
 } from "@/lib/api-client";
 import type { UIMessage } from "ai";
-import { Loader2, Sparkles, FileQuestion } from "lucide-react";
+import { Loader2, Sparkles, GraduationCap, ArrowUp } from "lucide-react";
 
 const USER_ID = "seed-user-ai-teacher";
+
+const fallbackTopics = [
+  { id: "t1", title: "JavaScript 闭包" },
+  { id: "t2", title: "认知行为疗法入门" },
+  { id: "t3", title: "营养学基础" },
+  { id: "t4", title: "文艺复兴艺术" },
+  { id: "t5", title: "高效沟通技巧" },
+  { id: "t6", title: "概率思维" },
+];
 
 interface SessionInfo {
   id: string;
@@ -108,6 +116,9 @@ export default function LearnPage() {
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [isNewSession, setIsNewSession] = useState(false);
+  const [newSessionInput, setNewSessionInput] = useState("");
+  const [creating, setCreating] = useState(false);
 
   const [diagnosticState, setDiagnosticState] = useState<
     | { phase: "idle" }
@@ -131,7 +142,9 @@ export default function LearnPage() {
     onFinish: () => {
       fetchSession(sessionId)
         .then((data) => {
-          setNodes(data.session.roadmap?.nodes ?? []);
+          if (data) {
+            setNodes(data.session.roadmap?.nodes ?? []);
+          }
         })
         .catch(console.error);
     },
@@ -171,63 +184,73 @@ export default function LearnPage() {
   useEffect(() => {
     if (!sessionId) return;
 
-    let sessionsList: SessionInfo[] = [];
-
     fetchSessions(USER_ID)
       .then((data) => {
-        sessionsList = data.sessions;
-        return fetchSession(sessionId);
-      })
-      .then((sessionData) => {
-        if (sessionData.session.status === "archived") {
-          setPageError("该学习会话已被归档");
-          setLoaded(true);
-          return;
-        }
+        const sessionsList = data.sessions;
+        const exists = sessionsList.some((s) => s.id === sessionId);
 
-        setSessions(sessionsList);
-        setNodes(sessionData.session.roadmap?.nodes ?? []);
-
-        const historyMessages: UIMessage<MessageMetadata>[] = sessionData.session.messages
-          .filter((m) => m.role === "learner" || m.role === "tutor")
-          .map((m, i) => {
-            const assessment =
-              m.type === "assessment" ? getAssessmentFromMetadata(m.metadata) : undefined;
-
-            return {
-              id: `init-${i}`,
-              role: (m.role === "learner" ? "user" : "assistant") as "user" | "assistant",
-              parts: [{ type: "text" as const, text: m.content || "" }],
-              metadata: assessment ? { annotations: [toAssessmentAnnotation(assessment) as unknown as import("@/hooks/use-chat-stream").AnnotationData] } : undefined,
-            } satisfies UIMessage<MessageMetadata>;
-          });
-        chat.setMessages(historyMessages);
-
-        if (sessionData.session.status === "diagnosing") {
-          loadDiagnostic();
-        } else {
-          setDiagnosticState({ phase: "idle" });
-        }
-
-        setLoaded(true);
-      })
-      .catch((err) => {
-        console.error("Failed to load session:", err);
-        if (err instanceof NotFoundError) {
+        if (!exists) {
           const virtualSession: SessionInfo = {
             id: sessionId,
             topic: "新对话",
-            status: "active",
+            status: "new",
             progress: { totalNodes: 0, masteredNodes: 0, currentNodeId: null },
           };
           setSessions([virtualSession, ...sessionsList]);
           setNodes([]);
           setDiagnosticState({ phase: "idle" });
+          setIsNewSession(true);
           setLoaded(true);
-        } else {
-          setPageError("加载会话失败，请稍后重试");
-          setLoaded(true);
+          return;
         }
+
+        return fetchSession(sessionId).then((sessionData) => {
+          if (!sessionData) {
+            setSessions(sessionsList);
+            setIsNewSession(false);
+            setDiagnosticState({ phase: "idle" });
+            setLoaded(true);
+            return;
+          }
+
+          if (sessionData.session.status === "archived") {
+            setPageError("该学习会话已被归档");
+            setLoaded(true);
+            return;
+          }
+
+          setSessions(sessionsList);
+          setNodes(sessionData.session.roadmap?.nodes ?? []);
+          setIsNewSession(false);
+
+          const historyMessages: UIMessage<MessageMetadata>[] = sessionData.session.messages
+            .filter((m) => m.role === "learner" || m.role === "tutor")
+            .map((m, i) => {
+              const assessment =
+                m.type === "assessment" ? getAssessmentFromMetadata(m.metadata) : undefined;
+
+              return {
+                id: `init-${i}`,
+                role: (m.role === "learner" ? "user" : "assistant") as "user" | "assistant",
+                parts: [{ type: "text" as const, text: m.content || "" }],
+                metadata: assessment ? { annotations: [toAssessmentAnnotation(assessment) as unknown as import("@/hooks/use-chat-stream").AnnotationData] } : undefined,
+              } satisfies UIMessage<MessageMetadata>;
+            });
+          chat.setMessages(historyMessages);
+
+          if (sessionData.session.status === "diagnosing") {
+            loadDiagnostic();
+          } else {
+            setDiagnosticState({ phase: "idle" });
+          }
+
+          setLoaded(true);
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to load session:", err);
+        setPageError("加载会话失败，请稍后重试");
+        setLoaded(true);
       });
   }, [sessionId]);
 
@@ -243,6 +266,26 @@ export default function LearnPage() {
   const handleNewSession = useCallback(() => {
     router.push("/");
   }, [router]);
+
+  const handleCreateFromNewSession = useCallback(
+    async (topic: string) => {
+      if (creating || !topic.trim()) return;
+      setCreating(true);
+      try {
+        const res = await fetch(`/api/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: USER_ID, topic: topic.trim(), teachingMode: "warm" }),
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        router.push(`/learn/${data.session.id}`);
+      } catch {
+        setCreating(false);
+      }
+    },
+    [creating, router],
+  );
 
   const handleArchiveSession = useCallback(
     async (id: string) => {
@@ -353,7 +396,9 @@ export default function LearnPage() {
       });
 
       const sessionData = await fetchSession(sessionId);
-      setNodes(sessionData.session.roadmap?.nodes ?? []);
+      if (sessionData) {
+        setNodes(sessionData.session.roadmap?.nodes ?? []);
+      }
 
       setDiagnosticState({
         phase: "done",
@@ -385,11 +430,11 @@ export default function LearnPage() {
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-            <FileQuestion className="h-7 w-7 text-muted-foreground" />
+            <GraduationCap className="h-7 w-7 text-muted-foreground" />
           </div>
           <div>
             <h2 className="text-lg font-medium text-foreground">
-              会话不存在
+              加载失败
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {pageError}
@@ -426,7 +471,60 @@ export default function LearnPage() {
       onNewSession={handleNewSession}
       onArchiveSession={handleArchiveSession}
     >
-      {showDiagnostic && (
+      {isNewSession ? (
+        <div className="flex h-full flex-col items-center justify-center px-6">
+          <div className="flex w-full max-w-lg flex-col items-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-roadmap-fill/10">
+              <GraduationCap className="h-6 w-6 text-roadmap-fill" />
+            </div>
+            <h1 className="mt-4 text-xl font-semibold text-foreground">
+              你好，我是 AI Teacher
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              告诉我你对什么感兴趣，从零到精通，我带你
+            </p>
+            <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
+            <div className="mt-3 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+              {fallbackTopics.map((topic) => (
+                <button
+                  key={topic.id}
+                  onClick={() => handleCreateFromNewSession(topic.title)}
+                  disabled={creating}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
+                >
+                  <span className="line-clamp-2 text-[13px] leading-snug">{topic.title}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleCreateFromNewSession(newSessionInput); }}
+            className="mt-8 flex w-full max-w-lg items-center gap-2"
+          >
+            <input
+              type="text"
+              value={newSessionInput}
+              onChange={(e) => setNewSessionInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleCreateFromNewSession(newSessionInput);
+                }
+              }}
+              placeholder="你想学什么？"
+              disabled={creating}
+              className="flex-1 rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-roadmap-fill focus:outline-none focus:ring-1 focus:ring-roadmap-fill disabled:opacity-50"
+            />
+            <button
+              type="submit"
+              disabled={!newSessionInput.trim() || creating}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all duration-200 hover:bg-primary/90 disabled:opacity-50"
+            >
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+            </button>
+          </form>
+        </div>
+      ) : showDiagnostic ? (
         <div className="flex h-full flex-col">
           <div className="border-b border-border bg-card px-5 py-4">
             <div className="mx-auto flex max-w-2xl items-center gap-3">
@@ -501,8 +599,7 @@ export default function LearnPage() {
             </div>
           )}
         </div>
-      )}
-      {showDone && (
+      ) : showDone ? (
         <div className="flex h-full flex-col">
           <div className="flex flex-1 items-center justify-center">
             <div className="flex flex-col items-center gap-4 text-center">
@@ -527,8 +624,7 @@ export default function LearnPage() {
             </div>
           </div>
         </div>
-      )}
-      {!showDiagnostic && !showDone && (
+      ) : (
         <>
           <ChatArea
             messages={chat.messages}

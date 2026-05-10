@@ -12,9 +12,9 @@ export abstract class BaseAgent {
 
   constructor(config?: AgentConfig) {
     this.config = {
-      model: config?.model ?? "glm-5-turbo",
+      model: config?.model ?? "deepseek-v4-flash",
       maxRetries: config?.maxRetries ?? 3,
-      fallbackModel: config?.fallbackModel ?? "glm-5-turbo",
+      fallbackModel: config?.fallbackModel ?? "deepseek-v4-flash",
     };
   }
 
