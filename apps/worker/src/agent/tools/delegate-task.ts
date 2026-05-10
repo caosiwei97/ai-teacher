@@ -48,7 +48,7 @@ export function createDelegateTaskTool(
       }
 
       try {
-        const model = getProvider()(agentDef.model ?? "glm-4-flash");
+        const model = getProvider()(agentDef.model ?? "glm-5-turbo");
         const result = streamText({
           model,
           system: agentDef.systemPrompt,

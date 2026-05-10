@@ -16,7 +16,7 @@ export const assessmentSubagent: SubagentDefinition = {
 - 语言简洁明了，适合学习者理解`,
   tools: ["assessMastery", "generateAssessment"],
   maxSteps: 3,
-  model: "glm-4-flash",
+  model: "glm-5-turbo",
   toModelOutput: (result) => {
     const content = result.content.slice(0, 300);
     return `AssessmentAgent 完成：${content}`;
