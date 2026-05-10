@@ -21,16 +21,16 @@ export default defineConfig({
   webServer: [
     {
       command: process.env.PNPM_PATH
-        ? `${process.env.PNPM_PATH} --filter @ai-teacher/server dev`
-        : "pnpm dev:server",
+        ? `MOCK_LLM=true ${process.env.PNPM_PATH} --filter @ai-teacher/server dev`
+        : "MOCK_LLM=true pnpm dev:server",
       port: 38422,
       reuseExistingServer: true,
       timeout: 60000,
     },
     {
       command: process.env.PNPM_PATH
-        ? `${process.env.PNPM_PATH} --filter @ai-teacher/worker dev`
-        : "pnpm dev:worker",
+        ? `MOCK_LLM=true ${process.env.PNPM_PATH} --filter @ai-teacher/worker dev`
+        : "MOCK_LLM=true pnpm dev:worker",
       port: 38423,
       reuseExistingServer: true,
       timeout: 60000,

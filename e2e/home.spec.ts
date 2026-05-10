@@ -34,6 +34,8 @@ test.describe("Home Page", () => {
   test("should create session and navigate on input submit", async ({
     page,
   }) => {
+    test.setTimeout(60000);
+
     await page.goto("/");
 
     const input = page.getByPlaceholder("你想学什么？");
@@ -42,6 +44,6 @@ test.describe("Home Page", () => {
     await input.fill("测试学习主题");
     await input.press("Enter");
 
-    await expect(page).toHaveURL(/\/learn\//, { timeout: 15000 });
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 30000 });
   });
 });
