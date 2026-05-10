@@ -8,6 +8,7 @@ const createSessionSchema = z.object({
   userId: z.string().min(1),
   topic: z.string().min(1),
   sourceId: z.string().min(1).optional(),
+  teachingMode: z.enum(["warm", "strict"]).optional(),
 });
 
 function buildFallbackNodes(topic: string) {
@@ -47,7 +48,7 @@ function buildFallbackNodes(topic: string) {
 
 export const sessionsRoute = new Hono()
   .post("/", zValidator("json", createSessionSchema), async (c) => {
-    const { userId, topic, sourceId } = c.req.valid("json");
+    const { userId, topic, sourceId, teachingMode } = c.req.valid("json");
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -100,6 +101,7 @@ export const sessionsRoute = new Hono()
         userId,
         topic,
         sourceId,
+        teachingMode: teachingMode ?? "warm",
         status: "diagnosing",
         roadmap: {
           create: {

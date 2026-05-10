@@ -1,8 +1,8 @@
 # AI Teacher — 苏格拉底式教学 Prompt 设计
 
-> 版本：v0.6
+> 版本：v0.7
 > 更新日期：2026-05-10
-> 状态：已对齐实际实现（含迭代 025 pushCode 工具）
+> 状态：已对齐实际实现（含迭代 026 Prompt 工程优化 + 教学模式切换）
 > 参考：Sigma Skill + 同类竞品实际交互分析
 
 ---
@@ -36,6 +36,18 @@
 4. 指出具体的原则/规律
 5. 直接讲清楚 + 要求复述
 
+### 1.4 教学模式（迭代 026 新增）
+
+系统支持两种教学模式，影响 Agent 的追问深度、通过门槛和提示频率：
+
+| 维度 | 温暖私教（warm） | 严格教练（strict） |
+|------|---------|---------|
+| 回答"对了" | 肯定推进 | 追问底层逻辑"为什么" |
+| 表面正确 | 接受继续 | 拒绝，要求深层解释 |
+| 追问策略 | 1-2 轮就总结 | 3-4 轮反复验证 |
+| 掌握门槛 | ~80% | ~85% + 理解"为什么" |
+| 出错时 | 充分提示和引导 | 让学生自己发现 |
+
 ---
 
 ## 2. Tutor Agent System Prompt
@@ -60,6 +72,7 @@ interface TutorPromptContext {
   }>;
   masteredNodes: string[];  // 已掌握的节点标题
   learnerProfile: string;   // 学习者画像（文本描述）
+  teachingMode: "warm" | "strict";  // 教学模式（迭代 026 新增）
   ragContext?: string;      // RAG 检索的参考资料（预留）
 }
 ```
@@ -94,7 +107,7 @@ interface TutorPromptContext {
 
 # 工具调用规则
 
-- 每轮对话后必须调用 assessMastery 工具，conceptId 传当前节点的 ID
+- 每 2-3 轮充分互动后调用 assessMastery 工具，conceptId 传当前节点的 ID
 - 当掌握度 ≥ 80% 时，调用 generateAssessment 生成评估卡片
 - 不要编造节点 ID，使用上面列表中提供的真实 ID
 ```
@@ -107,7 +120,7 @@ interface TutorPromptContext {
 
 ### 3.1 assessMastery
 
-每轮对话后调用，评估当前节点的掌握度。
+每 2-3 轮充分互动后调用，评估当前节点的掌握度。
 
 ```typescript
 {

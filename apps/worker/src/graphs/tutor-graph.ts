@@ -52,7 +52,13 @@ function createTutorGraph() {
         allNodes: state.allNodes,
         masteredNodes: state.masteredNodes.join(", ") || "无",
         learnerProfile: state.learnerProfile || "首次学习",
+        teachingMode: state.teachingMode,
       });
+
+      const toolPromptSection = graphCtx.toolRegistry.toPromptSection();
+      const fullSystemPrompt = toolPromptSection
+        ? `${systemPrompt}\n\n# 工具使用说明\n\n${toolPromptSection}`
+        : systemPrompt;
 
       const toolCtx = {
         prisma: graphCtx.prisma,
@@ -64,10 +70,10 @@ function createTutorGraph() {
       const model = getProvider()("glm-5-turbo");
       const result = streamText({
         model,
-        system: systemPrompt,
+        system: fullSystemPrompt,
         messages: state.messages,
         tools,
-        stopWhen: stepCountIs(3)
+        stopWhen: stepCountIs(5)
       });
 
       let assistantText = "";

@@ -65,9 +65,9 @@ export const assessMasteryTool: ToolDefinition = {
 
     return { success: true, ...p };
   },
-  promptSnippet: `**assessMastery 工具**：每轮对话后必须调用，传入当前知识点 id、掌握度分数(0-100)、strengths/gaps/misconceptions。当分数 ≥ 80 时系统会自动推进到下一个知识点。`,
+  promptSnippet: `**assessMastery 工具**：每 2-3 轮充分互动后调用，评估学习者对当前知识点的掌握程度。传入 conceptId、score(0-100)、strengths/gaps/misconceptions。当分数 ≥ 80 时系统会自动推进到下一个知识点。`,
   promptGuidelines: [
-    "每轮对话结束后都要调用此工具评估掌握度",
+    "不要每轮都调用——先进行 2-3 轮苏格拉底式追问，充分互动后再评估",
     "分数要基于学生实际回答质量，不要给虚高分数",
     "misconceptions 中的 resolved 字段标记该误解是否已在本轮对话中纠正",
   ],

@@ -103,6 +103,7 @@ export function createChatTurnWorker(
           })),
           masteredNodes,
           learnerProfile: buildLearnerProfile(session.user.profile),
+          teachingMode: (session.teachingMode as "warm" | "strict") ?? "warm",
           messages: messages.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,

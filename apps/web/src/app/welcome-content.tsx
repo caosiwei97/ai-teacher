@@ -59,6 +59,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
   const [topics, setTopics] = useState<Topic[]>(fallbackTopics);
   const [input, setInput] = useState("");
   const [creating, setCreating] = useState(false);
+  const [teachingMode, setTeachingMode] = useState<"warm" | "strict">("warm");
 
   useEffect(() => {
     fetch(`/api/sessions?userId=${USER_ID}`)
@@ -88,7 +89,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
         const res = await fetch(`/api/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "seed-user-ai-teacher", topic: topic.trim() }),
+          body: JSON.stringify({ userId: "seed-user-ai-teacher", topic: topic.trim(), teachingMode }),
         });
         if (!res.ok) throw new Error();
         const data = await res.json();
@@ -170,8 +171,33 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
 
         <form
           onSubmit={handleSubmit}
-          className="mt-8 flex w-full max-w-lg items-center gap-2"
+          className="mt-8 flex w-full max-w-lg flex-col gap-3"
         >
+          <div className="flex items-center gap-2 self-center">
+            <button
+              type="button"
+              onClick={() => setTeachingMode("warm")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                teachingMode === "warm"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              😊 温暖私教
+            </button>
+            <button
+              type="button"
+              onClick={() => setTeachingMode("strict")}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                teachingMode === "strict"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              🔥 严格教练
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
           <input
             type="text"
             value={input}
@@ -192,6 +218,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
               <ArrowUp className="h-4 w-4" />
             )}
           </button>
+          </div>
         </form>
       </div>
     </ThreeColumnLayout>

@@ -38,6 +38,7 @@ model Session {
   source    Source?   @relation(fields: [sourceId], references: [id])
   status    String    @default("active") @db.Text
   summary   Json?
+  teachingMode String @default("warm") @db.Text
   roadmap     Roadmap?
   messages    Message[]
   checkpoints Checkpoint[]
