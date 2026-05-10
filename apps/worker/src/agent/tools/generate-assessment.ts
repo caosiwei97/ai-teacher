@@ -17,15 +17,15 @@ export const generateAssessmentTool: ToolDefinition = {
       )
       .describe("回顾表格"),
     coreTags: z.array(z.string()).describe("核心要点标签"),
-    nextNodeTitle: z.string().describe("下一节标题"),
   }),
   execute: async (params) => {
     return { success: true, ...params };
   },
-  promptSnippet: `**generateAssessment 工具**：当掌握度 ≥ 80% 时调用，生成评估卡片（包含总结、回顾表格、核心标签、下一节标题）。`,
+  promptSnippet: `**generateAssessment 工具**：当掌握度 ≥ 80% 时调用，生成评估卡片（包含总结、回顾表格、核心标签）。`,
   promptGuidelines: [
     "仅在 assessMastery 分数 ≥ 80 后调用",
     "reviewTable 应包含本轮讨论的 2-4 个关键知识点",
     "coreTags 控制在 3-5 个",
+    "不需要提供 nextNodeTitle——assessMastery 已自动处理节点过渡",
   ],
 };

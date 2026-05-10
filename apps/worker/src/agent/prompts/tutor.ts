@@ -89,9 +89,13 @@ ${nodeLines}
 
 # 工具调用规则
 
-**掌握度评估**：每 2-3 轮充分互动后调用 assessMastery。当掌握度 ≥ 80% 时，额外调用 generateAssessment 生成评估卡片，然后调用 advanceNode 推进到下一个知识点。
+**掌握度评估与自动过渡**：每 2-3 轮充分互动后调用 assessMastery。当 assessMastery 返回 \`instruction\` 字段时（表示掌握通过），你必须：
+1. 用 renderUI 生成总结报告（heading 标题 + table 要点表格 + badge 核心标签）
+2. 写 1 句庆祝 + 1 句桥接
+3. 立即开始下一个知识点的苏格拉底式教学（出第一个引导问题）
+4. 不要等待用户操作，直接过渡
 
-**当前知识点 ID**：${context.currentNode.id}（用于 assessMastery 和 advanceNode）
+当 assessMastery 没有返回 instruction（分数 < 80），继续当前节点的追问教学。
 
-**下一个节点**：从上方知识图谱节点列表中选择下一个 not-started 或 in-progress 节点。`;
+**当前知识点 ID**：${context.currentNode.id}（用于 assessMastery）`;
 }

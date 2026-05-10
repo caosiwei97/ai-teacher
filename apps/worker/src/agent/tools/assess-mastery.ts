@@ -66,6 +66,19 @@ export const assessMasteryTool: ToolDefinition = {
           orderBy: { index: "asc" },
         });
         const masteredCount = refreshedNodes.filter((n) => n.status === "mastered").length;
+        if (nextNode) {
+          return {
+            success: true,
+            ...p,
+            roadmapUpdate: { nodes: refreshedNodes },
+            sessionUpdate: {
+              masteredNodes: masteredCount,
+              totalNodes: refreshedNodes.length,
+            },
+            instruction: `Node "${nextNode.title}" is now active. Write a brief celebration (1 sentence) for mastering "${node.title}", then render a mastery summary report using renderUI (with heading, table showing key topics and mastery level, and badge blocks for core concepts), then write a bridge sentence connecting to the new topic, and immediately start teaching "${nextNode.title}" with a Socratic opening question. Do NOT wait for user input.`,
+            activatedNextNode: { id: nextNode.id, title: nextNode.title },
+          };
+        }
         return {
           success: true,
           ...p,
@@ -74,13 +87,14 @@ export const assessMasteryTool: ToolDefinition = {
             masteredNodes: masteredCount,
             totalNodes: refreshedNodes.length,
           },
+          instruction: `All nodes have been mastered! Congratulate the learner warmly and summarize the overall journey.`,
         };
       }
     }
 
     return { success: true, ...p };
   },
-  promptSnippet: `**assessMastery 工具**：每 2-3 轮充分互动后调用，评估学习者对当前知识点的掌握程度。传入 conceptId、score(0-100)、strengths/gaps/misconceptions。当分数 ≥ 80 时系统会自动推进到下一个知识点。`,
+  promptSnippet: `**assessMastery 工具**：每 2-3 轮充分互动后调用，评估学习者对当前知识点的掌握程度。传入 conceptId、score(0-100)、strengths/gaps/misconceptions。当分数 ≥ 80 时系统会自动推进到下一个知识点并返回 instruction 字段，你需要按 instruction 执行自动过渡。`,
   promptGuidelines: [
     "不要每轮都调用——先进行 2-3 轮苏格拉底式追问，充分互动后再评估",
     "分数要基于学生实际回答质量，不要给虚高分数",

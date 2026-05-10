@@ -77,6 +77,35 @@ export const ComparisonCardSchema = z.object({
   ),
 });
 
+export const HeadingBlockSchema = z.object({
+  type: z.literal("heading"),
+  level: z.union([z.literal(2), z.literal(3)]),
+  text: z.string(),
+});
+
+export const BadgeBlockSchema = z.object({
+  type: z.literal("badge"),
+  items: z.array(
+    z.object({
+      text: z.string(),
+      variant: z.enum(["success", "warning", "info"]),
+    }),
+  ),
+});
+
+export const MasteryReportBlockSchema = z.object({
+  type: z.literal("mastery-report"),
+  nodeId: z.string(),
+  nodeName: z.string(),
+  score: z.number(),
+  summary: z.string(),
+  table: z.object({
+    columns: z.array(z.string()),
+    rows: z.array(z.array(z.string())),
+  }),
+  badges: z.array(z.string()),
+});
+
 export const UIBlockSchema = z.discriminatedUnion("type", [
   TextBlockSchema,
   AssessmentBlockSchema,
@@ -87,6 +116,9 @@ export const UIBlockSchema = z.discriminatedUnion("type", [
   TableBlockSchema,
   CalloutBlockSchema,
   ComparisonCardSchema,
+  HeadingBlockSchema,
+  BadgeBlockSchema,
+  MasteryReportBlockSchema,
 ]);
 
 export type UIBlock = z.infer<typeof UIBlockSchema>;
@@ -99,3 +131,6 @@ export type DiagramBlock = z.infer<typeof DiagramBlockSchema>;
 export type TableBlock = z.infer<typeof TableBlockSchema>;
 export type CalloutBlock = z.infer<typeof CalloutBlockSchema>;
 export type ComparisonCardBlock = z.infer<typeof ComparisonCardSchema>;
+export type HeadingBlock = z.infer<typeof HeadingBlockSchema>;
+export type BadgeBlock = z.infer<typeof BadgeBlockSchema>;
+export type MasteryReportBlock = z.infer<typeof MasteryReportBlockSchema>;
