@@ -1,8 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 
+const TEST_DATABASE_URL =
+  "postgresql://postgres:postgres@localhost:25432/ai_teacher_test";
+
 const prisma = new PrismaClient({
   datasources: {
-    db: { url: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:25432/ai_teacher" },
+    db: { url: TEST_DATABASE_URL },
   },
 });
 

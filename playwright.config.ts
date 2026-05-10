@@ -1,5 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
+const TEST_DATABASE_URL =
+  "postgresql://postgres:postgres@localhost:25432/ai_teacher_test";
+
 export default defineConfig({
   testDir: "./e2e",
   timeout: 30000,
@@ -18,19 +21,21 @@ export default defineConfig({
       use: { browserName: "chromium" },
     },
   ],
+  globalSetup: require.resolve("./e2e/global-setup"),
+  globalTeardown: require.resolve("./e2e/global-teardown"),
   webServer: [
     {
       command: process.env.PNPM_PATH
-        ? `MOCK_LLM=true ${process.env.PNPM_PATH} --filter @ai-teacher/server dev`
-        : "MOCK_LLM=true pnpm dev:server",
+        ? `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} ${process.env.PNPM_PATH} --filter @ai-teacher/server dev`
+        : `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} pnpm dev:server`,
       port: 38422,
       reuseExistingServer: true,
       timeout: 60000,
     },
     {
       command: process.env.PNPM_PATH
-        ? `MOCK_LLM=true ${process.env.PNPM_PATH} --filter @ai-teacher/worker dev`
-        : "MOCK_LLM=true pnpm dev:worker",
+        ? `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} ${process.env.PNPM_PATH} --filter @ai-teacher/worker dev`
+        : `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} pnpm dev:worker`,
       port: 38423,
       reuseExistingServer: true,
       timeout: 60000,
