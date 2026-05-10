@@ -108,6 +108,15 @@ function createTutorGraph() {
               );
             }
           }
+          if (toolEvent.toolName === "pushCode") {
+            const output = toolEvent.output as { success: boolean; code?: string; language?: string; instruction?: string };
+            if (output.code) {
+              await graphCtx.publisher.publish(
+                graphCtx.channel,
+                JSON.stringify({ type: "code-push", data: { code: output.code, language: output.language, instruction: output.instruction } }),
+              );
+            }
+          }
         } else if (eventType === "error" && "error" in event) {
           throw (event as { error: unknown }).error;
         }

@@ -27,6 +27,20 @@ export async function getLanguageExtension(lang: string): Promise<Extension | nu
       const { javascript } = await import("@codemirror/lang-javascript");
       return javascript({ jsx: true, typescript: true });
     }
+    case "java": {
+      const { java } = await import("@codemirror/lang-java");
+      return java();
+    }
+    case "cpp":
+    case "c":
+    case "c++": {
+      const { cpp } = await import("@codemirror/lang-cpp");
+      return cpp();
+    }
+    case "go": {
+      const { go } = await import("@codemirror/lang-go");
+      return go();
+    }
     default:
       return null;
   }

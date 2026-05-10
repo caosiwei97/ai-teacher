@@ -18,6 +18,7 @@ export interface AnnotationData {
   args?: unknown;
   result?: unknown;
   uiBlocks?: unknown[];
+  codePush?: { code: string; language: string; instruction?: string };
 }
 
 export interface MessageMetadata {
@@ -175,6 +176,18 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   metadata: {
                     ...newMessages[assistantIdx].metadata,
                     annotations: [...existing, { uiBlocks: data.uiBlocks }],
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === "code-push" && event.data) {
+                const data = event.data as { code: string; language: string; instruction?: string };
+                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: [...existing, { codePush: data }],
                   },
                 };
                 setMessages([...newMessages]);

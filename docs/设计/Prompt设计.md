@@ -1,8 +1,8 @@
 # AI Teacher — 苏格拉底式教学 Prompt 设计
 
-> 版本：v0.5
-> 更新日期：2026-05-09
-> 状态：已对齐实际实现（含迭代 022 delegateTask 工具）
+> 版本：v0.6
+> 更新日期：2026-05-10
+> 状态：已对齐实际实现（含迭代 025 pushCode 工具）
 > 参考：Sigma Skill + 同类竞品实际交互分析
 
 ---
@@ -295,6 +295,39 @@ interface TutorPromptContext {
 - 强调核心概念或常见陷阱时，用 callout 类型（variant=key 核心要点，variant=warning 常见陷阱）
 - 不要在 renderUI 中重复文字内容，而是补充视觉化呈现
 - 每个知识点最多 1-2 次 renderUI 调用
+
+### 3.8 pushCode
+
+推送代码到右侧编辑器面板，学生可直接修改运行（迭代 025 新增）。
+
+```typescript
+{
+  name: "pushCode",
+  description: "推送代码到右侧编辑器面板，学生可直接修改运行",
+  parameters: {
+    code: string,        // 代码内容（必须完整可运行）
+    language: "python" | "javascript" | "typescript" | "java" | "cpp",
+    instruction?: string // 给学生的操作说明
+  },
+  // 返回: { success: true, code, language, instruction }
+  // → SSE code-push 事件 → 前端自动切换到代码编辑器 Tab
+}
+```
+
+**Prompt 片段**（注入 system prompt）：
+
+```
+**pushCode 工具**：将代码推送到学生的右侧编辑器面板，学生可以直接修改和运行。
+- 讲解代码相关知识点时，给出完整的可运行示例
+- instruction 中引导学生修改关键部分进行实验
+- 推送的代码必须是完整可运行的，不要推送片段
+```
+
+**使用指引**：
+- 讲完概念后给出可动手的代码示例时使用 pushCode
+- instruction 应引导学生修改代码的关键部分，而不是照抄
+- 不要每次都推送代码——只在需要学生动手实践时才使用
+- 推送的代码必须是完整可运行的
 
 ---
 

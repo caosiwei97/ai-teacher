@@ -25,6 +25,12 @@ interface ThreeColumnLayoutProps {
   sessions: Session[];
   currentSessionId?: string;
   nodes?: Node[];
+  codePanel?: {
+    code: string;
+    language: string;
+    instruction?: string;
+  } | null;
+  onCodePanelChange?: (code: string) => void;
   onSelectSession: (id: string) => void;
   onNewSession?: () => void;
   onArchiveSession?: (id: string) => void;
@@ -35,6 +41,8 @@ export function ThreeColumnLayout({
   sessions,
   currentSessionId,
   nodes = [],
+  codePanel,
+  onCodePanelChange,
   onSelectSession,
   onNewSession,
   onArchiveSession,
@@ -42,6 +50,8 @@ export function ThreeColumnLayout({
 }: ThreeColumnLayoutProps) {
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+
+  const showRight = nodes.length > 0 || codePanel;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -64,7 +74,7 @@ export function ThreeColumnLayout({
             <PanelLeftOpen className="h-4 w-4 text-foreground" />
           </button>
         </div>
-        {nodes.length > 0 && rightCollapsed && (
+        {showRight && rightCollapsed && (
           <div className="absolute right-3 top-3 z-10 lg:hidden">
             <button
               onClick={() => setRightCollapsed(!rightCollapsed)}
@@ -77,9 +87,9 @@ export function ThreeColumnLayout({
         {children}
       </div>
 
-      {nodes.length > 0 && !rightCollapsed && (
+      {showRight && !rightCollapsed && (
         <div className="hidden lg:block">
-          <RightSidebar nodes={nodes} />
+          <RightSidebar nodes={nodes} codePanel={codePanel} onCodePanelChange={onCodePanelChange} />
         </div>
       )}
     </div>

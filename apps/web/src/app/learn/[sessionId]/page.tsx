@@ -121,6 +121,12 @@ export default function LearnPage() {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
 
+  const [codePanel, setCodePanel] = useState<{
+    code: string;
+    language: string;
+    instruction?: string;
+  } | null>(null);
+
   const chat = useChatStream(sessionId, {
     onFinish: () => {
       fetchSession(sessionId)
@@ -130,6 +136,18 @@ export default function LearnPage() {
         .catch(console.error);
     },
   });
+
+  useEffect(() => {
+    const lastMsg = chat.messages[chat.messages.length - 1];
+    if (lastMsg?.role === "assistant" && lastMsg.metadata?.annotations) {
+      for (const ann of [...lastMsg.metadata.annotations].reverse()) {
+        if (ann.codePush) {
+          setCodePanel(ann.codePush);
+          break;
+        }
+      }
+    }
+  }, [chat.messages]);
 
   function loadDiagnostic() {
     setDiagnosticState({ phase: "loading" });
@@ -235,6 +253,13 @@ export default function LearnPage() {
       } catch (err) {
         console.error("Failed to archive session:", err);
       }
+    },
+    [],
+  );
+
+  const handleCodePanelChange = useCallback(
+    (code: string) => {
+      setCodePanel((prev) => (prev ? { ...prev, code } : null));
     },
     [],
   );
@@ -395,6 +420,8 @@ export default function LearnPage() {
       sessions={sessions}
       currentSessionId={sessionId}
       nodes={nodes}
+      codePanel={codePanel}
+      onCodePanelChange={handleCodePanelChange}
       onSelectSession={handleSelectSession}
       onNewSession={handleNewSession}
       onArchiveSession={handleArchiveSession}

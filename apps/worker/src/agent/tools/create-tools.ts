@@ -10,6 +10,7 @@ import { advanceNodeTool } from "./advance-node";
 import { executeCodeTool } from "./execute-code";
 import { createDelegateTaskTool } from "./delegate-task";
 import { renderUITool } from "./render-ui";
+import { pushCodeTool } from "./push-code";
 
 export const tutorToolDefinitions = [
   assessMasteryTool,
@@ -19,6 +20,7 @@ export const tutorToolDefinitions = [
   advanceNodeTool,
   executeCodeTool,
   renderUITool,
+  pushCodeTool,
 ];
 
 export function createTutorToolRegistry(
