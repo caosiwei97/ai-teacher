@@ -137,6 +137,25 @@ function createTutorGraph() {
               );
             }
           }
+          if (toolEvent.toolName === "assessMastery") {
+            const output = toolEvent.output as {
+              success: boolean;
+              roadmapUpdate?: { nodes: unknown[] };
+              sessionUpdate?: { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string };
+            };
+            if (output.roadmapUpdate) {
+              await graphCtx.publisher.publish(
+                graphCtx.channel,
+                JSON.stringify({ type: "roadmap-updated", data: { nodes: output.roadmapUpdate.nodes } }),
+              );
+            }
+            if (output.sessionUpdate) {
+              await graphCtx.publisher.publish(
+                graphCtx.channel,
+                JSON.stringify({ type: "session-updated", data: output.sessionUpdate }),
+              );
+            }
+          }
         } else if (eventType === "error" && "error" in event) {
           throw (event as { error: unknown }).error;
         }

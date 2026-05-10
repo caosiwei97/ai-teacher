@@ -5,6 +5,8 @@ import type { UIMessage } from "ai";
 
 interface UseChatStreamOptions {
   onFinish?: () => void;
+  onRoadmapUpdate?: (nodes: unknown[]) => void;
+  onSessionUpdate?: (data: { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string }) => void;
 }
 
 interface SSEEvent {
@@ -31,6 +33,8 @@ export interface AnnotationData {
   uiBlocks?: unknown[];
   codePush?: { code: string; language: string; instruction?: string };
   diagnosticQuestions?: DiagnosticQuestionsData;
+  roadmapUpdate?: { nodes: unknown[] };
+  sessionUpdate?: { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string };
 }
 
 export interface MessageMetadata {
@@ -221,6 +225,12 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   },
                 };
                 setMessages([...newMessages]);
+              } else if (event.type === "roadmap-updated" && event.data) {
+                const data = event.data as { nodes: unknown[] };
+                options?.onRoadmapUpdate?.(data.nodes);
+              } else if (event.type === "session-updated" && event.data) {
+                const data = event.data as { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string };
+                options?.onSessionUpdate?.(data);
               } else if (event.type === "error") {
                 const errorMsg =
                   typeof event.data === "string"

@@ -60,6 +60,21 @@ export const assessMasteryTool: ToolDefinition = {
             data: { status: "in-progress" },
           });
         }
+
+        const refreshedNodes = await prisma.node.findMany({
+          where: { roadmapId: node.roadmapId },
+          orderBy: { index: "asc" },
+        });
+        const masteredCount = refreshedNodes.filter((n) => n.status === "mastered").length;
+        return {
+          success: true,
+          ...p,
+          roadmapUpdate: { nodes: refreshedNodes },
+          sessionUpdate: {
+            masteredNodes: masteredCount,
+            totalNodes: refreshedNodes.length,
+          },
+        };
       }
     }
 

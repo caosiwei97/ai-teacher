@@ -128,6 +128,27 @@ export default function LearnPage() {
         })
         .catch(console.error);
     },
+    onRoadmapUpdate: (updatedNodes) => {
+      setNodes(updatedNodes as NodeInfo[]);
+    },
+    onSessionUpdate: (data) => {
+      if (data.masteredNodes !== undefined && data.totalNodes !== undefined) {
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === sessionId
+              ? {
+                  ...s,
+                  progress: {
+                    ...s.progress,
+                    masteredNodes: data.masteredNodes!,
+                    totalNodes: data.totalNodes!,
+                  },
+                }
+              : s,
+          ),
+        );
+      }
+    },
   });
 
   useEffect(() => {
