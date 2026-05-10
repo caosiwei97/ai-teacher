@@ -185,10 +185,25 @@ POST /api/chat
 
 ### 响应
 
-AI SDK `DataDataStreamResponse`（SSE 流式响应），包含：
+SSE 流式响应（`GET /api/chat/:sessionId/stream`），事件格式：
 
-- 文本流（苏格拉底式教学回复）
-- 工具调用结果（assessMastery / generateAssessment 等）
+```
+data: {"type":"<event-type>","content":...,"data":...}
+```
+
+#### SSE 事件类型
+
+| 事件类型 | 说明 | 数据格式 |
+|---------|------|---------|
+| `text-delta` | 流式文本片段 | `{ content: string }` |
+| `tool-call` | 工具调用开始 | `{ data: { toolName, input } }` |
+| `tool-result` | 工具调用结果 | `{ data: { toolName, result } }` |
+| `ui-blocks` | 结构化教学组件 | `{ data: { uiBlocks: UIBlock[] } }` |
+| `code-push` | 代码推送到编辑器 | `{ data: { code, language, instruction? } }` |
+| `ask-question` | 聊天内诊断题 | `{ data: { questions, question, nodeId } }` |
+| `roadmap-updated` | 路线图节点状态变更 | `{ data: { nodes: RoadmapNode[] } }` |
+| `session-updated` | 会话状态变更 | `{ data: { masteredNodes?, totalNodes?, title?, learningStatus? } }` |
+| `error` | 错误 | `{ data: { message } }` |
 
 ### 后端副作用（异步持久化）
 
