@@ -6,6 +6,9 @@ import { QuizPanel } from "./quiz-panel";
 import { CodeResultBlock } from "./code-result-block";
 import { FormulaDisplay } from "./formula-display";
 import { DiagramRenderer } from "./diagram-renderer";
+import { TableBlock } from "./table-block";
+import { CalloutBlock } from "./callout-block";
+import { ComparisonCard } from "./comparison-card";
 
 export const UIBlockRegistry: Record<string, ComponentType<{ block: UIBlock }>> = {
   text: TextBlock as ComponentType<{ block: UIBlock }>,
@@ -14,4 +17,7 @@ export const UIBlockRegistry: Record<string, ComponentType<{ block: UIBlock }>> 
   "code-result": CodeResultBlock as ComponentType<{ block: UIBlock }>,
   formula: FormulaDisplay as ComponentType<{ block: UIBlock }>,
   diagram: DiagramRenderer as ComponentType<{ block: UIBlock }>,
+  table: TableBlock as ComponentType<{ block: UIBlock }>,
+  callout: CalloutBlock as ComponentType<{ block: UIBlock }>,
+  comparison: ComparisonCard as ComponentType<{ block: UIBlock }>,
 };

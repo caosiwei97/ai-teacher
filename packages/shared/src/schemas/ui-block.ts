@@ -51,6 +51,32 @@ export const DiagramBlockSchema = z.object({
   data: z.unknown(),
 });
 
+export const TableBlockSchema = z.object({
+  type: z.literal("table"),
+  title: z.string().optional(),
+  headers: z.array(z.string()),
+  rows: z.array(z.array(z.string())),
+});
+
+export const CalloutBlockSchema = z.object({
+  type: z.literal("callout"),
+  variant: z.enum(["tip", "warning", "key"]),
+  title: z.string().optional(),
+  content: z.string(),
+});
+
+export const ComparisonCardSchema = z.object({
+  type: z.literal("comparison"),
+  title: z.string().optional(),
+  items: z.array(
+    z.object({
+      label: z.string(),
+      left: z.string(),
+      right: z.string(),
+    }),
+  ),
+});
+
 export const UIBlockSchema = z.discriminatedUnion("type", [
   TextBlockSchema,
   AssessmentBlockSchema,
@@ -58,6 +84,9 @@ export const UIBlockSchema = z.discriminatedUnion("type", [
   CodeResultBlockSchema,
   FormulaBlockSchema,
   DiagramBlockSchema,
+  TableBlockSchema,
+  CalloutBlockSchema,
+  ComparisonCardSchema,
 ]);
 
 export type UIBlock = z.infer<typeof UIBlockSchema>;
@@ -67,3 +96,6 @@ export type QuizBlock = z.infer<typeof QuizBlockSchema>;
 export type CodeResultBlock = z.infer<typeof CodeResultBlockSchema>;
 export type FormulaBlock = z.infer<typeof FormulaBlockSchema>;
 export type DiagramBlock = z.infer<typeof DiagramBlockSchema>;
+export type TableBlock = z.infer<typeof TableBlockSchema>;
+export type CalloutBlock = z.infer<typeof CalloutBlockSchema>;
+export type ComparisonCardBlock = z.infer<typeof ComparisonCardSchema>;

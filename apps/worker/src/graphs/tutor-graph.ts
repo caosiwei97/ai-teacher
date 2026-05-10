@@ -99,6 +99,15 @@ function createTutorGraph() {
               data: { toolName: toolEvent.toolName, result: toolEvent.output },
             }),
           );
+          if (toolEvent.toolName === "renderUI") {
+            const output = toolEvent.output as { success: boolean; uiBlocks?: unknown[] };
+            if (output.uiBlocks && Array.isArray(output.uiBlocks)) {
+              await graphCtx.publisher.publish(
+                graphCtx.channel,
+                JSON.stringify({ type: "ui-blocks", data: { uiBlocks: output.uiBlocks } }),
+              );
+            }
+          }
         } else if (eventType === "error" && "error" in event) {
           throw (event as { error: unknown }).error;
         }

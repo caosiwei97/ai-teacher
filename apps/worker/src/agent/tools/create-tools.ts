@@ -9,6 +9,7 @@ import { recordMisconceptionTool } from "./record-misconception";
 import { advanceNodeTool } from "./advance-node";
 import { executeCodeTool } from "./execute-code";
 import { createDelegateTaskTool } from "./delegate-task";
+import { renderUITool } from "./render-ui";
 
 export const tutorToolDefinitions = [
   assessMasteryTool,
@@ -17,6 +18,7 @@ export const tutorToolDefinitions = [
   recordMisconceptionTool,
   advanceNodeTool,
   executeCodeTool,
+  renderUITool,
 ];
 
 export function createTutorToolRegistry(
