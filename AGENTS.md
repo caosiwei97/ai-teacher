@@ -443,6 +443,27 @@ pnpm dev   # 重启 dev server
 
 ---
 
+## 5.4 文档时效性规则（强制）
+
+> **核心原则**：Agent 在执行任务过程中，如果发现文档内容与实际代码/项目结构不一致，必须立即修正文档，不能只在心里知道。
+
+**触发条件**：
+- 读取 README、AGENTS.md、技术架构等文档时，发现路径、命令、结构描述与实际不符
+- 执行代码变更后，涉及的文档未同步更新
+
+**执行流程**：
+```
+发现文档与实际不符
+  ↓
+1. 立即修正文档（不等用户要求）
+2. 在开发日志中记录：修正了哪些过时信息
+3. 检查是否还有其他文档引用了相同的过时信息
+```
+
+**注意**：这是一个主动规则，不需要用户提醒。Agent 自身发现不一致就应该修。
+
+---
+
 ## 6. 技术约束（不可违反）
 
 - **pnpm workspaces**（不用 npm）
@@ -461,12 +482,13 @@ pnpm dev   # 重启 dev server
 
 ```
 apps/
-  web/          — Next.js 15 (App Router) + Chat UI + API Routes
-  worker/       — Agent 核心 (AI SDK streamText + 5 tools)
+  web/          — Next.js 15 (App Router) + Chat UI（纯前端）
+  server/       — Hono API Server (REST API + SSE)
+  worker/       — Agent Worker (BullMQ 队列消费 + AI SDK streamText + 5 tools)
 packages/
   shared/       — Zod schemas, types
   db/           — Prisma schema + seed
-  docker-compose.yml  — Docker Compose (PG + Redis + MinIO)
+docker-compose.yml  — Docker Compose (PG + Redis + MinIO)
 e2e/            — Playwright E2E tests
 docs/           — 项目文档（中文）
   产品/         — 产品定位、需求规格

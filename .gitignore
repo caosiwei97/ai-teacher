@@ -11,3 +11,4 @@ data/
 .turbo/
 coverage/
 test-results/
+*.tsbuildinfo
