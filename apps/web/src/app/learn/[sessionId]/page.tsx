@@ -22,12 +22,12 @@ import { Loader2, GraduationCap, ArrowUp } from "lucide-react";
 const USER_ID = "seed-user-ai-teacher";
 
 const fallbackTopics = [
-  { id: "t1", title: "JavaScript 闭包" },
-  { id: "t2", title: "认知行为疗法入门" },
-  { id: "t3", title: "营养学基础" },
-  { id: "t4", title: "文艺复兴艺术" },
-  { id: "t5", title: "高效沟通技巧" },
-  { id: "t6", title: "概率思维" },
+  { id: "t1", title: "AI 提示词工程" },
+  { id: "t2", title: "用 LangGraph 搭建 AI Agent" },
+  { id: "t3", title: "科学减脂与身材管理" },
+  { id: "t4", title: "情绪管理与压力释放" },
+  { id: "t5", title: "个人投资理财入门" },
+  { id: "t6", title: "自媒体运营与个人品牌" },
 ];
 
 interface SessionInfo {
@@ -253,7 +253,7 @@ export default function LearnPage() {
         });
         if (!res.ok) throw new Error();
         const data = await res.json();
-        router.push(`/learn/${data.session.id}`);
+        router.replace(`/learn/${data.session.id}`);
       } catch {
         setCreating(false);
       }
@@ -510,15 +510,15 @@ export default function LearnPage() {
               告诉我你对什么感兴趣，从零到精通，我带你
             </p>
             <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
-            <div className="mt-3 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-3 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
               {fallbackTopics.map((topic) => (
                 <button
                   key={topic.id}
                   onClick={() => handleCreateFromNewSession(topic.title)}
                   disabled={creating}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 text-left text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
                 >
-                  <span className="line-clamp-2 text-[13px] leading-snug">{topic.title}</span>
+                  <span className="text-sm leading-snug">{topic.title}</span>
                 </button>
               ))}
             </div>
