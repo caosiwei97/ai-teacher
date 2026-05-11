@@ -34,16 +34,41 @@ export function DiagnosticQuizCard({
   const currentAnswer = answers.get(currentQuestion?.id);
 
   function handleSelectOption(questionId: string, optionId: string, optionText: string) {
-    setAnswers((prev) => {
-      const next = new Map(prev);
-      next.set(questionId, { optionId, optionText });
-      return next;
-    });
+    const newAnswers = new Map(answers);
+    newAnswers.set(questionId, { optionId, optionText });
+    setAnswers(newAnswers);
     setCustomInput((prev) => {
       const next = new Map(prev);
       next.delete(questionId);
       return next;
     });
+
+    // Auto-advance to next unanswered question
+    const currentIdx = questions.findIndex((q) => q.id === questionId);
+    for (let i = currentIdx + 1; i < questions.length; i++) {
+      if (!newAnswers.has(questions[i].id)) {
+        setActiveTab(i);
+        return;
+      }
+    }
+    // If no unanswered after, check if all answered → auto submit
+    if (questions.every((q) => newAnswers.has(q.id))) {
+      setTimeout(() => {
+        const result = questions.map((q) => {
+          const answer = newAnswers.get(q.id)!;
+          return { questionId: q.id, optionId: answer.optionId, optionText: answer.optionText };
+        });
+        onSubmit(result);
+      }, 400);
+    } else {
+      // Wrap around to first unanswered
+      for (let i = 0; i < currentIdx; i++) {
+        if (!newAnswers.has(questions[i].id)) {
+          setActiveTab(i);
+          return;
+        }
+      }
+    }
   }
 
   function handleCustomInput(questionId: string, text: string) {
@@ -53,11 +78,27 @@ export function DiagnosticQuizCard({
       return next;
     });
     if (text.trim()) {
-      setAnswers((prev) => {
-        const next = new Map(prev);
-        next.set(questionId, { optionId: "custom", optionText: text.trim() });
-        return next;
-      });
+      const newAnswers = new Map(answers);
+      newAnswers.set(questionId, { optionId: "custom", optionText: text.trim() });
+      setAnswers(newAnswers);
+
+      // Auto-advance to next unanswered question
+      const currentIdx = questions.findIndex((q) => q.id === questionId);
+      for (let i = currentIdx + 1; i < questions.length; i++) {
+        if (!newAnswers.has(questions[i].id)) {
+          setActiveTab(i);
+          return;
+        }
+      }
+      if (questions.every((q) => newAnswers.has(q.id))) {
+        setTimeout(() => {
+          const result = questions.map((q) => {
+            const answer = newAnswers.get(q.id)!;
+            return { questionId: q.id, optionId: answer.optionId, optionText: answer.optionText };
+          });
+          onSubmit(result);
+        }, 400);
+      }
     } else {
       setAnswers((prev) => {
         const next = new Map(prev);

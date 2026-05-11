@@ -173,6 +173,25 @@ export function ChatArea({
             />
           );
         })}
+        {isLoading && messages.length > 0 && (() => {
+          const lastMsg = messages[messages.length - 1];
+          const lastText = lastMsg.parts
+            ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+            .map((p) => p.text)
+            .join("") ?? "";
+          return lastMsg.role === "assistant" && !lastText.trim();
+        })() && (
+          <div className="flex justify-start mb-4">
+            <div className="rounded-2xl rounded-bl-sm bg-chat-tutor px-4 py-3 shadow-sm flex items-center gap-2">
+              <div className="flex gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-roadmap-fill animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-roadmap-fill animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-roadmap-fill animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span className="text-[13px] text-chat-tutor-text">老师正在思考中…</span>
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
       <div className="flex flex-col">
