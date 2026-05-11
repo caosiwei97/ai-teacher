@@ -20,6 +20,13 @@ function getTextFromParts(parts: UIMessage["parts"]): string {
     .join("");
 }
 
+interface LlmConfigOption {
+  id: string;
+  provider: string;
+  defaultModel: string;
+  isDefault: boolean;
+}
+
 interface ChatAreaProps {
   messages: UIMessage<MessageMetadata>[];
   input: string;
@@ -39,6 +46,10 @@ interface ChatAreaProps {
   onTeachingModeChange?: (mode: "warm" | "strict" | "interviewer") => void;
   error?: string | null;
   welcomeContent?: React.ReactNode;
+  currentModel?: string;
+  llmConfigs?: LlmConfigOption[];
+  selectedConfigId?: string;
+  onModelChange?: (configId: string) => void;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -133,6 +144,10 @@ export function ChatArea({
   onTeachingModeChange,
   error,
   welcomeContent,
+  currentModel,
+  llmConfigs,
+  selectedConfigId,
+  onModelChange,
 }: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -244,6 +259,10 @@ export function ChatArea({
           onDismissSuggestion={onDismissSuggestion}
           teachingMode={teachingMode}
           onTeachingModeChange={onTeachingModeChange}
+          currentModel={currentModel}
+          llmConfigs={llmConfigs}
+          selectedConfigId={selectedConfigId}
+          onModelChange={onModelChange}
         />
       </div>
     </div>

@@ -107,3 +107,96 @@ export async function evaluateDiagnostic(
     startingNode: { id: string; index: number; title: string };
   }>;
 }
+
+// ─── LLM Config APIs ──────────────────────────────────────────────────
+
+export interface LlmConfig {
+  id: string;
+  userId: string;
+  provider: string;
+  apiKey: string; // masked
+  baseUrl: string | null;
+  defaultModel: string;
+  label: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModelInfo {
+  id: string;
+  label: string;
+  tier: "flagship" | "standard" | "value" | "light";
+  price: string;
+}
+
+const LLM_BASE = "/api/llm";
+
+export async function getLlmConfigs(userId: string) {
+  const res = await fetch(`${LLM_BASE}?userId=${encodeURIComponent(userId)}`);
+  if (!res.ok) throw new Error("Failed to fetch LLM configs");
+  return res.json() as Promise<{ configs: LlmConfig[] }>;
+}
+
+export async function createLlmConfig(
+  userId: string,
+  data: {
+    provider: string;
+    apiKey: string;
+    baseUrl?: string;
+    defaultModel: string;
+    label?: string;
+    isDefault?: boolean;
+  },
+) {
+  const res = await fetch(`${LLM_BASE}?userId=${encodeURIComponent(userId)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create LLM config");
+  return res.json() as Promise<{ config: LlmConfig }>;
+}
+
+export async function updateLlmConfig(
+  id: string,
+  userId: string,
+  data: {
+    provider?: string;
+    apiKey?: string;
+    baseUrl?: string;
+    defaultModel?: string;
+    label?: string;
+    isDefault?: boolean;
+  },
+) {
+  const res = await fetch(`${LLM_BASE}/${encodeURIComponent(id)}?userId=${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update LLM config");
+  return res.json() as Promise<{ config: LlmConfig }>;
+}
+
+export async function deleteLlmConfig(id: string, userId: string) {
+  const res = await fetch(`${LLM_BASE}/${encodeURIComponent(id)}?userId=${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete LLM config");
+  return res.json() as Promise<{ success: boolean }>;
+}
+
+export async function testLlmConfig(id: string, userId: string) {
+  const res = await fetch(`${LLM_BASE}/${encodeURIComponent(id)}/test?userId=${encodeURIComponent(userId)}`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to test LLM config");
+  return res.json() as Promise<{ success: boolean; error?: string }>;
+}
+
+export async function getProviderModels(provider: string) {
+  const res = await fetch(`${LLM_BASE}/models?provider=${encodeURIComponent(provider)}`);
+  if (!res.ok) throw new Error("Failed to fetch provider models");
+  return res.json() as Promise<{ provider: string; name: string; models: ModelInfo[] }>;
+}

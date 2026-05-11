@@ -114,6 +114,7 @@ export const sessionsRoute = new Hono()
           topic: session.topic,
           sourceId: session.sourceId,
           status: session.status,
+          llmConfigId: session.llmConfigId,
           createdAt: session.createdAt,
           updatedAt: session.updatedAt,
           source: session.source,

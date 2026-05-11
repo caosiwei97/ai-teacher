@@ -5,6 +5,7 @@ import type { UIMessage } from "ai";
 
 interface UseChatStreamOptions {
   teachingMode?: "warm" | "strict" | "interviewer";
+  llmConfigId?: string;
   onFinish?: () => void;
   onError?: (error: string) => void;
   onRoadmapUpdate?: (nodes: unknown[]) => void;
@@ -112,6 +113,7 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
               content: getTextFromParts(m.parts),
             })),
             ...(options?.teachingMode ? { teachingMode: options.teachingMode } : {}),
+            ...(options?.llmConfigId ? { llmConfigId: options.llmConfigId } : {}),
           }),
           signal: controller.signal,
         });

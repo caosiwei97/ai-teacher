@@ -13,8 +13,12 @@ import {
   TrendingUp,
   ArrowUp,
   Loader2,
+  Settings,
+  ChevronDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { getLlmConfigs, type LlmConfig } from "@/lib/api-client";
+import { getProviderDisplay } from "@/lib/llm-presets";
 
 const iconMap: Record<string, LucideIcon> = {
   Brain,
@@ -60,6 +64,9 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
   const [input, setInput] = useState("");
   const [creating, setCreating] = useState(false);
   const [teachingMode, setTeachingMode] = useState<"warm" | "strict">("warm");
+  const [llmConfigs, setLlmConfigs] = useState<LlmConfig[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string>("");
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/sessions?userId=${USER_ID}`)
@@ -81,6 +88,20 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
       .catch(() => setTopics(fallbackTopics));
   }, []);
 
+  useEffect(() => {
+    getLlmConfigs(USER_ID)
+      .then((data) => {
+        setLlmConfigs(data.configs);
+        const defaultConfig = data.configs.find((c) => c.isDefault);
+        if (defaultConfig) {
+          setSelectedConfigId(defaultConfig.id);
+        } else if (data.configs.length > 0) {
+          setSelectedConfigId(data.configs[0].id);
+        }
+      })
+      .catch(() => setLlmConfigs([]));
+  }, []);
+
   const createSession = useCallback(
     async (topic: string) => {
       if (creating || !topic.trim()) return;
@@ -89,7 +110,12 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
         const res = await fetch(`/api/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: "seed-user-ai-teacher", topic: topic.trim(), teachingMode }),
+          body: JSON.stringify({
+            userId: "seed-user-ai-teacher",
+            topic: topic.trim(),
+            teachingMode,
+            llmConfigId: selectedConfigId || undefined,
+          }),
         });
         if (!res.ok) throw new Error();
         const data = await res.json();
@@ -98,7 +124,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
         setCreating(false);
       }
     },
-    [creating, router, teachingMode],
+    [creating, router, teachingMode, selectedConfigId],
   );
 
   const handleSubmit = useCallback(
@@ -127,6 +153,8 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
   );
 
   const handleNewSession = useCallback(() => {}, []);
+
+  const selectedConfig = llmConfigs.find((c) => c.id === selectedConfigId);
 
   return (
     <ThreeColumnLayout
@@ -174,7 +202,85 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
                 )}
               </button>
             </div>
+
             <div className="flex items-center gap-2 self-center">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+                  className="flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all duration-200 hover:text-foreground"
+                >
+                  {selectedConfig ? (
+                    <>
+                      <span
+                        className="inline-block h-2 w-2 rounded-full"
+                        style={{ backgroundColor: getProviderDisplay(selectedConfig.provider) ? `var(--color-primary)` : undefined }}
+                      />
+                      {selectedConfig.defaultModel}
+                    </>
+                  ) : llmConfigs.length === 0 ? (
+                    <>
+                      <Settings className="h-3 w-3" />
+                      未配置模型
+                    </>
+                  ) : (
+                    "选择模型"
+                  )}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+
+                {modelDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setModelDropdownOpen(false)} />
+                    <div className="absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 rounded-xl border border-border bg-popover p-1.5 shadow-lg" style={{ minWidth: "200px" }}>
+                      {llmConfigs.map((config) => {
+                        const display = getProviderDisplay(config.provider);
+                        return (
+                          <button
+                            key={config.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedConfigId(config.id);
+                              setModelDropdownOpen(false);
+                            }}
+                            className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs transition-colors ${
+                              config.id === selectedConfigId
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                            }`}
+                          >
+                            {display && (
+                              <span
+                                className="h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: `var(--color-primary)` }}
+                              />
+                            )}
+                            <span className="flex-1 truncate">{config.defaultModel}</span>
+                            {config.isDefault && (
+                              <span className="text-[10px] text-muted-foreground">默认</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                      {llmConfigs.length > 0 && (
+                        <div className="my-1 border-t border-border" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setModelDropdownOpen(false);
+                          router.push("/settings");
+                        }}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      >
+                        <Settings className="h-3 w-3" />
+                        管理模型配置
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <button
                 type="button"
                 onClick={() => setTeachingMode("warm")}

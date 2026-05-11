@@ -15,6 +15,8 @@ import {
   fetchSession,
   fetchSessions,
   archiveSession,
+  getLlmConfigs,
+  type LlmConfig,
 } from "@/lib/api-client";
 import type { UIMessage } from "ai";
 import { GraduationCap } from "lucide-react";
@@ -143,6 +145,9 @@ export default function LearnPage() {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
 
+  const [llmConfigs, setLlmConfigs] = useState<LlmConfig[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | undefined>(undefined);
+
   const [codePanel, setCodePanel] = useState<{
     code: string;
     language: string;
@@ -151,6 +156,7 @@ export default function LearnPage() {
 
   const chat = useChatStream(sessionId, {
     teachingMode,
+    llmConfigId: selectedConfigId,
     onFinish: () => {
       if (isNewSession) {
         setIsNewSession(false);
@@ -214,6 +220,10 @@ export default function LearnPage() {
     }
     prevSessionRef.current = sessionId;
 
+    getLlmConfigs(USER_ID)
+      .then((data) => setLlmConfigs(data.configs))
+      .catch(() => setLlmConfigs([]));
+
     fetchSessions(USER_ID)
       .then((data) => {
         const sessionsList = data.sessions;
@@ -267,6 +277,7 @@ export default function LearnPage() {
           setSessions(sessionsList);
           setNodes(sessionData.session.roadmap?.nodes ?? []);
           setIsNewSession(false);
+          setSelectedConfigId((sessionData.session as Record<string, unknown>).llmConfigId as string | undefined);
 
           const historyMessages: UIMessage<MessageMetadata>[] = sessionData.session.messages
             .filter((m) => (m.role === "learner" || m.role === "tutor") && !m.hidden)
@@ -651,6 +662,10 @@ export default function LearnPage() {
                 </div>
               </div>
             }
+            currentModel={llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel}
+            llmConfigs={llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault }))}
+            selectedConfigId={selectedConfigId}
+            onModelChange={setSelectedConfigId}
           />
           <QuickQuestion sessionId={sessionId} />
         </>
@@ -674,6 +689,10 @@ export default function LearnPage() {
             teachingMode={teachingMode}
             onTeachingModeChange={setTeachingMode}
             error={chatError}
+            currentModel={llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel}
+            llmConfigs={llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault }))}
+            selectedConfigId={selectedConfigId}
+            onModelChange={setSelectedConfigId}
           />
           <QuickQuestion sessionId={sessionId} />
         </>

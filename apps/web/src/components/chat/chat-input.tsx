@@ -1,7 +1,15 @@
 "use client";
 
-import { ArrowUp, Lightbulb, Square } from "lucide-react";
+import { useState } from "react";
+import { ArrowUp, Lightbulb, Square, ChevronDown } from "lucide-react";
 import { ModeSelector, type TeachingMode } from "./mode-selector";
+
+interface LlmConfigOption {
+  id: string;
+  provider: string;
+  defaultModel: string;
+  isDefault: boolean;
+}
 
 interface ChatInputProps {
   value: string;
@@ -16,6 +24,10 @@ interface ChatInputProps {
   onDismissSuggestion?: () => void;
   teachingMode?: TeachingMode;
   onTeachingModeChange?: (mode: TeachingMode) => void;
+  currentModel?: string;
+  llmConfigs?: LlmConfigOption[];
+  selectedConfigId?: string;
+  onModelChange?: (configId: string) => void;
 }
 
 export function ChatInput({
@@ -31,7 +43,13 @@ export function ChatInput({
   onDismissSuggestion,
   teachingMode = "warm",
   onTeachingModeChange,
+  currentModel,
+  llmConfigs,
+  selectedConfigId,
+  onModelChange,
 }: ChatInputProps) {
+  const [modelOpen, setModelOpen] = useState(false);
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.nativeEvent.isComposing || e.key !== "Enter" || e.shiftKey) return;
     e.preventDefault();
@@ -66,6 +84,45 @@ export function ChatInput({
             />
           </div>
           <div className="absolute bottom-2 right-2 flex items-center gap-1">
+            {currentModel && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => llmConfigs && llmConfigs.length > 1 && setModelOpen(!modelOpen)}
+                  className="flex items-center gap-1 rounded-[8px] px-2 py-1 text-[11px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)]"
+                >
+                  {currentModel}
+                  {llmConfigs && llmConfigs.length > 1 && <ChevronDown className="h-2.5 w-2.5" />}
+                </button>
+                {modelOpen && llmConfigs && llmConfigs.length > 1 && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setModelOpen(false)} />
+                    <div className="absolute bottom-full right-0 z-50 mb-1 rounded-lg border border-border bg-popover p-1 shadow-lg" style={{ minWidth: "160px" }}>
+                      {llmConfigs.map((config) => (
+                        <button
+                          key={config.id}
+                          type="button"
+                          onClick={() => {
+                            onModelChange?.(config.id);
+                            setModelOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
+                            config.id === selectedConfigId
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                          }`}
+                        >
+                          <span className="flex-1 truncate">{config.defaultModel}</span>
+                          {config.isDefault && (
+                            <span className="text-[10px] text-muted-foreground">默认</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             {onSuggest && !isLoading && (
               <button
                 type="button"
