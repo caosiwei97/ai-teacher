@@ -87,6 +87,18 @@ function getUIBlocksFromMessage(message: UIMessage<MessageMetadata>): UIBlock[] 
   return undefined;
 }
 
+function hasToolCallPending(message: UIMessage<MessageMetadata>, toolName: string): boolean {
+  const annotations = message.metadata?.annotations;
+  if (!annotations) return false;
+  const hasCall = annotations.some(
+    (a) => isObject(a) && a.toolName === toolName && "args" in a,
+  );
+  const hasResult = annotations.some(
+    (a) => isObject(a) && a.toolName === toolName && "result" in a,
+  );
+  return hasCall && !hasResult;
+}
+
 function getDiagnosticQuestionsFromMessage(message: UIMessage<MessageMetadata>): DiagnosticQuestionsData | undefined {
   const annotations = message.metadata?.annotations;
   if (annotations) {
@@ -179,23 +191,33 @@ export function ChatArea({
         })}
         {isLoading && messages.length > 0 && (() => {
           const lastMsg = messages[messages.length - 1];
-          const lastText = lastMsg.parts
-            ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
-            .map((p) => p.text)
-            .join("") ?? "";
-          return lastMsg.role === "assistant" && !lastText.trim();
-        })() && (
-          <div className="flex justify-start mb-4">
-            <div className="rounded-xl rounded-bl-[4px] bg-chat-ai-bubble px-5 py-4 flex items-center gap-2">
-              <div className="flex gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0s' }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.2s' }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.4s' }} />
+          if (lastMsg.role !== "assistant") return null;
+
+          let label = "";
+          if (hasToolCallPending(lastMsg, "askQuestion")) {
+            label = "老师正在给你出题中…";
+          } else {
+            const lastText = lastMsg.parts
+              ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+              .map((p) => p.text)
+              .join("") ?? "";
+            if (lastText.trim()) return null;
+            label = "老师正在思考中…";
+          }
+
+          return (
+            <div className="flex justify-start mb-4">
+              <div className="rounded-xl rounded-bl-[4px] bg-chat-ai-bubble px-5 py-4 flex items-center gap-2">
+                <div className="flex gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0s' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.2s' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.4s' }} />
+                </div>
+                <span className="text-[13px] text-chat-ai-text">{label}</span>
               </div>
-              <span className="text-[13px] text-chat-ai-text">老师正在思考中…</span>
             </div>
-          </div>
-        )}
+          );
+        })()}
         <div ref={bottomRef} />
       </div>
       <div className="flex flex-col">

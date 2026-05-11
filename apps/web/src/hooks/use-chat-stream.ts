@@ -125,6 +125,7 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
 
         const decoder = new TextDecoder();
         let buffer = "";
+        let textFrozen = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -154,6 +155,7 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
               const assistantIdx = newMessages.length - 1;
 
               if (event.type === "text-delta" && typeof event.content === "string") {
+                if (textFrozen) continue;
                 const prevText = getTextFromParts(newMessages[assistantIdx].parts);
                 const updatedText = prevText + event.content;
                 newMessages[assistantIdx] = {
@@ -212,6 +214,7 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                 };
                 setMessages([...newMessages]);
               } else if (event.type === "ask-question" && event.data) {
+                textFrozen = true;
                 const data = event.data as { questions: unknown[]; question: string; nodeId: string };
                 const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
                 newMessages[assistantIdx] = {
