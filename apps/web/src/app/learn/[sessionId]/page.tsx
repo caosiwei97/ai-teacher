@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ThreeColumnLayout } from "@/components/layout/three-column";
 import {
@@ -10,7 +10,7 @@ import {
 import { ChatArea } from "@/components/chat/chat-area";
 import { QuickQuestion } from "@/components/chat/quick-question";
 import { useChatStream } from "@/hooks/use-chat-stream";
-import type { MessageMetadata } from "@/hooks/use-chat-stream";
+import type { MessageMetadata, DiagnosticQuestionsData, AnnotationData } from "@/hooks/use-chat-stream";
 import {
   fetchSession,
   fetchSessions,
@@ -95,6 +95,34 @@ function toAssessmentAnnotation(assessment: AssessmentCardProps): JsonObject {
   };
 }
 
+function getDiagnosticQuestionsFromMetadata(metadata: unknown): DiagnosticQuestionsData | undefined {
+  if (!isObject(metadata)) return undefined;
+
+  if (Array.isArray((metadata as Record<string, unknown>).annotations)) {
+    for (const ann of (metadata as Record<string, unknown>).annotations as Record<string, unknown>[]) {
+      if (isObject(ann) && "diagnosticQuestions" in ann && ann.diagnosticQuestions) {
+        const dq = ann.diagnosticQuestions as Record<string, unknown>;
+        if (Array.isArray(dq.questions) && dq.questions.length > 0) {
+          return dq as unknown as DiagnosticQuestionsData;
+        }
+      }
+    }
+  }
+
+  if (Array.isArray((metadata as Record<string, unknown>).toolResults)) {
+    for (const tr of (metadata as Record<string, unknown>).toolResults as Record<string, unknown>[]) {
+      if (isObject(tr) && tr.toolName === "askQuestion" && isObject(tr.result)) {
+        const result = tr.result as Record<string, unknown>;
+        if (Array.isArray(result.questions)) {
+          return result as unknown as DiagnosticQuestionsData;
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
 export default function LearnPage() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
@@ -105,6 +133,8 @@ export default function LearnPage() {
   const [loaded, setLoaded] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [isNewSession, setIsNewSession] = useState(false);
+  const prevSessionRef = useRef<string | null>(null);
+  const isSessionSwitch = prevSessionRef.current !== null && prevSessionRef.current !== sessionId;
   const [teachingMode, setTeachingMode] = useState<"warm" | "strict" | "interviewer">("warm");
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
@@ -178,6 +208,12 @@ export default function LearnPage() {
   useEffect(() => {
     if (!sessionId) return;
 
+    if (prevSessionRef.current && prevSessionRef.current !== sessionId) {
+      chat.setMessages([]);
+      setNodes([]);
+    }
+    prevSessionRef.current = sessionId;
+
     fetchSessions(USER_ID)
       .then((data) => {
         const sessionsList = data.sessions;
@@ -237,15 +273,26 @@ export default function LearnPage() {
             .map((m, i) => {
               const assessment =
                 m.type === "assessment" ? getAssessmentFromMetadata(m.metadata) : undefined;
+              const diagnosticQuestions = getDiagnosticQuestionsFromMetadata(m.metadata);
+              const annotations: AnnotationData[] = [];
+              if (assessment) annotations.push(toAssessmentAnnotation(assessment) as unknown as AnnotationData);
+              if (diagnosticQuestions) annotations.push({ diagnosticQuestions });
 
               return {
                 id: `init-${i}`,
                 role: (m.role === "learner" ? "user" : "assistant") as "user" | "assistant",
                 parts: [{ type: "text" as const, text: m.content || "" }],
-                metadata: assessment ? { annotations: [toAssessmentAnnotation(assessment) as unknown as import("@/hooks/use-chat-stream").AnnotationData] } : undefined,
+                metadata: annotations.length > 0 ? { annotations } : undefined,
               } satisfies UIMessage<MessageMetadata>;
             });
           chat.setMessages(historyMessages);
+
+          const hasActiveProcessing = sessionData.session.messages.some(
+            (m) => m.status === "sending" || m.status === "processing"
+          );
+          if (hasActiveProcessing) {
+            chat.resumeStream();
+          }
 
           setLoaded(true);
         });
@@ -490,7 +537,7 @@ export default function LearnPage() {
       .catch(console.error);
   }
 
-  if (!loaded) {
+  if (!loaded && !isSessionSwitch) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
