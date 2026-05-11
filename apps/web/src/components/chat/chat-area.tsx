@@ -147,7 +147,7 @@ export function ChatArea({
         className="flex-1 overflow-y-auto px-6 py-6"
         style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%)' }}
       >
-        {welcomeContent}
+        {messages.length === 0 && welcomeContent}
         {messages.length === 0 && !welcomeContent && (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
