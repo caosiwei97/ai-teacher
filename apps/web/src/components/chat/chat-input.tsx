@@ -56,7 +56,7 @@ export function ChatInput({
               onKeyDown={handleKeyDown}
               placeholder="写下你的思考…"
               rows={1}
-              className="flex-1 resize-none bg-transparent px-4 py-4 pr-12 text-[16px] leading-relaxed text-[var(--color-chat-input-text)] placeholder:text-[var(--color-chat-input-placeholder)] focus:outline-none"
+              className="flex-1 resize-none bg-transparent px-4 py-4 pr-12 text-[16px] leading-relaxed text-[var(--color-chat-input-text)] placeholder:text-[var(--color-chat-input-placeholder)] focus:outline-none focus-visible:shadow-none focus-visible:ring-0"
               style={{ minHeight: "56px", maxHeight: "280px" }}
               onInput={(e) => {
                 const el = e.currentTarget;
