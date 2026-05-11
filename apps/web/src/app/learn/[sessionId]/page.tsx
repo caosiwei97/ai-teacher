@@ -324,11 +324,15 @@ export default function LearnPage() {
   const handleArchiveSession = useCallback(
     async (id: string) => {
       try {
+        // Optimistically remove from local state to preserve virtual sessions
+        setSessions((prev) => prev.filter((s) => s.id !== id));
         await archiveSession(id);
-        const data = await fetchSessions(USER_ID);
-        setSessions(data.sessions);
       } catch (err) {
         console.error("Failed to archive session:", err);
+        // Rollback: re-fetch from server
+        fetchSessions(USER_ID)
+          .then((data) => setSessions(data.sessions))
+          .catch(console.error);
       }
     },
     [],
