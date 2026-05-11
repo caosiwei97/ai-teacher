@@ -13,7 +13,7 @@ export interface TutorPromptContext {
   }>;
   masteredNodes: string;
   learnerProfile: string;
-  teachingMode?: "warm" | "strict";
+  teachingMode?: "warm" | "strict" | "interviewer";
   isDiagnosisPhase?: boolean;
 }
 
@@ -25,7 +25,16 @@ export function buildTutorSystemPrompt(context: TutorPromptContext) {
     )
     .join("\n");
 
-  const teachingModeStrategies = context.teachingMode === "strict" ? `
+  const teachingModeStrategies = context.teachingMode === "interviewer" ? `
+# 教学模式：面试官
+
+- 以真实面试场景提问，模拟技术面试的节奏和压力
+- 连续追问技术深度，每个回答后立即追问"为什么"或"底层原理是什么"
+- 不给提示，要求独立作答，模拟真实面试的紧张感
+- 掌握门槛 ~90%，回答必须结构化、有深度才能通过
+- 出错时标记问题但继续追问下一题，不中断面试节奏
+- 定期进行"综合面试题"考核，多知识点串联
+` : context.teachingMode === "strict" ? `
 # 教学模式：严格教练
 
 - 学生回答正确时，追问底层逻辑"为什么"而不是直接肯定

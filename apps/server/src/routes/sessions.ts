@@ -7,7 +7,7 @@ const createSessionSchema = z.object({
   userId: z.string().min(1),
   topic: z.string().min(1),
   sourceId: z.string().min(1).optional(),
-  teachingMode: z.enum(["warm", "strict"]).optional(),
+  teachingMode: z.enum(["warm", "strict", "interviewer"]).optional(),
 });
 
 function buildFallbackNodes(topic: string) {
