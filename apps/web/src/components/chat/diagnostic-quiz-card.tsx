@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Check, ArrowRight, Loader2 } from "lucide-react";
 
 interface QuizQuestion {
@@ -30,6 +30,21 @@ export function DiagnosticQuizCard({
     Map<string, { optionId: string; optionText: string }>
   >(new Map());
   const [customInput, setCustomInput] = useState<Map<string, string>>(new Map());
+
+  const tabLabels = useMemo(() => {
+    const countMap = new Map<string, number>();
+    for (const q of questions) {
+      countMap.set(q.title, (countMap.get(q.title) ?? 0) + 1);
+    }
+    const indexMap = new Map<string, number>();
+    return questions.map((q) => {
+      const count = countMap.get(q.title) ?? 1;
+      if (count === 1) return q.title;
+      const idx = (indexMap.get(q.title) ?? 0) + 1;
+      indexMap.set(q.title, idx);
+      return `${q.title}${String.fromCodePoint(0x245f + idx)}`;
+    });
+  }, [questions]);
 
   const currentQuestion = questions[activeTab];
   const allAnswered = questions.every((q) => answers.has(q.id));
@@ -123,7 +138,7 @@ export function DiagnosticQuizCard({
             {answers.has(q.id) && (
               <Check className="h-3 w-3 text-roadmap-mastered" />
             )}
-            {q.title}
+            {tabLabels[i]}
           </button>
         ))}
       </div>

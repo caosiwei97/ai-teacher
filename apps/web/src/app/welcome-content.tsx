@@ -104,7 +104,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
   const handleSubmit = useCallback(
     (e: { preventDefault: () => void }) => {
       e.preventDefault();
-      createSession("学习" + input);
+      createSession(input);
     },
     [input, createSession],
   );
@@ -113,7 +113,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        createSession("学习" + input);
+        createSession(input);
       }
     },
     [input, createSession],
@@ -210,7 +210,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
                   return (
                     <button
                       key={topic.id}
-                      onClick={() => createSession("学习" + topic.title)}
+                      onClick={() => createSession(topic.title)}
                       disabled={creating}
                       className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground transition-all duration-200 hover:bg-secondary hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 disabled:opacity-50"
                     >

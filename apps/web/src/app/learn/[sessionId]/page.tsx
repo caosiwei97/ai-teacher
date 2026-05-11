@@ -346,7 +346,7 @@ export default function LearnPage() {
   }
 
   function handleTopicClick(topic: string) {
-    chat.submitMessage(`学习${topic}`);
+    chat.submitMessage(topic);
   }
 
   function getLastAssistantMessage() {
