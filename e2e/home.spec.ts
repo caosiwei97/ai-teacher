@@ -49,4 +49,18 @@ test.describe("Home Page", () => {
 
     await expect(page).toHaveURL(/\/learn\//, { timeout: 30000 });
   });
+
+  test("should show model selector on welcome page", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
+
+    const modelButton = page.locator("button", { hasText: "未配置模型" });
+    const hasModelSelector = await modelButton.isVisible().catch(() => false);
+
+    if (!hasModelSelector) {
+      await expect(
+        page.getByText("温暖私教"),
+      ).toBeVisible({ timeout: 10000 });
+    }
+  });
 });

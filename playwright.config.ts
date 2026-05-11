@@ -1,4 +1,7 @@
 import { defineConfig } from "@playwright/test";
+import path from "path";
+import fs from "fs";
+import { homedir } from "os";
 
 const TEST_DATABASE_URL =
   "postgresql://postgres:postgres@localhost:25432/ai_teacher_test";
@@ -7,6 +10,27 @@ const TEST_DATABASE_URL =
 const TEST_WEB_PORT = 48421;
 const TEST_SERVER_PORT = 48422;
 const TEST_WORKER_PORT = 48423;
+
+const pnpmLocations = [
+  path.join(homedir(), ".volta", "bin"),
+  path.join(homedir(), ".bun", "bin"),
+  path.join(homedir(), ".local", "bin"),
+  path.join(homedir(), "Library", "pnpm"),
+  "/opt/homebrew/bin",
+  "/usr/local/bin",
+];
+
+let pnpmPath = "";
+for (const dir of pnpmLocations) {
+  const candidate = path.join(dir, "pnpm");
+  if (fs.existsSync(candidate)) {
+    pnpmPath = dir;
+    break;
+  }
+}
+
+// 找到 pnpm 后注入 PATH，找不到则依赖系统默认
+const PATH_INJECT = pnpmPath ? `export PATH='${pnpmPath}':$PATH && ` : "";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -30,19 +54,19 @@ export default defineConfig({
   globalTeardown: require.resolve("./e2e/global-teardown"),
   webServer: [
     {
-      command: `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} SERVER_PORT=${TEST_SERVER_PORT} pnpm --filter @ai-teacher/server dev`,
+      command: `${PATH_INJECT}MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} SERVER_PORT=${TEST_SERVER_PORT} pnpm --filter @ai-teacher/server dev`,
       port: TEST_SERVER_PORT,
       reuseExistingServer: false,
       timeout: 60000,
     },
     {
-      command: `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} WORKER_PORT=${TEST_WORKER_PORT} SERVER_PORT=${TEST_SERVER_PORT} pnpm --filter @ai-teacher/worker dev`,
+      command: `${PATH_INJECT}MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} WORKER_PORT=${TEST_WORKER_PORT} SERVER_PORT=${TEST_SERVER_PORT} pnpm --filter @ai-teacher/worker dev`,
       port: TEST_WORKER_PORT,
       reuseExistingServer: false,
       timeout: 60000,
     },
     {
-      command: `API_SERVER_URL=http://localhost:${TEST_SERVER_PORT} NEXT_PUBLIC_API_URL=http://localhost:${TEST_SERVER_PORT} PORT=${TEST_WEB_PORT} pnpm --filter @ai-teacher/web dev:test`,
+      command: `${PATH_INJECT}API_SERVER_URL=http://localhost:${TEST_SERVER_PORT} NEXT_PUBLIC_API_URL=http://localhost:${TEST_SERVER_PORT} PORT=${TEST_WEB_PORT} pnpm --filter @ai-teacher/web dev:test`,
       port: TEST_WEB_PORT,
       reuseExistingServer: false,
       timeout: 60000,
