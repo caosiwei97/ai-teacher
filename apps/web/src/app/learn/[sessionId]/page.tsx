@@ -106,6 +106,7 @@ export default function LearnPage() {
   const [pageError, setPageError] = useState<string | null>(null);
   const [isNewSession, setIsNewSession] = useState(false);
   const [newSessionInput, setNewSessionInput] = useState("");
+  const [teachingMode, setTeachingMode] = useState<"warm" | "strict">("warm");
   const [creating, setCreating] = useState(false);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
 
@@ -249,7 +250,7 @@ export default function LearnPage() {
         const res = await fetch(`/api/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: USER_ID, topic: topic.trim(), teachingMode: "warm" }),
+          body: JSON.stringify({ userId: USER_ID, topic: topic.trim(), teachingMode }),
         });
         if (!res.ok) throw new Error();
         const data = await res.json();
@@ -258,7 +259,7 @@ export default function LearnPage() {
         setCreating(false);
       }
     },
-    [creating, router],
+    [creating, router, teachingMode],
   );
 
   const handleArchiveSession = useCallback(
@@ -525,29 +526,49 @@ export default function LearnPage() {
           </div>
           <form
             onSubmit={(e) => { e.preventDefault(); handleCreateFromNewSession(newSessionInput); }}
-            className="mt-8 flex w-full max-w-lg items-center gap-2"
+            className="mt-8 flex w-full max-w-lg flex-col gap-3"
           >
-            <input
-              type="text"
-              value={newSessionInput}
-              onChange={(e) => setNewSessionInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleCreateFromNewSession(newSessionInput);
-                }
-              }}
-              placeholder="你想学什么？"
-              disabled={creating}
-              className="flex-1 rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-roadmap-fill focus:outline-none focus:ring-1 focus:ring-roadmap-fill disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!newSessionInput.trim() || creating}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all duration-200 hover:bg-primary/90 disabled:opacity-50"
-            >
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
-            </button>
+            <div className="flex items-center gap-2 self-center">
+              <button
+                type="button"
+                onClick={() => setTeachingMode("warm")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  teachingMode === "warm"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                😊 温暖私教
+              </button>
+              <button
+                type="button"
+                onClick={() => setTeachingMode("strict")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  teachingMode === "strict"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                🔥 严格教练
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newSessionInput}
+                onChange={(e) => setNewSessionInput(e.target.value)}
+                placeholder="你想学什么？"
+                disabled={creating}
+                className="flex-1 rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-roadmap-fill focus:outline-none focus:ring-1 focus:ring-roadmap-fill disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={!newSessionInput.trim() || creating}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all duration-200 hover:bg-primary/90 disabled:opacity-50"
+              >
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+              </button>
+            </div>
           </form>
         </div>
       ) : (
