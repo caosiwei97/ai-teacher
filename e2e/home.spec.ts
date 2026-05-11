@@ -1,42 +1,45 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Home Page", () => {
-  test("should show welcome content on homepage", async ({ page }) => {
+  test("should redirect to learn page with welcome content", async ({ page }) => {
     const response = await page.goto("/");
     expect(response).not.toBeNull();
-    expect(response!.status()).toBeLessThan(400);
+    expect(response!.status).toBeLessThan(400);
 
-    await expect(page).toHaveURL("/");
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
     await expect(
       page.getByText("你好，我是 AI Teacher"),
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("should show suggested topic cards", async ({ page }) => {
+  test("should show suggested topic cards after redirect", async ({ page }) => {
     await page.goto("/");
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
     await expect(
       page.getByText("或者试试这些"),
     ).toBeVisible({ timeout: 10000 });
 
-    const topicCards = page.locator("button", { hasText: "文艺复兴" });
+    const topicCards = page.locator("button", { hasText: "AI 提示词" });
     await expect(topicCards.first()).toBeVisible();
   });
 
-  test("should show topic input", async ({ page }) => {
+  test("should show topic input after redirect", async ({ page }) => {
     await page.goto("/");
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
     const input = page.getByPlaceholder("你想学什么？");
     await expect(input).toBeVisible({ timeout: 10000 });
   });
 
-  test("should create session and navigate on input submit", async ({
+  test("should create session and update URL on input submit", async ({
     page,
   }) => {
     test.setTimeout(60000);
 
     await page.goto("/");
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
     const input = page.getByPlaceholder("你想学什么？");
     await expect(input).toBeVisible({ timeout: 10000 });
