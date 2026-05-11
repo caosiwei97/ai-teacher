@@ -98,22 +98,22 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
         setCreating(false);
       }
     },
-    [creating, router],
+    [creating, router, teachingMode],
   );
 
   const handleSubmit = useCallback(
     (e: { preventDefault: () => void }) => {
       e.preventDefault();
-      createSession(input);
+      createSession("学习" + input);
     },
     [input, createSession],
   );
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        createSession(input);
+        createSession("学习" + input);
       }
     },
     [input, createSession],
@@ -147,79 +147,84 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
             告诉我你对什么感兴趣，从零到精通，我带你
           </p>
 
-          <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
-
-          <div className="mt-3 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
-            {topics.map((topic) => {
-              const Icon = iconMap[topic.icon] ?? Brain;
-              return (
-                <button
-                  key={topic.id}
-                  onClick={() => createSession(topic.title)}
-                  disabled={creating}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground transition-all duration-200 hover:bg-secondary hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 disabled:opacity-50"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <span className="line-clamp-2 text-[13px] leading-snug">{topic.title}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="mt-8 flex w-full max-w-lg flex-col gap-3"
-        >
-          <div className="flex items-center gap-2 self-center">
-            <button
-              type="button"
-              onClick={() => setTeachingMode("warm")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                teachingMode === "warm"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              😊 温暖私教
-            </button>
-            <button
-              type="button"
-              onClick={() => setTeachingMode("strict")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                teachingMode === "strict"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              🔥 严格教练
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="你想学什么？"
-            disabled={creating}
-            className="flex-1 rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || creating}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all duration-200 hover:bg-primary/90 disabled:opacity-50"
+          <form
+            onSubmit={handleSubmit}
+            className="mt-8 flex w-full max-w-lg flex-col gap-3"
           >
-            {creating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowUp className="h-4 w-4" />
-            )}
-          </button>
-          </div>
-        </form>
+            <div className="flex items-center gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="你想学什么？"
+                disabled={creating}
+                rows={1}
+                className="flex-1 resize-none rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                style={{ minHeight: "48px" }}
+              />
+              <button
+                type="submit"
+                disabled={!input.trim() || creating}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all duration-200 hover:bg-primary/90 disabled:opacity-50"
+              >
+                {creating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowUp className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            <div className="flex items-center gap-2 self-center">
+              <button
+                type="button"
+                onClick={() => setTeachingMode("warm")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  teachingMode === "warm"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                😊 温暖私教
+              </button>
+              <button
+                type="button"
+                onClick={() => setTeachingMode("strict")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                  teachingMode === "strict"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                🔥 严格教练
+              </button>
+            </div>
+          </form>
+
+          {!creating && (
+            <>
+              <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
+
+              <div className="mt-3 grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+                {topics.map((topic) => {
+                  const Icon = iconMap[topic.icon] ?? Brain;
+                  return (
+                    <button
+                      key={topic.id}
+                      onClick={() => createSession("学习" + topic.title)}
+                      disabled={creating}
+                      className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground transition-all duration-200 hover:bg-secondary hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 disabled:opacity-50"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                        <Icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="line-clamp-2 text-[13px] leading-snug">{topic.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </ThreeColumnLayout>
   );
