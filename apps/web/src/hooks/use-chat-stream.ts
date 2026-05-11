@@ -4,7 +4,9 @@ import { useState, useCallback, useRef } from "react";
 import type { UIMessage } from "ai";
 
 interface UseChatStreamOptions {
+  teachingMode?: "warm" | "strict" | "interviewer";
   onFinish?: () => void;
+  onError?: (error: string) => void;
   onRoadmapUpdate?: (nodes: unknown[]) => void;
   onSessionUpdate?: (data: { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string }) => void;
 }
@@ -63,14 +65,15 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
   );
 
   const handleSubmit = useCallback(
-    async (e?: React.FormEvent) => {
+    async (e?: React.FormEvent, overrideText?: string) => {
       e?.preventDefault();
-      if (!input.trim() || isLoading) return;
+      const text = overrideText ?? input;
+      if (!text.trim() || isLoading) return;
 
       const userMessage: UIMessage<MessageMetadata> = {
         id: `user-${Date.now()}`,
         role: "user",
-        parts: [{ type: "text" as const, text: input.trim() }],
+        parts: [{ type: "text" as const, text: text.trim() }],
       };
 
       const assistantMessage: UIMessage<MessageMetadata> = {
@@ -100,6 +103,7 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
               role: m.role,
               content: getTextFromParts(m.parts),
             })),
+            ...(options?.teachingMode ? { teachingMode: options.teachingMode } : {}),
           }),
           signal: controller.signal,
         });
@@ -235,8 +239,9 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                 const errorMsg =
                   typeof event.data === "string"
                     ? event.data
-                    : (event.data as Record<string, unknown>)?.message ?? "Stream error";
+                    : (event.data as Record<string, unknown>)?.message ?? "AI 服务异常，请稍后重试";
                 console.error("SSE error:", errorMsg);
+                options?.onError?.(String(errorMsg));
               }
             }
           }
@@ -245,7 +250,9 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
         if ((err as Error).name === "AbortError") {
           // intentional — user stopped generation
         } else {
+          const errorMsg = (err as Error).message || "发送消息失败";
           console.error("Chat stream error:", err);
+          options?.onError?.(errorMsg);
         }
       } finally {
         setIsLoading(false);
@@ -263,5 +270,12 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
     setIsLoading(false);
   }, []);
 
-  return { messages, input, isLoading, handleInputChange, handleSubmit, stop, setMessages };
+  const submitMessage = useCallback(
+    (text: string) => {
+      handleSubmit(undefined, text);
+    },
+    [handleSubmit],
+  );
+
+  return { messages, input, isLoading, handleInputChange, handleSubmit, submitMessage, stop, setMessages };
 }

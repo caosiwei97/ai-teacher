@@ -17,7 +17,7 @@ import {
   archiveSession,
 } from "@/lib/api-client";
 import type { UIMessage } from "ai";
-import { Loader2, GraduationCap, ArrowUp } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -105,9 +105,8 @@ export default function LearnPage() {
   const [loaded, setLoaded] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [isNewSession, setIsNewSession] = useState(false);
-  const [newSessionInput, setNewSessionInput] = useState("");
-  const [teachingMode, setTeachingMode] = useState<"warm" | "strict">("warm");
-  const [creating, setCreating] = useState(false);
+  const [teachingMode, setTeachingMode] = useState<"warm" | "strict" | "interviewer">("warm");
+  const [chatError, setChatError] = useState<string | null>(null);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
 
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -120,7 +119,14 @@ export default function LearnPage() {
   } | null>(null);
 
   const chat = useChatStream(sessionId, {
+    teachingMode,
     onFinish: () => {
+      if (isNewSession) {
+        setIsNewSession(false);
+        fetchSessions(USER_ID)
+          .then((data) => setSessions(data.sessions))
+          .catch(console.error);
+      }
       fetchSession(sessionId)
         .then((data) => {
           if (data) {
@@ -128,6 +134,10 @@ export default function LearnPage() {
           }
         })
         .catch(console.error);
+    },
+    onError: (error) => {
+      setChatError(error);
+      setTimeout(() => setChatError(null), 5000);
     },
     onRoadmapUpdate: (updatedNodes) => {
       setNodes(updatedNodes as NodeInfo[]);
@@ -242,26 +252,6 @@ export default function LearnPage() {
     router.push("/");
   }, [router]);
 
-  const handleCreateFromNewSession = useCallback(
-    async (topic: string) => {
-      if (creating || !topic.trim()) return;
-      setCreating(true);
-      try {
-        const res = await fetch(`/api/sessions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: USER_ID, topic: topic.trim(), teachingMode }),
-        });
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        router.replace(`/learn/${data.session.id}`);
-      } catch {
-        setCreating(false);
-      }
-    },
-    [creating, router, teachingMode],
-  );
-
   const handleArchiveSession = useCallback(
     async (id: string) => {
       try {
@@ -284,9 +274,14 @@ export default function LearnPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setChatError(null);
     if (chat.input.trim()) {
       chat.handleSubmit(e);
     }
+  }
+
+  function handleTopicClick(topic: string) {
+    chat.submitMessage(topic);
   }
 
   function getLastAssistantMessage() {
@@ -487,11 +482,13 @@ export default function LearnPage() {
     );
   }
 
+  const hasProgress = nodes.some((n) => n.status !== "not-started");
+
   return (
     <ThreeColumnLayout
       sessions={sessions}
       currentSessionId={sessionId}
-      nodes={nodes}
+      nodes={hasProgress ? nodes : []}
       codePanel={codePanel}
       onCodePanelChange={handleCodePanelChange}
       onSelectSession={handleSelectSession}
@@ -499,78 +496,53 @@ export default function LearnPage() {
       onArchiveSession={handleArchiveSession}
     >
       {isNewSession ? (
-        <div className="flex h-full flex-col items-center justify-center px-6">
-          <div className="flex w-full max-w-lg flex-col items-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-roadmap-fill/10">
-              <GraduationCap className="h-6 w-6 text-roadmap-fill" />
-            </div>
-            <h1 className="mt-4 text-xl font-semibold text-foreground">
-              你好，我是 AI Teacher
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              告诉我你对什么感兴趣，从零到精通，我带你
-            </p>
-            <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
-            <div className="mt-3 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
-              {fallbackTopics.map((topic) => (
-                <button
-                  key={topic.id}
-                  onClick={() => handleCreateFromNewSession(topic.title)}
-                  disabled={creating}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 text-left text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
-                >
-                  <span className="text-sm leading-snug">{topic.title}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <form
-            onSubmit={(e) => { e.preventDefault(); handleCreateFromNewSession(newSessionInput); }}
-            className="mt-8 flex w-full max-w-lg flex-col gap-3"
-          >
-            <div className="flex items-center gap-2 self-center">
-              <button
-                type="button"
-                onClick={() => setTeachingMode("warm")}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                  teachingMode === "warm"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                😊 温暖私教
-              </button>
-              <button
-                type="button"
-                onClick={() => setTeachingMode("strict")}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                  teachingMode === "strict"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                🔥 严格教练
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newSessionInput}
-                onChange={(e) => setNewSessionInput(e.target.value)}
-                placeholder="你想学什么？"
-                disabled={creating}
-                className="flex-1 rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-roadmap-fill focus:outline-none focus:ring-1 focus:ring-roadmap-fill disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={!newSessionInput.trim() || creating}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-all duration-200 hover:bg-primary/90 disabled:opacity-50"
-              >
-                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
-              </button>
-            </div>
-          </form>
-        </div>
+        <>
+          <ChatArea
+            messages={chat.messages}
+            input={chat.input}
+            isLoading={chat.isLoading}
+            onInputChange={chat.handleInputChange}
+            onSubmit={handleSubmit}
+            onStop={chat.stop}
+            isSuggesting={isSuggesting}
+            suggestion={suggestion}
+            onSuggest={handleSuggest}
+            onApplySuggestion={handleApplySuggestion}
+            onDismissSuggestion={handleDismissSuggestion}
+            onDiagnosticSubmit={handleDiagnosticSubmit}
+            diagnosticSubmitted={diagnosticSubmitted}
+            teachingMode={teachingMode}
+            onTeachingModeChange={setTeachingMode}
+            error={chatError}
+            welcomeContent={
+              <div className="flex flex-col items-center pt-16 pb-8">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-roadmap-fill/10">
+                  <GraduationCap className="h-6 w-6 text-roadmap-fill" />
+                </div>
+                <h1 className="mt-4 text-xl font-semibold text-foreground">
+                  你好，我是 AI Teacher
+                </h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  告诉我你对什么感兴趣，从零到精通，我带你
+                </p>
+                <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
+                <div className="mt-3 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
+                  {fallbackTopics.map((topic) => (
+                    <button
+                      key={topic.id}
+                      onClick={() => handleTopicClick(topic.title)}
+                      disabled={chat.isLoading}
+                      className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 text-left text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
+                    >
+                      <span className="text-sm leading-snug">{topic.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            }
+          />
+          <QuickQuestion sessionId={sessionId} />
+        </>
       ) : (
         <>
           <ChatArea
@@ -587,6 +559,9 @@ export default function LearnPage() {
             onDismissSuggestion={handleDismissSuggestion}
             onDiagnosticSubmit={handleDiagnosticSubmit}
             diagnosticSubmitted={diagnosticSubmitted}
+            teachingMode={teachingMode}
+            onTeachingModeChange={setTeachingMode}
+            error={chatError}
           />
           <QuickQuestion sessionId={sessionId} />
         </>
