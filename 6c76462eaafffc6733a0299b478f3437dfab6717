@@ -1,0 +1,79 @@
+apps/web/src/app/learn/[sessionId]/page.tsx
+  9e1e4ada5035a7a0 327-328,332-335
+apps/web/src/app/learn/[sessionId]/loading.tsx
+  0623c14e3adae509 1-9
+apps/web/src/app/page.tsx
+  28ad781bf1005117 1,3-4,7-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.14",
+  "base_commit_sha": "6c76462eaafffc6733a0299b478f3437dfab6717",
+  "prompts": {
+    "0623c14e3adae509": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e90a23d4ffeOCDBzpASxumM7x-59cb8feb-2317-40bc-bd29-6f2629314930",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 0,
+      "accepted_lines": 9,
+      "overriden_lines": 0
+    },
+    "28ad781bf1005117": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e90a23d4ffeOCDBzpASxumM7x-e79a9890-a5b4-41dd-bdba-449a1737e1ec",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 21,
+      "total_deletions": 3,
+      "accepted_lines": 21,
+      "overriden_lines": 0
+    },
+    "46661abcf4bb31cf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e90a23d4ffeOCDBzpASxumM7x-0fc011db-dfb3-4169-8aea-1b083b8f15ed",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 2,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    },
+    "4cd89f16e863bfe7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e90a23d4ffeOCDBzpASxumM7x-35effecb-4ff0-4211-8e58-856480e20f63",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 5,
+      "accepted_lines": 7,
+      "overriden_lines": 0
+    },
+    "9e1e4ada5035a7a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e90a23d4ffeOCDBzpASxumM7x-72850188-21b4-4d02-a2f3-0af586de3d33",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 2,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    }
+  }
+}
