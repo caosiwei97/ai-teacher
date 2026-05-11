@@ -314,7 +314,11 @@ export default function LearnPage() {
   );
 
   const handleNewSession = useCallback(() => {
-    router.push("/");
+    const hex = Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    const newId = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${(parseInt(hex[16], 16) & 0x3 | 0x8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+    router.push(`/learn/${newId}`);
   }, [router]);
 
   const handleArchiveSession = useCallback(
@@ -337,15 +341,26 @@ export default function LearnPage() {
     [],
   );
 
+  function optimisticUpdateTopic(topic: string) {
+    if (!isNewSession) return;
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === sessionId ? { ...s, topic, status: "active" } : s,
+      ),
+    );
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setChatError(null);
     if (chat.input.trim()) {
+      optimisticUpdateTopic(chat.input.trim());
       chat.handleSubmit(e);
     }
   }
 
   function handleTopicClick(topic: string) {
+    optimisticUpdateTopic(topic);
     chat.submitMessage(topic);
   }
 
