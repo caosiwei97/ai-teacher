@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, Loader2 } from "lucide-react";
 
 interface QuizQuestion {
   id: string;
@@ -15,6 +15,7 @@ interface DiagnosticQuizCardProps {
   title: string;
   onSubmit: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
   submitted?: boolean;
+  analyzing?: boolean;
 }
 
 export function DiagnosticQuizCard({
@@ -22,6 +23,7 @@ export function DiagnosticQuizCard({
   title,
   onSubmit,
   submitted = false,
+  analyzing = false,
 }: DiagnosticQuizCardProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [answers, setAnswers] = useState<
@@ -32,8 +34,10 @@ export function DiagnosticQuizCard({
   const currentQuestion = questions[activeTab];
   const allAnswered = questions.every((q) => answers.has(q.id));
   const currentAnswer = answers.get(currentQuestion?.id);
+  const disabled = submitted || analyzing;
 
   function handleSelectOption(questionId: string, optionId: string, optionText: string) {
+    if (disabled) return;
     const newAnswers = new Map(answers);
     newAnswers.set(questionId, { optionId, optionText });
     setAnswers(newAnswers);
@@ -51,27 +55,17 @@ export function DiagnosticQuizCard({
         return;
       }
     }
-    // If no unanswered after, check if all answered → auto submit
-    if (questions.every((q) => newAnswers.has(q.id))) {
-      setTimeout(() => {
-        const result = questions.map((q) => {
-          const answer = newAnswers.get(q.id)!;
-          return { questionId: q.id, optionId: answer.optionId, optionText: answer.optionText };
-        });
-        onSubmit(result);
-      }, 400);
-    } else {
-      // Wrap around to first unanswered
-      for (let i = 0; i < currentIdx; i++) {
-        if (!newAnswers.has(questions[i].id)) {
-          setActiveTab(i);
-          return;
-        }
+    // Wrap around to first unanswered
+    for (let i = 0; i < currentIdx; i++) {
+      if (!newAnswers.has(questions[i].id)) {
+        setActiveTab(i);
+        return;
       }
     }
   }
 
   function handleCustomInput(questionId: string, text: string) {
+    if (disabled) return;
     setCustomInput((prev) => {
       const next = new Map(prev);
       next.set(questionId, text);
@@ -90,15 +84,6 @@ export function DiagnosticQuizCard({
           return;
         }
       }
-      if (questions.every((q) => newAnswers.has(q.id))) {
-        setTimeout(() => {
-          const result = questions.map((q) => {
-            const answer = newAnswers.get(q.id)!;
-            return { questionId: q.id, optionId: answer.optionId, optionText: answer.optionText };
-          });
-          onSubmit(result);
-        }, 400);
-      }
     } else {
       setAnswers((prev) => {
         const next = new Map(prev);
@@ -109,23 +94,12 @@ export function DiagnosticQuizCard({
   }
 
   function handleSubmit() {
-    if (!allAnswered) return;
+    if (!allAnswered || disabled) return;
     const result = questions.map((q) => {
       const answer = answers.get(q.id)!;
       return { questionId: q.id, optionId: answer.optionId, optionText: answer.optionText };
     });
     onSubmit(result);
-  }
-
-  if (submitted) {
-    return (
-      <div className="rounded-xl border border-border bg-card p-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Check className="h-4 w-4 text-roadmap-mastered" />
-          <span>已提交</span>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -168,10 +142,13 @@ export function DiagnosticQuizCard({
                 onClick={() =>
                   handleSelectOption(currentQuestion.id, opt.id, opt.text)
                 }
+                disabled={disabled}
                 className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left text-[13px] transition-all ${
                   currentAnswer?.optionId === opt.id
                     ? "border-roadmap-fill bg-roadmap-fill/5 text-foreground"
-                    : "border-border bg-background text-foreground hover:border-roadmap-fill/50"
+                    : disabled
+                      ? "border-border bg-background text-foreground cursor-default"
+                      : "border-border bg-background text-foreground hover:border-roadmap-fill/50"
                 }`}
               >
                 <span
@@ -210,6 +187,7 @@ export function DiagnosticQuizCard({
                   onChange={(e) =>
                     handleCustomInput(currentQuestion.id, e.target.value)
                   }
+                  readOnly={disabled}
                   placeholder="其他（自由输入）"
                   className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-[13px]"
                 />
@@ -220,22 +198,46 @@ export function DiagnosticQuizCard({
       )}
 
       <div className="border-t border-border px-4 py-3 flex items-center justify-between bg-secondary/20">
-        <span className="text-xs text-muted-foreground">
-          {answers.size}/{questions.length} 已回答
-        </span>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!allAnswered}
-          className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all ${
-            allAnswered
-              ? "bg-primary text-primary-foreground hover:bg-primary/90"
-              : "bg-muted text-muted-foreground cursor-not-allowed"
-          }`}
-        >
-          {allAnswered ? "提交" : "请回答所有问题"}
-          {allAnswered && <ArrowRight className="h-3.5 w-3.5" />}
-        </button>
+        {submitted ? (
+          <>
+            <span className="text-xs text-muted-foreground">
+              {answers.size}/{questions.length} 已回答
+            </span>
+            <div className="flex items-center gap-1.5 text-xs font-medium text-roadmap-mastered">
+              <Check className="h-3.5 w-3.5" />
+              <span>已提交</span>
+            </div>
+          </>
+        ) : analyzing ? (
+          <>
+            <span className="text-xs text-muted-foreground">
+              {answers.size}/{questions.length} 已回答
+            </span>
+            <div className="flex items-center gap-1.5 text-xs font-medium text-roadmap-fill">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span>正在分析你的水平…</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <span className="text-xs text-muted-foreground">
+              {answers.size}/{questions.length} 已回答
+            </span>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!allAnswered}
+              className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all ${
+                allAnswered
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-muted text-muted-foreground cursor-not-allowed"
+              }`}
+            >
+              {allAnswered ? "提交" : "请回答所有问题"}
+              {allAnswered && <ArrowRight className="h-3.5 w-3.5" />}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
