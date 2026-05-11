@@ -8,10 +8,8 @@ interface ToolResultEntry {
 export const MessageService = {
   async persistTurn(
     sessionId: string,
-    userMessage: string,
     assistantContent: string,
     toolResults: ToolResultEntry[],
-    hidden = false,
   ) {
     const assistantMetadata =
       toolResults.length > 0
@@ -29,19 +27,14 @@ export const MessageService = {
       (tr) => tr.toolName === "generateAssessment",
     );
 
-    await prisma.$transaction([
-      prisma.message.create({
-        data: { sessionId, role: "learner", type: "text", content: userMessage, hidden },
-      }),
-      prisma.message.create({
-        data: {
-          sessionId,
-          role: "tutor",
-          type: hasAssessment ? "assessment" : "text",
-          content: assistantContent,
-          metadata: assistantMetadata,
-        },
-      }),
-    ]);
+    await prisma.message.create({
+      data: {
+        sessionId,
+        role: "tutor",
+        type: hasAssessment ? "assessment" : "text",
+        content: assistantContent,
+        metadata: assistantMetadata,
+      },
+    });
   },
 };

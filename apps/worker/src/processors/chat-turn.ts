@@ -46,7 +46,7 @@ export function createChatTurnWorker(
   const worker = new BullWorker<ChatTurnJobData>(
     "chat-turn",
     async (job) => {
-      const { messageId, sessionId, userContent, messages, hidden } = job.data;
+      const { messageId, sessionId, messages } = job.data;
       const channel = `chat:${sessionId}`;
 
       console.log(
@@ -189,10 +189,8 @@ export function createChatTurnWorker(
 
         await MessageService.persistTurn(
           sessionId,
-          userContent,
           graphResult.assistantText ?? "",
           graphResult.toolResults ?? [],
-          hidden,
         );
 
         await prisma.message.update({
