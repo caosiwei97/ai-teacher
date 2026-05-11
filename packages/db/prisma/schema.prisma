@@ -8,12 +8,13 @@ datasource db {
 }
 
 model User {
-  id        String          @id @default(cuid()) @db.Text
-  name      String          @db.Text
-  sessions  Session[]
-  sources   Source[]
-  profile   LearnerProfile?
-  createdAt DateTime        @default(now())
+  id         String          @id @default(cuid()) @db.Text
+  name       String          @db.Text
+  sessions   Session[]
+  sources    Source[]
+  profile    LearnerProfile?
+  llmConfigs LlmConfig[]
+  createdAt  DateTime        @default(now())
 }
 
 model Source {
@@ -30,15 +31,17 @@ model Source {
 }
 
 model Session {
-  id        String    @id @default(cuid()) @db.Text
-  userId    String    @db.Text
-  user      User      @relation(fields: [userId], references: [id])
-  topic     String    @db.Text
-  sourceId  String?   @db.Text
-  source    Source?   @relation(fields: [sourceId], references: [id])
-  status    String    @default("active") @db.Text
-  summary   Json?
+  id          String    @id @default(cuid()) @db.Text
+  userId      String    @db.Text
+  user        User      @relation(fields: [userId], references: [id])
+  topic       String    @db.Text
+  sourceId    String?   @db.Text
+  source      Source?   @relation(fields: [sourceId], references: [id])
+  status      String    @default("active") @db.Text
+  summary     Json?
   teachingMode String @default("warm") @db.Text
+  llmConfigId String?   @db.Text
+  llmConfig   LlmConfig? @relation(fields: [llmConfigId], references: [id])
   roadmap     Roadmap?
   messages    Message[]
   checkpoints Checkpoint[]
@@ -101,4 +104,21 @@ model LearnerProfile {
   misconceptionPatterns Json?
   sessionsSummary      Json?
   updatedAt            DateTime @updatedAt
+}
+
+model LlmConfig {
+  id           String   @id @default(cuid()) @db.Text
+  userId       String   @db.Text
+  user         User     @relation(fields: [userId], references: [id])
+  provider     String   @db.Text
+  encryptedKey String   @db.Text
+  baseUrl      String?  @db.Text
+  defaultModel String   @db.Text
+  label        String?  @db.Text
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sessions     Session[]
+
+  @@index([userId])
 }
