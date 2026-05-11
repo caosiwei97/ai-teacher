@@ -58,20 +58,24 @@ export function createChatTurnWorker(
         });
 
         if (!session) throw new Error(`Session ${sessionId} not found`);
-        if (!session.roadmap || session.roadmap.nodes.length === 0) {
+        if (!session.roadmap) {
           throw new Error(`Session ${sessionId} has no roadmap`);
         }
 
-        const currentNode =
-          session.roadmap.nodes.find((node) => node.status === "in-progress") ??
-          session.roadmap.nodes.find((node) => node.status === "not-started") ??
-          session.roadmap.nodes.find((node) => node.status !== "mastered") ??
-          session.roadmap.nodes.at(-1);
-        if (!currentNode) throw new Error(`Session ${sessionId} has no current node`);
+        const hasNodes = session.roadmap.nodes.length > 0;
 
-        const masteredNodes = session.roadmap.nodes
-          .filter((node) => node.status === "mastered" || node.masteryScore >= 80)
-          .map((node) => node.title);
+        const currentNode = hasNodes
+          ? (session.roadmap.nodes.find((node) => node.status === "in-progress") ??
+            session.roadmap.nodes.find((node) => node.status === "not-started") ??
+            session.roadmap.nodes.find((node) => node.status !== "mastered") ??
+            session.roadmap.nodes.at(-1))
+          : null;
+
+        const masteredNodes = hasNodes
+          ? session.roadmap.nodes
+              .filter((node) => node.status === "mastered" || node.masteryScore >= 80)
+              .map((node) => node.title)
+          : [];
 
         const subagentRegistry = createSubagentRegistry();
         const toolRegistry = createTutorToolRegistry(subagentRegistry);
@@ -92,18 +96,18 @@ export function createChatTurnWorker(
         const initialState: TutorState = {
           sessionId,
           topic: session.topic,
-          currentNodeId: currentNode.id,
-          currentNode: {
-            id: currentNode.id,
-            title: currentNode.title,
-            description: currentNode.description,
-          },
-          allNodes: session.roadmap.nodes.map((n) => ({
-            id: n.id,
-            index: n.index,
-            title: n.title,
-            status: n.status,
-          })),
+          currentNodeId: currentNode?.id ?? "pending",
+          currentNode: currentNode
+            ? { id: currentNode.id, title: currentNode.title, description: currentNode.description }
+            : { id: "pending", title: session.topic, description: `等待诊断后生成学习路线` },
+          allNodes: hasNodes
+            ? session.roadmap.nodes.map((n) => ({
+                id: n.id,
+                index: n.index,
+                title: n.title,
+                status: n.status,
+              }))
+            : [],
           masteredNodes,
           learnerProfile: buildLearnerProfile(session.user.profile),
           teachingMode: (session.teachingMode as "warm" | "strict") ?? "warm",

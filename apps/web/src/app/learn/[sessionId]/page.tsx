@@ -183,17 +183,34 @@ export default function LearnPage() {
         const exists = sessionsList.some((s) => s.id === sessionId);
 
         if (!exists) {
-          const virtualSession: SessionInfo = {
-            id: sessionId,
-            topic: "新对话",
-            status: "new",
-            progress: { totalNodes: 0, masteredNodes: 0, currentNodeId: null },
-          };
-          setSessions([virtualSession, ...sessionsList]);
-          setNodes([]);
-          setIsNewSession(true);
-          setLoaded(true);
-          return;
+          return fetchSession(sessionId).then((sessionData) => {
+            if (sessionData) {
+              const nodes = sessionData.session.roadmap?.nodes ?? [];
+              const virtualSession: SessionInfo = {
+                id: sessionId,
+                topic: sessionData.session.topic || "新对话",
+                status: sessionData.session.status || "active",
+                progress: {
+                  totalNodes: nodes.length,
+                  masteredNodes: nodes.filter((n: NodeInfo) => n.status === "mastered").length,
+                  currentNodeId: nodes.find((n: NodeInfo) => n.status === "in-progress")?.id ?? null,
+                },
+              };
+              setSessions([virtualSession, ...sessionsList]);
+              setNodes(nodes);
+            } else {
+              const virtualSession: SessionInfo = {
+                id: sessionId,
+                topic: "新对话",
+                status: "new",
+                progress: { totalNodes: 0, masteredNodes: 0, currentNodeId: null },
+              };
+              setSessions([virtualSession, ...sessionsList]);
+              setNodes([]);
+            }
+            setIsNewSession(true);
+            setLoaded(true);
+          });
         }
 
         return fetchSession(sessionId).then((sessionData) => {
@@ -421,6 +438,31 @@ export default function LearnPage() {
                 parts: [{ type: "text" as const, text: updatedText }],
               };
               chat.setMessages([...newMessages]);
+            }
+
+            if (event.type === "roadmap-updated" && event.data) {
+              const data = event.data as { nodes: NodeInfo[] };
+              setNodes(data.nodes);
+            }
+
+            if (event.type === "session-updated" && event.data) {
+              const data = event.data as { masteredNodes?: number; totalNodes?: number };
+              if (data.totalNodes !== undefined) {
+                setSessions((prev) =>
+                  prev.map((s) =>
+                    s.id === sessionId
+                      ? {
+                          ...s,
+                          progress: {
+                            ...s.progress,
+                            totalNodes: data.totalNodes!,
+                            masteredNodes: data.masteredNodes ?? 0,
+                          },
+                        }
+                      : s,
+                  ),
+                );
+              }
             }
           }
         }

@@ -12,6 +12,7 @@ import { createDelegateTaskTool } from "./delegate-task";
 import { renderUITool } from "./render-ui";
 import { pushCodeTool } from "./push-code";
 import { askQuestionTool } from "./ask-question";
+import { generateRoadmapTool } from "./generate-roadmap";
 
 export const tutorToolDefinitions = [
   assessMasteryTool,
@@ -23,6 +24,7 @@ export const tutorToolDefinitions = [
   renderUITool,
   pushCodeTool,
   askQuestionTool,
+  generateRoadmapTool,
 ];
 
 export function createTutorToolRegistry(
