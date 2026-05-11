@@ -4,7 +4,7 @@ test.describe("Home Page", () => {
   test("should redirect to learn page with welcome content", async ({ page }) => {
     const response = await page.goto("/");
     expect(response).not.toBeNull();
-    expect(response!.status).toBeLessThan(400);
+    expect(response!.status()).toBeLessThan(400);
 
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
@@ -29,7 +29,7 @@ test.describe("Home Page", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
-    const input = page.getByPlaceholder("你想学什么？");
+    const input = page.locator("textarea");
     await expect(input).toBeVisible({ timeout: 10000 });
   });
 
@@ -41,7 +41,7 @@ test.describe("Home Page", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
-    const input = page.getByPlaceholder("你想学什么？");
+    const input = page.locator("textarea");
     await expect(input).toBeVisible({ timeout: 10000 });
 
     await input.fill("测试学习主题");

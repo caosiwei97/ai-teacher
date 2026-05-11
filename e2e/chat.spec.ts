@@ -18,9 +18,9 @@ test.describe("Chat — Message Flow", () => {
       );
     });
 
-    await page.waitForSelector('[class*="rounded-2xl"]', { timeout: 15000 });
+    await page.waitForSelector('[class*="rounded-xl"]', { timeout: 15000 });
 
-    const messages = page.locator('[class*="rounded-2xl"]');
+    const messages = page.locator('[class*="rounded-xl"]');
     const count = await messages.count();
     expect(count).toBeGreaterThanOrEqual(2);
   });

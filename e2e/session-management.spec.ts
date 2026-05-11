@@ -19,43 +19,40 @@ test.describe("Session Management — API", () => {
   });
 
   test("should archive a session via DELETE", async ({ request }) => {
-    const listRes = await request.get(`/api/sessions?userId=${USER_ID}`);
-    const { sessions } = await listRes.json();
-    const target = sessions.find(
-      (s: { status: string }) => s.status === "completed",
-    );
+    const createRes = await request.post("/api/sessions", {
+      data: { userId: USER_ID, topic: "待归档测试会话" },
+    });
+    expect(createRes.ok()).toBeTruthy();
+    const { session: created } = await createRes.json();
 
-    if (!target) {
-      test.skip();
-      return;
-    }
+    const patchRes = await request.patch(`/api/sessions/${created.id}`, {
+      data: { status: "completed" },
+    });
+    expect(patchRes.ok()).toBeTruthy();
 
-    const archiveRes = await request.delete(`/api/sessions/${target.id}`);
+    const archiveRes = await request.delete(`/api/sessions/${created.id}`);
     expect(archiveRes.ok()).toBeTruthy();
 
     const { success, session: archived } = await archiveRes.json();
     expect(success).toBe(true);
     expect(archived.status).toBe("archived");
 
-    const listRes2 = await request.get(`/api/sessions?userId=${USER_ID}`);
-    const { sessions: sessions2 } = await listRes2.json();
-    const found = sessions2.find(
-      (s: { id: string }) => s.id === target.id,
+    const listRes = await request.get(`/api/sessions?userId=${USER_ID}`);
+    const { sessions } = await listRes.json();
+    const found = sessions.find(
+      (s: { id: string }) => s.id === created.id,
     );
     expect(found).toBeUndefined();
   });
 
   test("should update session status via PATCH", async ({ request }) => {
-    const listRes = await request.get(`/api/sessions?userId=${USER_ID}`);
-    const { sessions } = await listRes.json();
-    const target = sessions[0];
+    const createRes = await request.post("/api/sessions", {
+      data: { userId: USER_ID, topic: "状态变更测试会话" },
+    });
+    expect(createRes.ok()).toBeTruthy();
+    const { session: created } = await createRes.json();
 
-    if (!target) {
-      test.skip();
-      return;
-    }
-
-    const patchRes = await request.patch(`/api/sessions/${target.id}`, {
+    const patchRes = await request.patch(`/api/sessions/${created.id}`, {
       data: { status: "completed" },
     });
     expect(patchRes.ok()).toBeTruthy();
@@ -63,13 +60,7 @@ test.describe("Session Management — API", () => {
     const { session: updated } = await patchRes.json();
     expect(updated.status).toBe("completed");
 
-    const restoreRes = await request.patch(`/api/sessions/${target.id}`, {
-      data: { status: target.status === "diagnosing" ? "diagnosing" : "active" },
-    });
-    if (restoreRes.ok()) {
-      const { session: restored } = await restoreRes.json();
-      expect(restored).toBeDefined();
-    }
+    await request.delete(`/api/sessions/${created.id}`);
   });
 
   test("should return 404 for non-existent session", async ({ request }) => {
@@ -93,7 +84,7 @@ test.describe("Session Management — Home Page", () => {
 
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
-    const sidebar = page.locator(".bg-sidebar-bg");
+    const sidebar = page.locator(".bg-sidebar").first();
     await expect(sidebar).toBeVisible();
 
     const sessionButtons = sidebar.locator("button");
@@ -132,7 +123,7 @@ test.describe("Session Management — Left Sidebar", () => {
     await page.goto("/learn/seed-session-react-hooks");
     await page.waitForSelector("text=学习路线", { timeout: 10000 });
 
-    const sidebar = page.locator(".bg-sidebar-bg");
+    const sidebar = page.locator(".bg-sidebar").first();
     await expect(sidebar).toBeVisible();
 
     const progressText = sidebar.locator("text=1/5");

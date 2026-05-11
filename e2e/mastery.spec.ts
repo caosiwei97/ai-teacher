@@ -35,7 +35,7 @@ test.describe("Mastery — Node State Transitions", () => {
     expect(masteredCount).toBeGreaterThanOrEqual(1);
   });
 
-  test("new session should create nodes with correct structure", async ({
+  test("new session should create empty roadmap (nodes generated after diagnosis)", async ({
     request,
   }) => {
     test.setTimeout(60000);
@@ -47,9 +47,7 @@ test.describe("Mastery — Node State Transitions", () => {
 
     const { session } = await createResponse.json();
     expect(session.status).toBe("active");
-
-    const nodes = session.roadmap.nodes;
-    expect(nodes.length).toBe(5);
-    expect(nodes.every((n: { status: string }) => n.status === "not-started")).toBeTruthy();
+    expect(session.roadmap).toBeDefined();
+    expect(session.roadmap.nodes.length).toBe(0);
   });
 });
