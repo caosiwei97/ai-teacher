@@ -1,0 +1,130 @@
+apps/worker/src/agent/tools/ask-question.ts
+  16496e3c142813ab 56
+  20b0aad3bbe1b252 51
+apps/worker/src/agent/prompts/tutor.ts
+  e9df6fba4b4cce52 61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.14",
+  "base_commit_sha": "5ff8a7617d6aea0321c50660b8fb6a292d1765b5",
+  "prompts": {
+    "16496e3c142813ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e93c5dbcffeqApw26wBnRGfcD-a7b07fcd-604d-4271-83a5-abc58ce1575b",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "1a19e8b13b0c6bc2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e93c5dbcffeqApw26wBnRGfcD-ce7568d2-f459-4da2-990e-342bc2a06908",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "20b0aad3bbe1b252": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e93c5dbcffeqApw26wBnRGfcD-be2231af-a463-43d0-98ca-b1e69cdbe1d8",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "2a6ee0313ed3cbcd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e93c5dbcffeqApw26wBnRGfcD-d11526c4-dfb9-4804-9920-454dfcbb795b",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 4,
+      "accepted_lines": 3,
+      "overriden_lines": 0
+    },
+    "5f0d23e092b2b9b2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e93c5dbcffeqApw26wBnRGfcD-c201b770-6894-4378-8a84-9794d1ac25cc",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "75f326d239e32fe0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e93c5dbcffeqApw26wBnRGfcD-d3c1857d-0a4f-4313-b482-4738cd688abf",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 16,
+      "total_deletions": 0,
+      "accepted_lines": 15,
+      "overriden_lines": 0
+    },
+    "8f7432f136b03670": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e93c5dbcffeqApw26wBnRGfcD-e51aad16-2d8e-4ce7-9bc1-5f1ef7b5704f",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "d0de4a7b5e6c9e97": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e93c5dbcffeqApw26wBnRGfcD-7d4b8d1c-aa49-4fb8-ab93-88ecef1eae7d",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "e9df6fba4b4cce52": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1e93c5dbcffeqApw26wBnRGfcD-614e76e1-6273-4926-a574-6df9b616f4e0",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
