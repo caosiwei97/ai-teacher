@@ -3,6 +3,11 @@ import { defineConfig } from "@playwright/test";
 const TEST_DATABASE_URL =
   "postgresql://postgres:postgres@localhost:25432/ai_teacher_test";
 
+// E2E 测试使用独立端口，避免与开发环境冲突
+const TEST_WEB_PORT = 48421;
+const TEST_SERVER_PORT = 48422;
+const TEST_WORKER_PORT = 48423;
+
 export default defineConfig({
   testDir: "./e2e",
   timeout: 30000,
@@ -11,7 +16,7 @@ export default defineConfig({
   retries: 0,
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:38421",
+    baseURL: `http://localhost:${TEST_WEB_PORT}`,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -25,27 +30,21 @@ export default defineConfig({
   globalTeardown: require.resolve("./e2e/global-teardown"),
   webServer: [
     {
-      command: process.env.PNPM_PATH
-        ? `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} ${process.env.PNPM_PATH} --filter @ai-teacher/server dev`
-        : `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} pnpm dev:server`,
-      port: 38422,
-      reuseExistingServer: true,
+      command: `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} SERVER_PORT=${TEST_SERVER_PORT} pnpm --filter @ai-teacher/server dev`,
+      port: TEST_SERVER_PORT,
+      reuseExistingServer: false,
       timeout: 60000,
     },
     {
-      command: process.env.PNPM_PATH
-        ? `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} ${process.env.PNPM_PATH} --filter @ai-teacher/worker dev`
-        : `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} pnpm dev:worker`,
-      port: 38423,
-      reuseExistingServer: true,
+      command: `MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} WORKER_PORT=${TEST_WORKER_PORT} SERVER_PORT=${TEST_SERVER_PORT} pnpm --filter @ai-teacher/worker dev`,
+      port: TEST_WORKER_PORT,
+      reuseExistingServer: false,
       timeout: 60000,
     },
     {
-      command: process.env.PNPM_PATH
-        ? `${process.env.PNPM_PATH} --filter @ai-teacher/web dev`
-        : "pnpm dev:web",
-      port: 38421,
-      reuseExistingServer: true,
+      command: `API_SERVER_URL=http://localhost:${TEST_SERVER_PORT} NEXT_PUBLIC_API_URL=http://localhost:${TEST_SERVER_PORT} pnpm --filter @ai-teacher/web dev -- -p ${TEST_WEB_PORT}`,
+      port: TEST_WEB_PORT,
+      reuseExistingServer: false,
       timeout: 60000,
     },
   ],
