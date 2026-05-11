@@ -18,14 +18,28 @@ const labelMap = {
 } as const;
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   const Icon = iconMap[theme];
   const label = labelMap[theme];
 
   const handleClick = () => {
     const idx = cycleOrder.indexOf(theme);
-    const next = cycleOrder[(idx + 1) % cycleOrder.length];
+    let nextIdx = (idx + 1) % cycleOrder.length;
+    let next = cycleOrder[nextIdx];
+
+    const nextResolved =
+      next === "system"
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light"
+        : next;
+
+    if (nextResolved === resolvedTheme) {
+      nextIdx = (nextIdx + 1) % cycleOrder.length;
+      next = cycleOrder[nextIdx];
+    }
+
     setTheme(next);
   };
 
