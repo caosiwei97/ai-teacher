@@ -121,20 +121,26 @@ export function LeftSidebar({
                     )}
                   >
                     <p className="truncate text-[13px] font-medium leading-snug pr-6">{s.topic}</p>
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <div className="h-1 flex-1 rounded-full bg-sidebar-hover">
-                        <div
-                          className={cn(
-                            "h-1 rounded-full transition-all",
-                            isActive ? "bg-sidebar-accent-foreground/60" : "bg-sidebar-muted/50",
-                          )}
-                          style={{ width: `${progress}%` }}
-                        />
+                    {s.progress.totalNodes > 0 ? (
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <div className="h-1 flex-1 rounded-full bg-sidebar-hover">
+                          <div
+                            className={cn(
+                              "h-1 rounded-full transition-all",
+                              isActive ? "bg-sidebar-accent-foreground/60" : "bg-sidebar-muted/50",
+                            )}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        <span className={cn("text-[10px]", isActive ? "text-sidebar-accent-foreground/70" : "text-sidebar-muted")}>
+                          {s.progress.masteredNodes}/{s.progress.totalNodes}
+                        </span>
                       </div>
-                      <span className={cn("text-[10px]", isActive ? "text-sidebar-accent-foreground/70" : "text-sidebar-muted")}>
-                        {s.progress.masteredNodes}/{s.progress.totalNodes}
+                    ) : s.status === 'diagnosing' ? (
+                      <span className={cn("mt-1 inline-block text-[10px]", isActive ? "text-sidebar-accent-foreground/70" : "text-sidebar-muted")}>
+                        诊断中…
                       </span>
-                    </div>
+                    ) : null}
                   </button>
                   {onArchiveSession && !isActive && (
                     <button
