@@ -8,11 +8,12 @@ const createSessionSchema = z.object({
   topic: z.string().min(1),
   sourceId: z.string().min(1).optional(),
   teachingMode: z.enum(["warm", "strict", "interviewer"]).optional(),
+  llmConfigId: z.string().optional(),
 });
 
 export const sessionsRoute = new Hono()
   .post("/", zValidator("json", createSessionSchema), async (c) => {
-    const { userId, topic, sourceId, teachingMode } = c.req.valid("json");
+    const { userId, topic, sourceId, teachingMode, llmConfigId } = c.req.valid("json");
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -41,6 +42,7 @@ export const sessionsRoute = new Hono()
         userId,
         topic,
         sourceId,
+        llmConfigId,
         teachingMode: teachingMode ?? "warm",
         status: "active",
         roadmap: {

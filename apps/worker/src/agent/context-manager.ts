@@ -1,4 +1,4 @@
-import type { ModelMessage } from "ai";
+import type { ModelMessage, LanguageModel } from "ai";
 import type { StructuredSummary } from "@ai-teacher/shared";
 import {
   type AgentMessage,
@@ -25,6 +25,7 @@ export interface ContextResult {
 interface ContextManagerDeps {
   loadSummary: (sessionId: string) => Promise<StructuredSummary | null>;
   saveSummary: (sessionId: string, summary: StructuredSummary) => Promise<void>;
+  model?: LanguageModel;
 }
 
 const DEFAULT_TOKEN_BUDGET = 6000;
@@ -124,8 +125,8 @@ export class ContextManager {
     if (toCompress.length === 0) return;
 
     const newSummary = existingSummary
-      ? await updateCompactSummary(existingSummary, toCompress)
-      : await generateCompactSummary(toCompress);
+      ? await updateCompactSummary(existingSummary, toCompress, this.deps.model)
+      : await generateCompactSummary(toCompress, this.deps.model);
 
     await this.deps.saveSummary(sessionId, newSummary);
   }
@@ -169,8 +170,8 @@ export class ContextManager {
     let newSummary: StructuredSummary;
     try {
       newSummary = existingSummary
-        ? await updateCompactSummary(existingSummary, toCompress)
-        : await generateCompactSummary(toCompress);
+        ? await updateCompactSummary(existingSummary, toCompress, this.deps.model)
+        : await generateCompactSummary(toCompress, this.deps.model);
     } catch (error) {
       console.error("[ContextManager] compaction failed, falling back to truncation:", error);
       const fallback = messages.slice(-recentCount);

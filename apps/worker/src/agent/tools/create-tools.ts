@@ -1,4 +1,5 @@
 import { tool } from "ai";
+import type { LanguageModel } from "ai";
 import { z } from 'zod';
 import { ToolRegistry, type SubagentRegistry } from "@ai-teacher/agent";
 import { NodeService } from "../services/node-service.js";
@@ -29,12 +30,13 @@ export const tutorToolDefinitions = [
 
 export function createTutorToolRegistry(
   subagentRegistry?: SubagentRegistry,
+  providerFn?: (modelId: string) => LanguageModel,
 ): ToolRegistry {
   const registry = new ToolRegistry();
   registry.registerAll(tutorToolDefinitions);
 
   if (subagentRegistry) {
-    const delegateTaskTool = createDelegateTaskTool(subagentRegistry, registry);
+    const delegateTaskTool = createDelegateTaskTool(subagentRegistry, registry, providerFn);
     registry.register(delegateTaskTool);
   }
 

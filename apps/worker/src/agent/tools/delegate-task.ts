@@ -1,4 +1,4 @@
-import { streamText, stepCountIs, tool as aiTool } from "ai";
+import { streamText, stepCountIs, tool as aiTool, type LanguageModel } from "ai";
 import type { Tool } from "ai";
 import type { ToolDefinition, SubagentRegistry, AgentResult } from "@ai-teacher/agent";
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import { getProvider } from "../provider";
 export function createDelegateTaskTool(
   subagentRegistry: SubagentRegistry,
   toolRegistry: { get: (name: string) => ToolDefinition | undefined; getAll: () => ToolDefinition[] },
+  providerFn?: (modelId: string) => LanguageModel,
 ): ToolDefinition {
   const agentDescriptions = subagentRegistry.getAgentDescriptions();
 
@@ -48,7 +49,7 @@ export function createDelegateTaskTool(
       }
 
       try {
-        const model = getProvider()(agentDef.model ?? "deepseek-v4-flash");
+        const model = (providerFn ?? getProvider())(agentDef.model ?? "deepseek-v4-flash");
         const result = streamText({
           model,
           system: agentDef.systemPrompt,

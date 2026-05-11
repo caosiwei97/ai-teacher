@@ -5,25 +5,29 @@ export interface AgentConfig {
   model?: string;
   maxRetries?: number;
   fallbackModel?: string;
+  providerFn?: (modelId: string) => LanguageModel;
 }
 
 export abstract class BaseAgent {
-  protected config: Required<AgentConfig>;
+  protected config: Required<Omit<AgentConfig, "providerFn">> & Pick<AgentConfig, "providerFn">;
 
   constructor(config?: AgentConfig) {
     this.config = {
       model: config?.model ?? "deepseek-v4-flash",
       maxRetries: config?.maxRetries ?? 3,
       fallbackModel: config?.fallbackModel ?? "deepseek-v4-flash",
+      providerFn: config?.providerFn,
     };
   }
 
   protected getModel(): LanguageModel {
-    return getProvider()(this.config.model);
+    const provider = this.config.providerFn ?? getProvider();
+    return provider(this.config.model);
   }
 
   protected getFallbackModel(): LanguageModel {
-    return getProvider()(this.config.fallbackModel);
+    const provider = this.config.providerFn ?? getProvider();
+    return provider(this.config.fallbackModel);
   }
 
   protected async executeWithRetry<T>(

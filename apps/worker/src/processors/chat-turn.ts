@@ -9,6 +9,8 @@ import { createSubagentRegistry } from "../agent/subagents";
 import { MessageService } from "../agent/services/message-service";
 import { buildLearnerProfile } from "../lib/learner-profile";
 import { ContextManager } from "../agent/context-manager";
+import { createProviderForConfig, getFallbackProvider } from "../agent/provider-registry.js";
+import { decrypt } from "../../../server/src/services/crypto.js";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
 const STREAM_TIMEOUT_MS = 120_000;
@@ -32,10 +34,25 @@ export interface ChatTurnJobData {
   teachingMode?: string;
   userId?: string;
   roadmapNodes?: RoadmapNodePayload[];
+  llmConfigId?: string;
 }
 
 function createPublisher(): Redis {
   return new Redis(REDIS_URL, { maxRetriesPerRequest: null });
+}
+
+async function getProviderForJob(llmConfigId?: string) {
+  if (llmConfigId) {
+    const config = await prisma.llmConfig.findUnique({ where: { id: llmConfigId } });
+    if (!config) throw new Error(`LlmConfig ${llmConfigId} not found`);
+    const apiKey = decrypt(config.encryptedKey);
+    return createProviderForConfig({
+      provider: config.provider,
+      apiKey,
+      baseUrl: config.baseUrl ?? undefined,
+    });
+  }
+  return getFallbackProvider();
 }
 
 export function createChatTurnWorker(
@@ -127,7 +144,8 @@ export function createChatTurnWorker(
           : [];
 
         const subagentRegistry = createSubagentRegistry();
-        const toolRegistry = createTutorToolRegistry(subagentRegistry);
+        const providerFn = await getProviderForJob(job.data.llmConfigId);
+        const toolRegistry = createTutorToolRegistry(subagentRegistry, providerFn);
         const checkpoint = new PrismaCheckpointStore(prisma);
 
         const contextManager = new ContextManager({
@@ -140,6 +158,7 @@ export function createChatTurnWorker(
           saveSummary: async (sid, summary) => {
             await prisma.session.update({ where: { id: sid }, data: { summary: JSON.parse(JSON.stringify(summary)) } });
           },
+          model: providerFn("deepseek-v4-flash"),
         });
 
         const initialState: TutorState = {
@@ -176,6 +195,7 @@ export function createChatTurnWorker(
           channel,
           contextManager,
           subagentRegistry,
+          providerFn,
         };
 
         const timeoutPromise = new Promise<never>((_, reject) =>

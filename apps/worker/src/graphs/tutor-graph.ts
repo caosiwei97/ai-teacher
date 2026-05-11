@@ -1,4 +1,4 @@
-import { streamText, stepCountIs } from "ai";
+import { streamText, stepCountIs, type LanguageModel } from "ai";
 import {
   StateGraph,
   END,
@@ -22,6 +22,10 @@ export interface TutorGraphContext extends GraphExecutionContext {
   channel: string;
   contextManager: ContextManager;
   subagentRegistry?: SubagentRegistry;
+  /** Provider function from job-level LLM config. Falls back to env-var provider. */
+  providerFn?: (modelId: string) => LanguageModel;
+  /** Default model name from job-level LLM config. Falls back to "deepseek-v4-flash". */
+  defaultModel?: string;
 }
 
 function createTutorGraph() {
@@ -73,7 +77,9 @@ function createTutorGraph() {
       };
       const tools = graphCtx.toolRegistry.toAiSdkTools(toolCtx);
 
-      const model = getProvider()("deepseek-v4-flash");
+      const modelName = graphCtx.defaultModel ?? "deepseek-v4-flash";
+      const providerFn = graphCtx.providerFn ?? getProvider();
+      const model = providerFn(modelName);
       const result = streamText({
         model,
         system: fullSystemPrompt,

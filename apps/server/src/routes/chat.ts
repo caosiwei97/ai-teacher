@@ -22,6 +22,7 @@ const chatRequestSchema = z.object({
     .min(1),
   hidden: z.boolean().optional().default(false),
   teachingMode: z.enum(["warm", "strict", "interviewer"]).optional(),
+  llmConfigId: z.string().optional(),
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,7 +95,7 @@ function subscribeAndStream(c: any, sessionId: string) {
 
 export const chatRoute = new Hono()
   .post("/", zValidator("json", chatRequestSchema), async (c) => {
-    const { sessionId, messages, hidden, teachingMode } = c.req.valid("json");
+    const { sessionId, messages, hidden, teachingMode, llmConfigId } = c.req.valid("json");
     const userMessage = messages[messages.length - 1].content;
 
     let session = await prisma.session.findUnique({
@@ -166,6 +167,7 @@ export const chatRoute = new Hono()
       teachingMode: session!.teachingMode ?? "warm",
       userId: session!.userId,
       roadmapNodes,
+      llmConfigId: llmConfigId ?? session!.llmConfigId,
     });
 
     return subscribeAndStream(c, sessionId);

@@ -12,6 +12,7 @@ import { suggestReplyRoute } from "./routes/suggest-reply";
 import { quickQuestionRoute } from "./routes/quick-question";
 import { chatRoute } from "./routes/chat";
 import { sandboxRoute } from "./routes/sandbox";
+import { llmConfigRoute } from "./routes/llm-config";
 
 const app = new Hono();
 
@@ -28,6 +29,7 @@ app.route("/api/suggest-reply", suggestReplyRoute);
 app.route("/api/quick-question", quickQuestionRoute);
 app.route("/api/chat", chatRoute);
 app.route("/api/sandbox", sandboxRoute);
+app.route("/api/llm", llmConfigRoute);
 
 const port = Number(process.env.SERVER_PORT) || 38422;
 

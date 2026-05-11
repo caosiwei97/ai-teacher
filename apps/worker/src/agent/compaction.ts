@@ -1,4 +1,4 @@
-import { generateObject } from "ai";
+import { generateObject, type LanguageModel } from "ai";
 import { StructuredSummarySchema, type StructuredSummary } from "@ai-teacher/shared";
 import { getProvider } from "./provider";
 import type { AgentMessage } from "./agent-message";
@@ -35,12 +35,13 @@ const UPDATE_SYSTEM = `你是一个教学对话分析专家。请基于已有摘
 
 export async function generateCompactSummary(
   messages: AgentMessage[],
+  model?: LanguageModel,
 ): Promise<StructuredSummary> {
-  const model = getProvider()("deepseek-v4-flash");
+  const resolvedModel = model ?? getProvider()("deepseek-v4-flash");
   const conversation = formatMessagesForPrompt(messages);
 
   const { object } = await generateObject({
-    model,
+    model: resolvedModel,
     schema: StructuredSummarySchema,
     system: COMPACT_SYSTEM,
     prompt: conversation,
@@ -52,12 +53,13 @@ export async function generateCompactSummary(
 export async function updateCompactSummary(
   existingSummary: StructuredSummary,
   newMessages: AgentMessage[],
+  model?: LanguageModel,
 ): Promise<StructuredSummary> {
-  const model = getProvider()("deepseek-v4-flash");
+  const resolvedModel = model ?? getProvider()("deepseek-v4-flash");
   const conversation = formatMessagesForPrompt(newMessages);
 
   const { object } = await generateObject({
-    model,
+    model: resolvedModel,
     schema: StructuredSummarySchema,
     system: UPDATE_SYSTEM,
     prompt: `已有摘要：\n${JSON.stringify(existingSummary, null, 2)}\n\n新对话：\n${conversation}`,
