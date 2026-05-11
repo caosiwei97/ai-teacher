@@ -142,13 +142,14 @@ export function ChatArea({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-5 py-4"
+        className="flex-1 overflow-y-auto px-6 py-6"
+        style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%)' }}
       >
         {welcomeContent}
         {messages.length === 0 && !welcomeContent && (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary">
-              <Sparkles className="h-6 w-6 text-roadmap-fill" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+              <Sparkles className="h-6 w-6 text-primary" />
             </div>
             <p className="text-sm">开始你的学习之旅吧</p>
           </div>
@@ -182,13 +183,13 @@ export function ChatArea({
           return lastMsg.role === "assistant" && !lastText.trim();
         })() && (
           <div className="flex justify-start mb-4">
-            <div className="rounded-2xl rounded-bl-sm bg-chat-tutor px-4 py-3 shadow-sm flex items-center gap-2">
+            <div className="rounded-xl rounded-bl-[4px] bg-chat-ai-bubble px-5 py-4 flex items-center gap-2">
               <div className="flex gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-roadmap-fill animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-roadmap-fill animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="h-1.5 w-1.5 rounded-full bg-roadmap-fill animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0s' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.2s' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.4s' }} />
               </div>
-              <span className="text-[13px] text-chat-tutor-text">老师正在思考中…</span>
+              <span className="text-[13px] text-chat-ai-text">老师正在思考中…</span>
             </div>
           </div>
         )}

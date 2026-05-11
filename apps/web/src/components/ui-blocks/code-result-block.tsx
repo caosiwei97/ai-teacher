@@ -62,14 +62,14 @@ export function CodeResultBlock({ block, onResult }: CodeResultBlockProps) {
           <textarea
             value={editCode}
             onChange={(e) => setEditCode(e.target.value)}
-            className="w-full min-h-[120px] rounded-lg border border-code-border bg-code-bg p-3 font-mono text-[13px] leading-relaxed text-code-text focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+            className="w-full min-h-[120px] rounded-lg border border-code-border bg-code-bg p-3 font-mono text-[13px] leading-relaxed text-code-text focus:outline-none focus:ring-2 focus:ring-primary/50"
             spellCheck={false}
           />
           <div className="flex gap-2">
             <button
               onClick={handleRun}
               disabled={isExecuting}
-              className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             >
               {isExecuting ? (
                 <>
@@ -130,7 +130,7 @@ export function CodeResultBlock({ block, onResult }: CodeResultBlockProps) {
       {!editing && (
         <button
           onClick={() => setEditing(true)}
-          className="text-[11px] font-medium text-chat-muted hover:text-amber-500 transition-colors"
+          className="text-[11px] font-medium text-chat-muted hover:text-accent transition-colors"
         >
           ✎ 编辑并重新运行
         </button>

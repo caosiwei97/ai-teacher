@@ -37,7 +37,7 @@ export function LeftSidebar({
     return (
       <button
         onClick={onToggle}
-        className="flex h-full w-12 items-center justify-center border-r border-sidebar-surface bg-sidebar-bg text-sidebar-text transition-colors hover:bg-sidebar-hover"
+        className="flex h-full w-12 items-center justify-center border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-colors hover:bg-sidebar-hover"
       >
         <ChevronRight className="h-4 w-4" />
       </button>
@@ -45,17 +45,17 @@ export function LeftSidebar({
   }
 
   return (
-    <div className="flex h-full w-[272px] flex-col bg-sidebar-bg text-sidebar-text">
+    <div className="flex h-full w-[280px] flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-active">
-            <GraduationCap className="h-4 w-4 text-sidebar-active-text" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-accent">
+            <GraduationCap className="h-4 w-4 text-sidebar-accent-foreground" />
           </div>
           <h1 className="text-sm font-semibold tracking-tight">AI Teacher</h1>
         </div>
         <button
           onClick={onToggle}
-          className="rounded-md p-1 text-sidebar-muted transition-colors hover:bg-sidebar-surface hover:text-sidebar-text"
+          className="rounded-md p-1 text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -65,7 +65,7 @@ export function LeftSidebar({
         <div className="px-3 pb-2">
           <button
             onClick={onNewSession}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-sidebar-muted px-3 py-2 text-[13px] text-sidebar-muted transition-colors hover:border-sidebar-active hover:text-sidebar-active-text"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-sidebar-muted px-3 py-2 text-[13px] text-sidebar-muted transition-colors hover:border-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
             新建会话
@@ -88,8 +88,8 @@ export function LeftSidebar({
                     className={cn(
                       "w-full rounded-lg px-3 py-2.5 text-left transition-all duration-150",
                       isActive
-                        ? "bg-sidebar-active text-sidebar-active-text shadow-sm"
-                        : "text-sidebar-text hover:bg-sidebar-hover",
+                        ? "bg-sidebar-active text-sidebar-accent-foreground border-l-2 border-sidebar-accent"
+                        : "text-sidebar-foreground hover:bg-sidebar-hover",
                     )}
                   >
                     <p className="truncate text-[13px] font-medium leading-snug">{s.topic}</p>
@@ -116,22 +116,22 @@ export function LeftSidebar({
                     className={cn(
                       "w-full rounded-lg px-3 py-2.5 text-left transition-all duration-150",
                       isActive
-                        ? "bg-sidebar-active text-sidebar-active-text shadow-sm"
-                        : "text-sidebar-text hover:bg-sidebar-hover",
+                        ? "bg-sidebar-active text-sidebar-accent-foreground border-l-2 border-sidebar-accent"
+                        : "text-sidebar-foreground hover:bg-sidebar-hover",
                     )}
                   >
                     <p className="truncate text-[13px] font-medium leading-snug pr-6">{s.topic}</p>
                     <div className="mt-1.5 flex items-center gap-2">
-                      <div className="h-1 flex-1 rounded-full bg-sidebar-surface">
+                      <div className="h-1 flex-1 rounded-full bg-sidebar-hover">
                         <div
                           className={cn(
                             "h-1 rounded-full transition-all",
-                            isActive ? "bg-white/60" : "bg-sidebar-muted/50",
+                            isActive ? "bg-sidebar-accent-foreground/60" : "bg-sidebar-muted/50",
                           )}
                           style={{ width: `${progress}%` }}
                         />
                       </div>
-                      <span className={cn("text-[10px]", isActive ? "text-white/70" : "text-sidebar-muted")}>
+                      <span className={cn("text-[10px]", isActive ? "text-sidebar-accent-foreground/70" : "text-sidebar-muted")}>
                         {s.progress.masteredNodes}/{s.progress.totalNodes}
                       </span>
                     </div>
@@ -162,8 +162,8 @@ export function LeftSidebar({
                   className={cn(
                     "w-full rounded-lg px-3 py-2 text-left transition-all duration-150",
                     s.id === currentSessionId
-                      ? "bg-sidebar-active text-sidebar-active-text"
-                      : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-text",
+                      ? "bg-sidebar-active text-sidebar-accent-foreground"
+                      : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground",
                   )}
                 >
                   <div className="flex items-center gap-2 pr-6">

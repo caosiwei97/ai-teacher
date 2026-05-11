@@ -9,7 +9,7 @@ interface MasteryReportBlockProps {
 
 function scoreColor(score: number) {
   if (score >= 90) return "text-roadmap-mastered";
-  if (score >= 80) return "text-amber-500";
+  if (score >= 80) return "text-accent";
   return "text-destructive";
 }
 

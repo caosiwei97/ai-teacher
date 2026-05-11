@@ -41,35 +41,37 @@ export function ChatInput({
   }
 
   return (
-    <div className="border-t border-border bg-card px-4 py-3">
+    <div className="border-t border-border p-4">
       <form onSubmit={onSubmit} className="mx-auto max-w-3xl">
-        <div className="flex items-end gap-2 rounded-2xl border border-input bg-background px-3 py-2 transition-colors focus-within:border-roadmap-fill focus-within:ring-1 focus-within:ring-roadmap-fill">
-          {onTeachingModeChange && (
-            <div className="flex shrink-0 items-end pb-0.5">
-              <ModeSelector value={teachingMode} onChange={onTeachingModeChange} />
-            </div>
-          )}
-          <textarea
-            value={value}
-            onChange={onChange}
-            onKeyDown={handleKeyDown}
-            placeholder="你想学什么？"
-            rows={1}
-            className="flex-1 resize-none bg-transparent py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-            style={{ minHeight: "24px", maxHeight: "200px" }}
-            onInput={(e) => {
-              const el = e.currentTarget;
-              el.style.height = "auto";
-              el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
-            }}
-          />
-          <div className="flex shrink-0 items-end gap-1 pb-0.5">
+        <div className="relative rounded-[12px] border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input-bg)] transition-[border-color,box-shadow] duration-200 ease-in-out focus-within:border-[var(--color-chat-input-focus)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-ring)_25%,transparent)]">
+          <div className="flex items-start">
+            {onTeachingModeChange && (
+              <div className="flex shrink-0 items-center pt-4 pl-4">
+                <ModeSelector value={teachingMode} onChange={onTeachingModeChange} />
+              </div>
+            )}
+            <textarea
+              value={value}
+              onChange={onChange}
+              onKeyDown={handleKeyDown}
+              placeholder="写下你的思考…"
+              rows={1}
+              className="flex-1 resize-none bg-transparent px-4 py-4 pr-12 text-[16px] leading-relaxed text-[var(--color-chat-input-text)] placeholder:text-[var(--color-chat-input-placeholder)] focus:outline-none"
+              style={{ minHeight: "56px", maxHeight: "280px" }}
+              onInput={(e) => {
+                const el = e.currentTarget;
+                el.style.height = "auto";
+                el.style.height = `${Math.min(el.scrollHeight, 280)}px`;
+              }}
+            />
+          </div>
+          <div className="absolute bottom-2 right-2 flex items-center gap-1">
             {onSuggest && !isLoading && (
               <button
                 type="button"
                 onClick={onSuggest}
                 disabled={isSuggesting}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-50"
+                className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)] disabled:opacity-50"
               >
                 <Lightbulb className="h-4 w-4" />
               </button>
@@ -78,7 +80,7 @@ export function ChatInput({
               <button
                 type="button"
                 onClick={onStop}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
+                className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
               >
                 <Square className="h-3.5 w-3.5" />
               </button>
@@ -86,7 +88,7 @@ export function ChatInput({
               <button
                 type="submit"
                 disabled={!value.trim()}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+                className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
               >
                 <ArrowUp className="h-4 w-4" />
               </button>

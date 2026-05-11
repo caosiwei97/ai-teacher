@@ -40,14 +40,14 @@ export function RightSidebar({ nodes, codePanel, onCodePanelChange }: RightSideb
   }, [codePanel]);
 
   return (
-    <div className="flex h-full w-[296px] flex-col border-l border-border bg-card">
+    <div className="flex h-full w-[320px] flex-col border-l border-border bg-sidebar">
       <div className="flex border-b border-border">
         <button
           type="button"
           onClick={() => setActiveTab("roadmap")}
           className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors ${
             activeTab === "roadmap"
-              ? "border-b-2 border-roadmap-fill text-roadmap-fill"
+              ? "border-b-2 border-sidebar-accent text-sidebar-accent"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -59,7 +59,7 @@ export function RightSidebar({ nodes, codePanel, onCodePanelChange }: RightSideb
           onClick={() => setActiveTab("code")}
           className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors ${
             activeTab === "code"
-              ? "border-b-2 border-roadmap-fill text-roadmap-fill"
+              ? "border-b-2 border-sidebar-accent text-sidebar-accent"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -83,7 +83,7 @@ export function RightSidebar({ nodes, codePanel, onCodePanelChange }: RightSideb
               <div className="mt-3">
                 <div className="mb-1.5 flex items-center justify-between">
                   <span className="text-[11px] text-muted-foreground">总进度</span>
-                  <span className="text-[11px] font-medium text-roadmap-fill">{progress}%</span>
+                  <span className="text-[11px] font-medium text-sidebar-accent">{progress}%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-roadmap-track">
                   <div
@@ -127,7 +127,7 @@ export function RightSidebar({ nodes, codePanel, onCodePanelChange }: RightSideb
           />
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sidebar-hover">
               <Code2 className="h-6 w-6 text-muted-foreground" />
             </div>
             <p className="text-xs text-muted-foreground">

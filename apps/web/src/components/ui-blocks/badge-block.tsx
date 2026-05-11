@@ -8,7 +8,7 @@ interface BadgeBlockProps {
 
 const VARIANT_STYLES: Record<BadgeBlockType["items"][number]["variant"], string> = {
   success: "bg-roadmap-mastered/10 text-roadmap-mastered",
-  warning: "bg-amber-500/10 text-amber-500",
+  warning: "bg-accent/10 text-accent",
   info: "bg-chat-accent/10 text-chat-accent",
 };
 

@@ -136,8 +136,8 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
     >
       <div className="flex h-full flex-col items-center justify-center px-6">
         <div className="flex w-full max-w-lg flex-col items-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-roadmap-fill/10">
-            <GraduationCap className="h-6 w-6 text-roadmap-fill" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+            <GraduationCap className="h-6 w-6 text-primary" />
           </div>
 
           <h1 className="mt-4 text-xl font-semibold text-foreground">
@@ -157,10 +157,10 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
                   key={topic.id}
                   onClick={() => createSession(topic.title)}
                   disabled={creating}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-left text-sm text-foreground transition-all duration-200 hover:bg-secondary hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 disabled:opacity-50"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-roadmap-fill/10">
-                    <Icon className="h-4 w-4 text-roadmap-fill" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <Icon className="h-4 w-4 text-primary" />
                   </div>
                   <span className="line-clamp-2 text-[13px] leading-snug">{topic.title}</span>
                 </button>
@@ -205,7 +205,7 @@ export function WelcomeContent({ sessions }: WelcomeContentProps) {
             onKeyDown={handleKeyDown}
             placeholder="你想学什么？"
             disabled={creating}
-            className="flex-1 rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-roadmap-fill focus:outline-none focus:ring-1 focus:ring-roadmap-fill disabled:opacity-50"
+            className="flex-1 rounded-xl border border-input bg-card px-4 py-3 text-sm text-foreground transition-all duration-200 placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
           />
           <button
             type="submit"

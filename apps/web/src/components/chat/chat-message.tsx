@@ -52,11 +52,12 @@ export function ChatMessage({
       <div className={`max-w-[80%] space-y-3 ${isUser ? "order-1" : ""}`}>
         {(hasContent || hasBlocks) && (
           <div
-            className={`rounded-2xl px-4 py-3 text-[14px] leading-relaxed ${
+            className={`rounded-xl px-4 py-3 text-base leading-relaxed ${
               isUser
-                ? "rounded-br-sm bg-chat-user text-chat-user-text"
-                : "rounded-bl-sm bg-chat-tutor text-chat-tutor-text shadow-sm"
+                ? "rounded-br-[4px] bg-chat-user-bubble text-chat-user-text"
+                : "rounded-bl-[4px] bg-chat-ai-bubble text-chat-ai-text"
             }`}
+            style={{ animation: 'message-in 300ms cubic-bezier(0.33, 1, 0.68, 1) both' }}
           >
             <MessageContent content={content} uiBlocks={effectiveBlocks} />
           </div>

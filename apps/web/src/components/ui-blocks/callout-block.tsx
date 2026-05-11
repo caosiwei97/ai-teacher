@@ -7,9 +7,9 @@ interface CalloutBlockProps {
 }
 
 const VARIANT_STYLES: Record<CalloutBlockType["variant"], string> = {
-  tip: "border-l-green-500 bg-green-500/5",
-  warning: "border-l-amber-500 bg-amber-500/5",
-  key: "border-l-blue-400 bg-blue-400/5",
+  tip: "border-l-roadmap-mastered bg-roadmap-mastered/5",
+  warning: "border-l-accent bg-accent/5",
+  key: "border-l-primary bg-primary/5",
 };
 
 function renderInlineCode(text: string) {

@@ -42,7 +42,7 @@ export function isAssessmentCardData(value: unknown): value is AssessmentCardPro
 
 function getAccuracyClass(accuracy: string) {
   if (accuracy.includes("部分") || accuracy.includes("中")) {
-    return "text-roadmap-fill";
+    return "text-primary";
   }
 
   if (
@@ -74,11 +74,11 @@ export function AssessmentCard({
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-roadmap-fill/10 text-roadmap-fill">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Award className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-[0.18em] text-roadmap-fill">
+          <p className="text-xs font-semibold tracking-[0.18em] text-primary">
             学习评估
           </p>
           <p className="mt-1 text-sm leading-6 text-foreground">{summary}</p>
@@ -127,7 +127,7 @@ export function AssessmentCard({
           {coreTags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center rounded-full bg-roadmap-fill/10 px-3 py-1 text-xs font-medium text-roadmap-fill"
+              className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
             >
               {tag}
             </span>
