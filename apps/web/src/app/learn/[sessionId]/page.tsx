@@ -354,12 +354,6 @@ export default function LearnPage() {
     );
     const hiddenContent = `[Quiz Response] ${answerLines.join(" | ")}`;
 
-    const userMessage: UIMessage<MessageMetadata> = {
-      id: `user-diag-${Date.now()}`,
-      role: "user",
-      parts: [{ type: "text" as const, text: "诊断答案已提交" }],
-    };
-
     const assistantMessage: UIMessage<MessageMetadata> = {
       id: `assistant-diag-${Date.now()}`,
       role: "assistant",
@@ -367,7 +361,7 @@ export default function LearnPage() {
       metadata: { annotations: [] },
     };
 
-    const newMessages = [...chat.messages, userMessage, assistantMessage];
+    const newMessages = [...chat.messages, assistantMessage];
     chat.setMessages(newMessages);
 
     try {
@@ -440,6 +434,10 @@ export default function LearnPage() {
         if (data) {
           setNodes(data.session.roadmap?.nodes ?? []);
         }
+        return fetchSessions(USER_ID);
+      })
+      .then((data) => {
+        if (data) setSessions(data.sessions);
       })
       .catch(console.error);
   }
@@ -482,13 +480,11 @@ export default function LearnPage() {
     );
   }
 
-  const hasProgress = nodes.some((n) => n.status !== "not-started");
-
   return (
     <ThreeColumnLayout
       sessions={sessions}
       currentSessionId={sessionId}
-      nodes={hasProgress ? nodes : []}
+      nodes={nodes}
       codePanel={codePanel}
       onCodePanelChange={handleCodePanelChange}
       onSelectSession={handleSelectSession}
