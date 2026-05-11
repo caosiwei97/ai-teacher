@@ -34,6 +34,7 @@ interface ChatAreaProps {
   onDismissSuggestion?: () => void;
   onDiagnosticSubmit?: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
   diagnosticSubmitted?: boolean;
+  diagnosticAnalyzing?: boolean;
   teachingMode?: "warm" | "strict" | "interviewer";
   onTeachingModeChange?: (mode: "warm" | "strict" | "interviewer") => void;
   error?: string | null;
@@ -115,6 +116,7 @@ export function ChatArea({
   onDismissSuggestion,
   onDiagnosticSubmit,
   diagnosticSubmitted,
+  diagnosticAnalyzing,
   teachingMode,
   onTeachingModeChange,
   error,
@@ -171,6 +173,7 @@ export function ChatArea({
               diagnosticQuestions={diagnosticQuestions}
               onDiagnosticSubmit={diagnosticQuestions ? onDiagnosticSubmit : undefined}
               diagnosticSubmitted={diagnosticSubmitted}
+              diagnosticAnalyzing={diagnosticAnalyzing}
             />
           );
         })}

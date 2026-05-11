@@ -14,6 +14,7 @@ interface ChatMessageProps {
   diagnosticQuestions?: DiagnosticQuestionsData;
   onDiagnosticSubmit?: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
   diagnosticSubmitted?: boolean;
+  diagnosticAnalyzing?: boolean;
 }
 
 export function ChatMessage({
@@ -24,6 +25,7 @@ export function ChatMessage({
   diagnosticQuestions,
   onDiagnosticSubmit,
   diagnosticSubmitted,
+  diagnosticAnalyzing,
 }: ChatMessageProps) {
   const isUser = role === "user";
   const hasContent = content.trim().length > 0;
@@ -68,6 +70,7 @@ export function ChatMessage({
             title={diagnosticQuestions.question}
             onSubmit={onDiagnosticSubmit}
             submitted={diagnosticSubmitted}
+            analyzing={diagnosticAnalyzing}
           />
         )}
       </div>

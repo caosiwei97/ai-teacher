@@ -108,6 +108,7 @@ export default function LearnPage() {
   const [teachingMode, setTeachingMode] = useState<"warm" | "strict" | "interviewer">("warm");
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
+  const [diagnosticAnalyzing, setDiagnosticAnalyzing] = useState(false);
 
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
@@ -364,7 +365,7 @@ export default function LearnPage() {
   async function handleDiagnosticSubmit(
     answers: Array<{ questionId: string; optionId: string; optionText: string }>,
   ) {
-    setDiagnosticSubmitted(true);
+    setDiagnosticAnalyzing(true);
 
     const answerLines = answers.map(
       (a) => `${a.questionId}: ${a.optionId} (${a.optionText})`,
@@ -467,8 +468,13 @@ export default function LearnPage() {
           }
         }
       }
+
+      setDiagnosticAnalyzing(false);
+      setDiagnosticSubmitted(true);
     } catch (err) {
       console.error("Diagnostic submit error:", err);
+      setDiagnosticAnalyzing(false);
+      setDiagnosticSubmitted(true);
     }
 
     fetchSession(sessionId)
@@ -549,6 +555,7 @@ export default function LearnPage() {
             onDismissSuggestion={handleDismissSuggestion}
             onDiagnosticSubmit={handleDiagnosticSubmit}
             diagnosticSubmitted={diagnosticSubmitted}
+            diagnosticAnalyzing={diagnosticAnalyzing}
             teachingMode={teachingMode}
             onTeachingModeChange={setTeachingMode}
             error={chatError}
@@ -597,6 +604,7 @@ export default function LearnPage() {
             onDismissSuggestion={handleDismissSuggestion}
             onDiagnosticSubmit={handleDiagnosticSubmit}
             diagnosticSubmitted={diagnosticSubmitted}
+            diagnosticAnalyzing={diagnosticAnalyzing}
             teachingMode={teachingMode}
             onTeachingModeChange={setTeachingMode}
             error={chatError}
