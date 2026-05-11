@@ -22,6 +22,7 @@ export interface TutorState extends BaseGraphState {
   needsFollowUp?: boolean;
   assistantText?: string;
   toolResults?: Array<{ toolName: string; result: unknown }>;
+  needsCompaction?: boolean;
 }
 
 /** Configuration for graph execution */

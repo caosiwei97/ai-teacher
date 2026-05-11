@@ -120,15 +120,7 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
           throw new Error(`Failed to send message: ${postRes.status}`);
         }
 
-        const sseRes = await fetch(`/api/chat/${sessionId}/stream`, {
-          signal: controller.signal,
-        });
-
-        if (!sseRes.ok) {
-          throw new Error(`Failed to open stream: ${sseRes.status}`);
-        }
-
-        const reader = sseRes.body?.getReader();
+        const reader = postRes.body?.getReader();
         if (!reader) throw new Error("No stream body");
 
         const decoder = new TextDecoder();

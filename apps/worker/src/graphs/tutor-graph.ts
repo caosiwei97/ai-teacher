@@ -31,7 +31,7 @@ function createTutorGraph() {
       const graphCtx = ctx as TutorGraphContext;
       await graphCtx.checkpoint.save(state.sessionId, "prepare_context", state);
 
-      const result = await graphCtx.contextManager.process(
+      const result = await graphCtx.contextManager.prepareForStream(
         state.sessionId,
         state.messages,
       );
@@ -40,6 +40,7 @@ function createTutorGraph() {
         ...state,
         messages: result.messages,
         summary: result.summary ?? state.summary,
+        needsCompaction: result.needsCompaction,
       };
     })
     .addNode("agent_loop", async (state, ctx) => {
@@ -191,6 +192,16 @@ function createTutorGraph() {
     .addNode("post_process", async (state, ctx) => {
       const graphCtx = ctx as TutorGraphContext;
       await graphCtx.checkpoint.save(state.sessionId, "post_process", state);
+
+      if (state.needsCompaction) {
+        graphCtx.contextManager.compactAfterStream(
+          state.sessionId,
+          state.messages,
+        ).catch((err) => {
+          console.error("[post_process] async compaction failed:", err);
+        });
+      }
+
       return state;
     })
     .addEdge("prepare_context", "agent_loop")

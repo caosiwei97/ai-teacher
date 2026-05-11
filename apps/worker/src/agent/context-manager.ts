@@ -19,6 +19,7 @@ export interface ContextResult {
   tokenCount: number;
   summary: StructuredSummary | null;
   compacted: boolean;
+  needsCompaction: boolean;
 }
 
 interface ContextManagerDeps {
@@ -57,7 +58,76 @@ export class ContextManager {
       tokenCount,
       summary: null,
       compacted: false,
+      needsCompaction: false,
     };
+  }
+
+  async prepareForStream(
+    sessionId: string,
+    rawMessages: ModelMessage[],
+  ): Promise<ContextResult> {
+    const agentMessages = coreMessagesToAgentMessages(rawMessages);
+    const transformed = this.transformContext(agentMessages);
+    const tokenCount = this.estimateAgentTokens(transformed);
+
+    const needsCompaction = tokenCount > this.tokenBudget * COMPACT_THRESHOLD;
+
+    if (needsCompaction) {
+      const existingSummary = await this.deps.loadSummary(sessionId);
+      const recentCount = KEEP_RECENT_TURNS * 2;
+      const recent = transformed.slice(-recentCount);
+
+      if (existingSummary) {
+        const summaryMessage: AgentMessage = {
+          type: "llm",
+          role: "assistant",
+          content: formatSummaryAsContext(existingSummary),
+        };
+        const withSummary = [summaryMessage, ...recent];
+        return {
+          messages: agentMessagesToCoreMessages(withSummary),
+          tokenCount: this.estimateAgentTokens(withSummary),
+          summary: existingSummary,
+          compacted: false,
+          needsCompaction: true,
+        };
+      }
+
+      return {
+        messages: agentMessagesToCoreMessages(recent),
+        tokenCount: this.estimateAgentTokens(recent),
+        summary: null,
+        compacted: false,
+        needsCompaction: true,
+      };
+    }
+
+    return {
+      messages: agentMessagesToCoreMessages(transformed),
+      tokenCount,
+      summary: null,
+      compacted: false,
+      needsCompaction: false,
+    };
+  }
+
+  async compactAfterStream(
+    sessionId: string,
+    rawMessages: ModelMessage[],
+  ): Promise<void> {
+    const agentMessages = coreMessagesToAgentMessages(rawMessages);
+    const transformed = this.transformContext(agentMessages);
+    const existingSummary = await this.deps.loadSummary(sessionId);
+    const recentCount = KEEP_RECENT_TURNS * 2;
+    const toCompress = transformed.slice(0, -recentCount);
+
+    if (toCompress.length === 0) return;
+
+    const newSummary = existingSummary
+      ? await updateCompactSummary(existingSummary, toCompress)
+      : await generateCompactSummary(toCompress);
+
+    await this.deps.saveSummary(sessionId, newSummary);
   }
 
   private transformContext(messages: AgentMessage[]): AgentMessage[] {
@@ -92,6 +162,7 @@ export class ContextManager {
         tokenCount: this.estimateAgentTokens(messages),
         summary: existingSummary,
         compacted: false,
+        needsCompaction: false,
       };
     }
 
@@ -108,6 +179,7 @@ export class ContextManager {
         tokenCount: this.estimateAgentTokens(fallback),
         summary: existingSummary,
         compacted: false,
+        needsCompaction: false,
       };
     }
 
@@ -125,6 +197,7 @@ export class ContextManager {
       tokenCount: this.estimateAgentTokens(compacted),
       summary: newSummary,
       compacted: true,
+      needsCompaction: false,
     };
   }
 

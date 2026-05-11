@@ -13,12 +13,25 @@ import { ContextManager } from "../agent/context-manager";
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
 const STREAM_TIMEOUT_MS = 120_000;
 
+export interface RoadmapNodePayload {
+  id: string;
+  index: number;
+  title: string;
+  description: string;
+  status: string;
+  masteryScore: number;
+}
+
 export interface ChatTurnJobData {
   messageId: string;
   sessionId: string;
   userContent: string;
   messages: Array<{ role: "user" | "assistant"; content: string }>;
   hidden?: boolean;
+  topic?: string;
+  teachingMode?: string;
+  userId?: string;
+  roadmapNodes?: RoadmapNodePayload[];
 }
 
 function createPublisher(): Redis {
@@ -46,33 +59,69 @@ export function createChatTurnWorker(
       });
 
       try {
-        const session = await prisma.session.findUnique({
-          where: { id: sessionId },
-          include: {
-            messages: { orderBy: { createdAt: "asc" } },
-            roadmap: {
-              include: { nodes: { orderBy: { index: "asc" } } },
-            },
-            user: { include: { profile: true } },
-          },
-        });
+        const hasPayloadData = job.data.topic !== undefined && job.data.userId !== undefined;
 
-        if (!session) throw new Error(`Session ${sessionId} not found`);
-        if (!session.roadmap) {
-          throw new Error(`Session ${sessionId} has no roadmap`);
+        let topic: string;
+        let teachingMode: string;
+        let userId: string;
+        let roadmapNodes: RoadmapNodePayload[];
+        let userProfile: Parameters<typeof buildLearnerProfile>[0] = null;
+
+        if (hasPayloadData) {
+          topic = job.data.topic!;
+          teachingMode = job.data.teachingMode ?? "warm";
+          userId = job.data.userId!;
+          roadmapNodes = job.data.roadmapNodes ?? [];
+
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { profile: true },
+          });
+          if (!user) throw new Error(`User ${userId} not found`);
+          userProfile = user.profile;
+        } else {
+          console.log(`[chat-turn] job ${job.id} missing payload data, falling back to DB query`);
+          const session = await prisma.session.findUnique({
+            where: { id: sessionId },
+            include: {
+              messages: { orderBy: { createdAt: "asc" } },
+              roadmap: {
+                include: { nodes: { orderBy: { index: "asc" } } },
+              },
+              user: { include: { profile: true } },
+            },
+          });
+
+          if (!session) throw new Error(`Session ${sessionId} not found`);
+          if (!session.roadmap) {
+            throw new Error(`Session ${sessionId} has no roadmap`);
+          }
+
+          topic = session.topic;
+          teachingMode = session.teachingMode ?? "warm";
+          userId = session.userId;
+          userProfile = session.user.profile;
+          roadmapNodes = session.roadmap.nodes.map((n) => ({
+            id: n.id,
+            index: n.index,
+            title: n.title,
+            description: n.description,
+            status: n.status,
+            masteryScore: n.masteryScore,
+          }));
         }
 
-        const hasNodes = session.roadmap.nodes.length > 0;
+        const hasNodes = roadmapNodes.length > 0;
 
         const currentNode = hasNodes
-          ? (session.roadmap.nodes.find((node) => node.status === "in-progress") ??
-            session.roadmap.nodes.find((node) => node.status === "not-started") ??
-            session.roadmap.nodes.find((node) => node.status !== "mastered") ??
-            session.roadmap.nodes.at(-1))
+          ? (roadmapNodes.find((node) => node.status === "in-progress") ??
+            roadmapNodes.find((node) => node.status === "not-started") ??
+            roadmapNodes.find((node) => node.status !== "mastered") ??
+            roadmapNodes.at(-1))
           : null;
 
         const masteredNodes = hasNodes
-          ? session.roadmap.nodes
+          ? roadmapNodes
               .filter((node) => node.status === "mastered" || node.masteryScore >= 80)
               .map((node) => node.title)
           : [];
@@ -95,13 +144,13 @@ export function createChatTurnWorker(
 
         const initialState: TutorState = {
           sessionId,
-          topic: session.topic,
+          topic,
           currentNodeId: currentNode?.id ?? "pending",
           currentNode: currentNode
             ? { id: currentNode.id, title: currentNode.title, description: currentNode.description }
-            : { id: "pending", title: session.topic, description: `等待诊断后生成学习路线` },
+            : { id: "pending", title: topic, description: `等待诊断后生成学习路线` },
           allNodes: hasNodes
-            ? session.roadmap.nodes.map((n) => ({
+            ? roadmapNodes.map((n) => ({
                 id: n.id,
                 index: n.index,
                 title: n.title,
@@ -109,8 +158,8 @@ export function createChatTurnWorker(
               }))
             : [],
           masteredNodes,
-          learnerProfile: buildLearnerProfile(session.user.profile),
-          teachingMode: (session.teachingMode as "warm" | "strict") ?? "warm",
+          learnerProfile: buildLearnerProfile(userProfile),
+          teachingMode: (teachingMode as "warm" | "strict") ?? "warm",
           messages: messages.map((m) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
@@ -122,7 +171,7 @@ export function createChatTurnWorker(
           checkpoint,
           prisma,
           sessionId,
-          userId: session.userId,
+          userId,
           publisher,
           channel,
           contextManager,
