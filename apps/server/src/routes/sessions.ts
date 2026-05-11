@@ -10,41 +10,6 @@ const createSessionSchema = z.object({
   teachingMode: z.enum(["warm", "strict", "interviewer"]).optional(),
 });
 
-function buildFallbackNodes(topic: string) {
-  return [
-    {
-      index: 0,
-      title: `${topic} 的整体框架`,
-      description: `先建立 ${topic} 的整体地图，知道这个主题在解决什么问题。`,
-      status: "not-started",
-    },
-    {
-      index: 1,
-      title: `${topic} 的核心概念`,
-      description: `拆开 ${topic} 的关键术语和基础概念，避免后面混淆。`,
-      status: "not-started",
-    },
-    {
-      index: 2,
-      title: `${topic} 的关键机制`,
-      description: `理解 ${topic} 背后的运行逻辑、因果关系和判断依据。`,
-      status: "not-started",
-    },
-    {
-      index: 3,
-      title: `${topic} 的常见误区`,
-      description: `聚焦 ${topic} 里最容易踩坑或想偏的地方。`,
-      status: "not-started",
-    },
-    {
-      index: 4,
-      title: `${topic} 的综合应用`,
-      description: `把前面的知识串起来，能够用 ${topic} 解决完整问题。`,
-      status: "not-started",
-    },
-  ];
-}
-
 export const sessionsRoute = new Hono()
   .post("/", zValidator("json", createSessionSchema), async (c) => {
     const { userId, topic, sourceId, teachingMode } = c.req.valid("json");
@@ -69,8 +34,8 @@ export const sessionsRoute = new Hono()
       }
     }
 
-    const nodeData = buildFallbackNodes(topic);
-
+    // Create session with empty roadmap — nodes will be generated
+    // after diagnostic assessment based on learner's level
     const session = await prisma.session.create({
       data: {
         userId,
@@ -79,11 +44,7 @@ export const sessionsRoute = new Hono()
         teachingMode: teachingMode ?? "warm",
         status: "active",
         roadmap: {
-          create: {
-            nodes: {
-              create: nodeData,
-            },
-          },
+          create: {},
         },
       },
       include: {
