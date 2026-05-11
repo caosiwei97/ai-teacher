@@ -23,6 +23,11 @@
     "setup:env": "node scripts/setup-env.mjs",
     "bootstrap": "run-s setup:env docker:up \"db:*\"",
     "dev": "node scripts/kill-ports.mjs && run-p dev:*",
+    "start": "node scripts/kill-ports.mjs && run-p start:*",
+    "start:web": "pnpm --filter @ai-teacher/web start",
+    "start:server": "pnpm --filter @ai-teacher/server start",
+    "start:worker": "pnpm --filter @ai-teacher/worker start",
+    "prod": "run-s build start",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },
