@@ -193,14 +193,19 @@ export function ChatArea({
           const lastMsg = messages[messages.length - 1];
           if (lastMsg.role !== "assistant") return null;
 
+          const lastText = lastMsg.parts
+            ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+            .map((p) => p.text)
+            .join("") ?? "";
+          const hasDiagnosticQuestions = getDiagnosticQuestionsFromMessage(lastMsg) !== undefined;
+          const isFirstAssistantMsg = messages.filter((m) => m.role === "assistant").length === 1;
+
           let label = "";
           if (hasToolCallPending(lastMsg, "askQuestion")) {
             label = "老师正在给你出题中…";
+          } else if (lastText.trim() && isFirstAssistantMsg && !hasDiagnosticQuestions) {
+            label = "老师正在给你出题中…";
           } else {
-            const lastText = lastMsg.parts
-              ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
-              .map((p) => p.text)
-              .join("") ?? "";
             if (lastText.trim()) return null;
             label = "老师正在思考中…";
           }
