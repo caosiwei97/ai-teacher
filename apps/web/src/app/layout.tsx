@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const sans = Inter({
@@ -21,6 +22,8 @@ export const metadata: Metadata = {
   description: "AI 1v1 private tutor",
 };
 
+const themeScript = `(function(){try{var t=localStorage.getItem("theme")||"system";var r=t==="system"?(window.matchMedia("(prefers-color-scheme:light)").matches?"light":"dark"):t;document.documentElement.dataset.theme=r}catch(e){}})()`;
+
 export default function RootLayout({
   children,
 }: {
@@ -28,7 +31,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" className={cn("font-sans", sans.variable, mono.variable)} suppressHydrationWarning>
-      <body>{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

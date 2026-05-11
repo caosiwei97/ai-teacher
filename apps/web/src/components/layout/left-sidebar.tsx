@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, BookOpen, GraduationCap, Plus, Archive } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Session {
   id: string;
@@ -53,12 +54,15 @@ export function LeftSidebar({
           </div>
           <h1 className="text-sm font-semibold tracking-tight">AI Teacher</h1>
         </div>
-        <button
-          onClick={onToggle}
-          className="rounded-md p-1 text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <button
+            onClick={onToggle}
+            className="rounded-md p-1 text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {onNewSession && (
