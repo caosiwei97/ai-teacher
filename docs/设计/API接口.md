@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v0.6
-> 更新日期：2026-05-09
-> 状态：已对齐实际实现（含迭代 021 代码执行沙箱）
+> 版本：v0.8
+> 更新日期：2026-05-12
+> 状态：已对齐实际实现（含迭代 031 多模型支持 + DeepSeek）
 
 ---
 
@@ -15,13 +15,17 @@
 | GET | `/api/sessions/:id` | 获取会话详情 | ✅ |
 | PATCH | `/api/sessions/:id` | 更新会话状态 | ✅ |
 | DELETE | `/api/sessions/:id` | 归档会话 | ✅ |
-| POST | `/api/chat` | 流式对话（SSE） | ✅ |
+| POST | `/api/chat` | 流式对话（SSE，经 Hono Server） | ✅ |
 | POST | `/api/sessions/:id/diagnostic` | 生成诊断题 | ✅ |
 | POST | `/api/sessions/:id/diagnostic/evaluate` | 评估诊断答案 | ✅ |
 | POST | `/api/quick-question` | 快问（选中文字提问） | ✅ |
 | POST | `/api/suggest-reply` | AI 建议回复 | ✅ |
 | GET | `/api/suggested-topics` | 获取推荐学习话题 | ✅ |
 | POST | `/api/sandbox/execute` | 代码执行（Judge0 沙箱） | ✅ |
+| POST | `/api/llm-configs` | 管理用户 LLM 配置 | ✅ |
+| GET | `/api/llm-configs` | 获取用户 LLM 配置列表 | ✅ |
+
+> **架构说明**：API 路由已从 Next.js API Routes 迁移到独立 Hono Server（apps/server，端口 38422）。Next.js 仅保留 `/api/chat` 作为 SSE 代理。前端通过 `NEXT_PUBLIC_API_URL` 直接请求 Hono Server。
 
 > 以下为实际已实现的接口详情。
 
@@ -185,7 +189,7 @@ POST /api/chat
 
 ### 响应
 
-SSE 流式响应（`GET /api/chat/:sessionId/stream`），事件格式：
+SSE 流式响应。流程：`POST /api/chat` → Hono Server 入队 BullMQ Job → Worker 执行 Agent（AI SDK streamText）→ 通过 Redis Pub/Sub 流式推送 SSE 事件。
 
 ```
 data: {"type":"<event-type>","content":...,"data":...}
@@ -326,7 +330,7 @@ POST /api/quick-question
 
 ### 响应
 
-AI SDK `DataDataStreamResponse`（SSE 流式响应）。
+AI SDK SSE 流式响应。
 
 - 基于 `glm-4-flash`，使用苏格拉底式追问风格回答
 - 回答 1-3 句话，聚焦选中内容

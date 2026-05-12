@@ -310,10 +310,13 @@ interface TutorPromptContext {
 **Prompt 片段**（注入 system prompt）：
 
 ```
-**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持三种类型：
+**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持六种类型：
 - table: 表格（适合对比多个属性、罗列要点）
 - callout: 提示卡（tip=提示, warning=注意事项, key=核心要点）
 - comparison: 对比卡（适合两种方案的横向比较）
+- heading: 标题（h2/h3，分隔内容段落）
+- badge: 徽章标签（success/warning/info，展示关键要点）
+- mastery-report: 掌握总结报告（节点掌握后自动生成）
 每次调用可以生成多个 block，它们会按顺序显示在你的回复中。
 ```
 
