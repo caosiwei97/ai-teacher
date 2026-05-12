@@ -24,8 +24,8 @@ export function TableBlock({ block }: TableBlockProps) {
   return (
     <div className="space-y-2">
       {block.title && (
-        <h4 className="text-sm font-semibold text-roadmap-fill">
-          {block.title}
+        <h4 className="text-sm font-semibold text-roadmap-fill truncate">
+          {renderInlineCode(block.title)}
         </h4>
       )}
       <div className="overflow-hidden rounded-lg border border-border">
