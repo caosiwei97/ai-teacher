@@ -8,7 +8,47 @@ interface TextBlockProps {
   block: { type: "text"; content: string };
 }
 
+/**
+ * Close unclosed markdown tokens that cause rendering artifacts during streaming.
+ * Handles: ``` code fences, ** bold, * italic, ` inline code
+ */
+function closeUnclosedMarkdown(text: string): string {
+  let result = text;
+
+  // Close unclosed code fences (```)
+  const fenceCount = (result.match(/```/g) || []).length;
+  if (fenceCount % 2 !== 0) {
+    result += "\n```";
+  }
+
+  // Close unclosed inline code (`)
+  // Only count backticks NOT part of code fences
+  const withoutFences = result.replace(/```[\s\S]*?```/g, "");
+  const backtickCount = (withoutFences.match(/`/g) || []).length;
+  if (backtickCount % 2 !== 0) {
+    result += "`";
+  }
+
+  // Close unclosed bold (**)
+  const withoutCode = result.replace(/```[\s\S]*?```/g, "").replace(/`[^`]*`/g, "");
+  const boldCount = (withoutCode.match(/\*\*/g) || []).length;
+  if (boldCount % 2 !== 0) {
+    result += "**";
+  }
+
+  // Close unclosed italic (single * not part of **)
+  const withoutBold = withoutCode.replace(/\*\*/g, "");
+  const italicCount = (withoutBold.match(/\*/g) || []).length;
+  if (italicCount % 2 !== 0) {
+    result += "*";
+  }
+
+  return result;
+}
+
 export function TextBlock({ block }: TextBlockProps) {
+  const sanitizedContent = closeUnclosedMarkdown(block.content);
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -108,7 +148,7 @@ export function TextBlock({ block }: TextBlockProps) {
         },
       }}
     >
-      {block.content}
+      {sanitizedContent}
     </ReactMarkdown>
   );
 }

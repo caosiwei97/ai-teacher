@@ -123,13 +123,13 @@ export function DiagnosticQuizCard({
         <p className="text-sm font-medium text-foreground">{title}</p>
       </div>
 
-      <div className="flex border-b border-border">
+      <div className="flex overflow-x-auto border-b border-border">
         {questions.map((q, i) => (
           <button
             key={q.id}
             type="button"
             onClick={() => setActiveTab(i)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors relative ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium whitespace-nowrap transition-colors relative ${
               i === activeTab
                 ? "text-roadmap-fill border-b-2 border-roadmap-fill"
                 : "text-muted-foreground hover:text-foreground"
