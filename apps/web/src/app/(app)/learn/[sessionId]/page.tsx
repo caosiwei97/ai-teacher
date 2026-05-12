@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ThreeColumnLayout } from "@/components/layout/three-column";
+import { RightSidebar } from "@/components/layout/right-sidebar";
 import {
   isAssessmentCardData,
   type AssessmentCardProps,
@@ -14,12 +14,12 @@ import type { MessageMetadata, DiagnosticQuestionsData, AnnotationData } from "@
 import {
   fetchSession,
   fetchSessions,
-  archiveSession,
   getLlmConfigs,
   type LlmConfig,
 } from "@/lib/api-client";
+import { useSession } from "@/contexts/session-context";
 import type { UIMessage } from "ai";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, PanelRightClose } from "lucide-react";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -31,13 +31,6 @@ const fallbackTopics = [
   { id: "t5", title: "个人投资理财入门" },
   { id: "t6", title: "自媒体运营与个人品牌" },
 ];
-
-interface SessionInfo {
-  id: string;
-  topic: string;
-  status: string;
-  progress: { totalNodes: number; masteredNodes: number; currentNodeId: string | null };
-}
 
 interface NodeInfo {
   id: string;
@@ -128,15 +121,15 @@ function getDiagnosticQuestionsFromMetadata(metadata: unknown): DiagnosticQuesti
 export default function LearnPage() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
-  const sessionId = params.sessionId;
+  const { setSessions, currentSessionId, refreshSessions } = useSession();
 
-  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const sessionId = currentSessionId ?? params.sessionId;
+
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [isNewSession, setIsNewSession] = useState(false);
   const prevSessionRef = useRef<string | null>(null);
-  const isSessionSwitch = prevSessionRef.current !== null && prevSessionRef.current !== sessionId;
   const [teachingMode, setTeachingMode] = useState<"warm" | "strict" | "interviewer">("warm");
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
@@ -154,15 +147,15 @@ export default function LearnPage() {
     instruction?: string;
   } | null>(null);
 
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+
   const chat = useChatStream(sessionId, {
     teachingMode,
     llmConfigId: selectedConfigId,
     onFinish: () => {
       if (isNewSession) {
         setIsNewSession(false);
-        fetchSessions(USER_ID)
-          .then((data) => setSessions(data.sessions))
-          .catch(console.error);
+        refreshSessions();
       }
       fetchSession(sessionId)
         .then((data) => {
@@ -217,6 +210,13 @@ export default function LearnPage() {
     if (prevSessionRef.current && prevSessionRef.current !== sessionId) {
       chat.setMessages([]);
       setNodes([]);
+      setCodePanel(null);
+      setLoaded(false);
+      setPageError(null);
+      setIsNewSession(false);
+      setDiagnosticSubmitted(false);
+      setDiagnosticAnalyzing(false);
+      setSuggestion(undefined);
     }
     prevSessionRef.current = sessionId;
 
@@ -232,21 +232,21 @@ export default function LearnPage() {
         if (!exists) {
           return fetchSession(sessionId).then((sessionData) => {
             if (sessionData) {
-              const nodes = sessionData.session.roadmap?.nodes ?? [];
-              const virtualSession: SessionInfo = {
+              const fetchedNodes = sessionData.session.roadmap?.nodes ?? [];
+              const virtualSession = {
                 id: sessionId,
                 topic: sessionData.session.topic || "新对话",
                 status: sessionData.session.status || "active",
                 progress: {
-                  totalNodes: nodes.length,
-                  masteredNodes: nodes.filter((n: NodeInfo) => n.status === "mastered").length,
-                  currentNodeId: nodes.find((n: NodeInfo) => n.status === "in-progress")?.id ?? null,
+                  totalNodes: fetchedNodes.length,
+                  masteredNodes: fetchedNodes.filter((n: NodeInfo) => n.status === "mastered").length,
+                  currentNodeId: fetchedNodes.find((n: NodeInfo) => n.status === "in-progress")?.id ?? null,
                 },
               };
               setSessions([virtualSession, ...sessionsList]);
-              setNodes(nodes);
+              setNodes(fetchedNodes);
             } else {
-              const virtualSession: SessionInfo = {
+              const virtualSession = {
                 id: sessionId,
                 topic: "新对话",
                 status: "new",
@@ -314,40 +314,6 @@ export default function LearnPage() {
         setLoaded(true);
       });
   }, [sessionId]);
-
-  const handleSelectSession = useCallback(
-    (id: string) => {
-      if (id !== sessionId) {
-        router.push(`/learn/${id}`);
-      }
-    },
-    [sessionId, router],
-  );
-
-  const handleNewSession = useCallback(() => {
-    const hex = Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-    const newId = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${(parseInt(hex[16], 16) & 0x3 | 0x8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
-    router.push(`/learn/${newId}`);
-  }, [router]);
-
-  const handleArchiveSession = useCallback(
-    async (id: string) => {
-      try {
-        // Optimistically remove from local state to preserve virtual sessions
-        setSessions((prev) => prev.filter((s) => s.id !== id));
-        await archiveSession(id);
-      } catch (err) {
-        console.error("Failed to archive session:", err);
-        // Rollback: re-fetch from server
-        fetchSessions(USER_ID)
-          .then((data) => setSessions(data.sessions))
-          .catch(console.error);
-      }
-    },
-    [],
-  );
 
   const handleCodePanelChange = useCallback(
     (code: string) => {
@@ -567,9 +533,11 @@ export default function LearnPage() {
       .catch(console.error);
   }
 
-  if (!loaded && !isSessionSwitch) {
+  const showRight = nodes.length > 0 || codePanel;
+
+  if (!loaded) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-pulse-soft rounded-full bg-roadmap-fill" />
           <p className="text-sm text-muted-foreground">加载中...</p>
@@ -580,7 +548,7 @@ export default function LearnPage() {
 
   if (pageError) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
             <GraduationCap className="h-7 w-7 text-muted-foreground" />
@@ -605,98 +573,89 @@ export default function LearnPage() {
     );
   }
 
+  const chatAreaProps = {
+    messages: chat.messages,
+    input: chat.input,
+    isLoading: chat.isLoading,
+    onInputChange: chat.handleInputChange,
+    onSubmit: handleSubmit,
+    onStop: chat.stop,
+    isSuggesting,
+    suggestion,
+    onSuggest: handleSuggest,
+    onApplySuggestion: handleApplySuggestion,
+    onDismissSuggestion: handleDismissSuggestion,
+    onDiagnosticSubmit: handleDiagnosticSubmit,
+    diagnosticSubmitted,
+    diagnosticAnalyzing,
+    teachingMode,
+    onTeachingModeChange: setTeachingMode,
+    error: chatError,
+    currentModel: llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel,
+    llmConfigs: llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault })),
+    selectedConfigId,
+    onModelChange: setSelectedConfigId,
+  };
+
   return (
-    <ThreeColumnLayout
-      sessions={sessions}
-      currentSessionId={sessionId}
-      nodes={nodes}
-      codePanel={codePanel}
-      onCodePanelChange={handleCodePanelChange}
-      onSelectSession={handleSelectSession}
-      onNewSession={handleNewSession}
-      onArchiveSession={handleArchiveSession}
-    >
-      {isNewSession ? (
-        <>
-          <ChatArea
-            messages={chat.messages}
-            input={chat.input}
-            isLoading={chat.isLoading}
-            onInputChange={chat.handleInputChange}
-            onSubmit={handleSubmit}
-            onStop={chat.stop}
-            isSuggesting={isSuggesting}
-            suggestion={suggestion}
-            onSuggest={handleSuggest}
-            onApplySuggestion={handleApplySuggestion}
-            onDismissSuggestion={handleDismissSuggestion}
-            onDiagnosticSubmit={handleDiagnosticSubmit}
-            diagnosticSubmitted={diagnosticSubmitted}
-            diagnosticAnalyzing={diagnosticAnalyzing}
-            teachingMode={teachingMode}
-            onTeachingModeChange={setTeachingMode}
-            error={chatError}
-            welcomeContent={
-              <div className="flex flex-col items-center pt-16 pb-8">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-roadmap-fill/10">
-                  <GraduationCap className="h-6 w-6 text-roadmap-fill" />
+    <div className="flex h-full">
+      <div className="relative flex flex-1 flex-col">
+        {showRight && rightCollapsed && (
+          <div className="absolute right-3 top-3 z-10 lg:hidden">
+            <button
+              onClick={() => setRightCollapsed(!rightCollapsed)}
+              className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
+            >
+              <PanelRightClose className="h-4 w-4 text-foreground" />
+            </button>
+          </div>
+        )}
+        {isNewSession ? (
+          <>
+            <ChatArea
+              {...chatAreaProps}
+              welcomeContent={
+                <div className="flex flex-col items-center pt-16 pb-8">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-roadmap-fill/10">
+                    <GraduationCap className="h-6 w-6 text-roadmap-fill" />
+                  </div>
+                  <h1 className="mt-4 text-xl font-semibold text-foreground">
+                    你好，我是 AI Teacher
+                  </h1>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    告诉我你对什么感兴趣，从零到精通，我带你
+                  </p>
+                  <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
+                  <div className="mt-3 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
+                    {fallbackTopics.map((topic) => (
+                      <button
+                        key={topic.id}
+                        onClick={() => handleTopicClick(topic.title)}
+                        disabled={chat.isLoading}
+                        className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 text-left text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
+                      >
+                        <span className="text-sm leading-snug">{topic.title}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <h1 className="mt-4 text-xl font-semibold text-foreground">
-                  你好，我是 AI Teacher
-                </h1>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  告诉我你对什么感兴趣，从零到精通，我带你
-                </p>
-                <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
-                <div className="mt-3 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
-                  {fallbackTopics.map((topic) => (
-                    <button
-                      key={topic.id}
-                      onClick={() => handleTopicClick(topic.title)}
-                      disabled={chat.isLoading}
-                      className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 text-left text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
-                    >
-                      <span className="text-sm leading-snug">{topic.title}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            }
-            currentModel={llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel}
-            llmConfigs={llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault }))}
-            selectedConfigId={selectedConfigId}
-            onModelChange={setSelectedConfigId}
-          />
-          <QuickQuestion sessionId={sessionId} />
-        </>
-      ) : (
-        <>
-          <ChatArea
-            messages={chat.messages}
-            input={chat.input}
-            isLoading={chat.isLoading}
-            onInputChange={chat.handleInputChange}
-            onSubmit={handleSubmit}
-            onStop={chat.stop}
-            isSuggesting={isSuggesting}
-            suggestion={suggestion}
-            onSuggest={handleSuggest}
-            onApplySuggestion={handleApplySuggestion}
-            onDismissSuggestion={handleDismissSuggestion}
-            onDiagnosticSubmit={handleDiagnosticSubmit}
-            diagnosticSubmitted={diagnosticSubmitted}
-            diagnosticAnalyzing={diagnosticAnalyzing}
-            teachingMode={teachingMode}
-            onTeachingModeChange={setTeachingMode}
-            error={chatError}
-            currentModel={llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel}
-            llmConfigs={llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault }))}
-            selectedConfigId={selectedConfigId}
-            onModelChange={setSelectedConfigId}
-          />
-          <QuickQuestion sessionId={sessionId} />
-        </>
+              }
+            />
+            <QuickQuestion sessionId={sessionId} />
+          </>
+        ) : (
+          <>
+            <ChatArea {...chatAreaProps} />
+            <QuickQuestion sessionId={sessionId} />
+          </>
+        )}
+      </div>
+
+      {showRight && !rightCollapsed && (
+        <div className="hidden lg:block">
+          <RightSidebar nodes={nodes} codePanel={codePanel} onCodePanelChange={handleCodePanelChange} />
+        </div>
       )}
-    </ThreeColumnLayout>
+    </div>
   );
 }

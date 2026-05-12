@@ -15,7 +15,7 @@ export default function HomePage() {
   }, [router]);
 
   return (
-    <div className="flex h-screen items-center justify-center bg-background">
+    <div className="flex h-full items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="h-8 w-8 animate-pulse-soft rounded-full bg-roadmap-fill" />
       </div>
