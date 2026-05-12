@@ -44,30 +44,22 @@ services:
       timeout: 5s
       retries: 5
 
-  # Judge0 — 代码执行沙箱
-  judge0-server:
-    image: judge0/judge0:latest
+  # OpenSandbox — 代码执行沙箱
+  opensandbox-server:
+    image: opensandbox/server:latest
+    container_name: opensandbox-server
     ports:
-      - "2358:2358"
+      - "2358:8090"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./opensandbox.toml:/etc/opensandbox/config.toml:ro
     environment:
-      REDIS_HOST: redis-judge0
-    depends_on:
-      redis-judge0:
-        condition: service_healthy
+      SANDBOX_CONFIG_PATH: /etc/opensandbox/config.toml
+      OPENSANDBOX_INSECURE_SERVER: "YES"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2358/"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health')"]
       interval: 10s
       timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  redis-judge0:
-    image: redis:7-alpine
-    volumes:
-      - ./data/redis-judge0:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 15s
     restart: unless-stopped

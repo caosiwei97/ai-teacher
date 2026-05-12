@@ -1,6 +1,16 @@
-const JUDGE0_URL = process.env.JUDGE0_URL ?? "http://localhost:2358";
+const OPENSANDBOX_URL = process.env.OPENSANDBOX_URL ?? "http://localhost:2358";
+const SANDBOX_IMAGE = "opensandbox/code-interpreter:latest";
+const EXECD_PORT = 44772;
 
-export interface Judge0Submission {
+const LANGUAGE_MAP: Record<string, string> = {
+  python: "python",
+  javascript: "javascript",
+  typescript: "typescript",
+  java: "java",
+  cpp: "cpp",
+};
+
+export interface SandboxSubmission {
   source_code: string;
   language_id: number;
   stdin?: string;
@@ -10,7 +20,7 @@ export interface Judge0Submission {
   wall_time_limit: number;
 }
 
-export interface Judge0Result {
+export interface SandboxResult {
   stdout: string | null;
   stderr: string | null;
   exit_code: number;
@@ -19,33 +29,130 @@ export interface Judge0Result {
   status: { id: number; description: string };
 }
 
-export async function submitCode(submission: Judge0Submission): Promise<Judge0Result> {
-  const submitRes = await fetch(`${JUDGE0_URL}/submissions?base64_encoded=false`, {
+interface SandboxInfo {
+  id: string;
+  status: { state: string };
+}
+
+let cachedSandboxId: string | null = null;
+let cachedExecdUrl: string | null = null;
+
+function languageIdToName(id: number): string {
+  const map: Record<number, string> = { 71: "python", 63: "javascript", 74: "typescript", 62: "java", 54: "cpp" };
+  return map[id] ?? "python";
+}
+
+/** OpenSandbox endpoint uses "host.docker.internal" (Docker-only DNS); we map to localhost. */
+function toHostUrl(endpoint: string): string {
+  const match = endpoint.match(/:(\d+)/);
+  if (!match) throw new Error(`Cannot parse endpoint port: ${endpoint}`);
+  return `localhost:${match[1]}`;
+}
+
+async function createSandbox(): Promise<string> {
+  const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      ...submission,
-      cpu_time_limit: submission.cpu_time_limit ?? 5,
-      memory_limit: submission.memory_limit ?? 256000,
-      wall_time_limit: submission.wall_time_limit ?? 10,
+      image: { uri: SANDBOX_IMAGE },
+      entrypoint: ["/opt/opensandbox/code-interpreter.sh"],
+      env: {},
+      timeout: 86400,
+      resourceLimits: { cpu: "1", memory: "2Gi" },
     }),
   });
 
-  if (!submitRes.ok) {
-    throw new Error(`Judge0 submit failed: ${submitRes.status} ${await submitRes.text()}`);
+  if (!res.ok) {
+    throw new Error(`Failed to create sandbox: ${res.status} ${await res.text()}`);
   }
 
-  const { token } = (await submitRes.json()) as { token: string };
+  const data = (await res.json()) as SandboxInfo;
+  return data.id;
+}
 
-  const maxAttempts = 30;
-  for (let i = 0; i < maxAttempts; i++) {
-    const pollRes = await fetch(`${JUDGE0_URL}/submissions/${token}?base64_encoded=false`);
-    if (!pollRes.ok) {
-      throw new Error(`Judge0 poll failed: ${pollRes.status}`);
+async function waitForSandbox(id: string, maxWaitMs = 60000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes/${id}`);
+    if (!res.ok) throw new Error(`Failed to poll sandbox: ${res.status}`);
+    const data = (await res.json()) as SandboxInfo;
+    if (data.status.state === "Running") return;
+    if (data.status.state === "Failed") throw new Error("Sandbox failed to start");
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  throw new Error("Sandbox startup timeout");
+}
+
+async function getExecdUrl(sandboxId: string): Promise<string> {
+  const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes/${sandboxId}/endpoints/${EXECD_PORT}`);
+  if (!res.ok) throw new Error(`Failed to get execd endpoint: ${res.status}`);
+  const data = (await res.json()) as { endpoint: string };
+  return toHostUrl(data.endpoint);
+}
+
+async function ensureSandbox(): Promise<string> {
+  if (cachedExecdUrl && cachedSandboxId) {
+    const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes/${cachedSandboxId}`).catch(() => null);
+    if (res?.ok) {
+      const data = (await res.json()) as SandboxInfo;
+      if (data.status.state === "Running") return cachedExecdUrl;
     }
-    const result = (await pollRes.json()) as Judge0Result;
-    if (result.status.id >= 3) return result;
-    await new Promise((r) => setTimeout(r, 500));
+    cachedSandboxId = null;
+    cachedExecdUrl = null;
   }
-  throw new Error("Judge0 execution timeout");
+
+  const id = await createSandbox();
+  await waitForSandbox(id);
+  const execdUrl = await getExecdUrl(id);
+  cachedSandboxId = id;
+  cachedExecdUrl = execdUrl;
+  return execdUrl;
+}
+
+/** execd SSE is raw JSON lines (no "data: " prefix). */
+function parseExecdSse(text: string): { stdout: string; stderr: string } {
+  let stdout = "";
+  let stderr = "";
+
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("{") === false) continue;
+    try {
+      const event = JSON.parse(trimmed) as { type?: string; text?: string };
+      if (event.type === "stdout" && event.text) stdout += event.text;
+      else if (event.type === "stderr" && event.text) stderr += event.text;
+    } catch { /* skip malformed lines */ }
+  }
+
+  return { stdout, stderr };
+}
+
+async function execCode(execdUrl: string, code: string, language: string): Promise<{ stdout: string; stderr: string }> {
+  const res = await fetch(`http://${execdUrl}/code`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, context: { language } }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`execd code failed: ${res.status} ${await res.text()}`);
+  }
+
+  const text = await res.text();
+  return parseExecdSse(text);
+}
+
+export async function submitCode(submission: SandboxSubmission): Promise<SandboxResult> {
+  const language = LANGUAGE_MAP[languageIdToName(submission.language_id)] ?? "python";
+  const execdUrl = await ensureSandbox();
+  const { stdout, stderr } = await execCode(execdUrl, submission.source_code, language);
+
+  return {
+    stdout: stdout || null,
+    stderr: stderr || null,
+    exit_code: stderr ? 1 : 0,
+    time: "0",
+    memory: 0,
+    status: { id: 3, description: stderr ? "Runtime Error" : "Accepted" },
+  };
 }

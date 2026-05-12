@@ -72,6 +72,7 @@ data/
 | Redis | 26379 | 缓存（非标准端口） |
 | MinIO API | 29000 | 对象存储 |
 | MinIO Console | 29001 | 对象存储管理界面 |
+| OpenSandbox | 2358 | 代码执行沙箱（Docker 镜像内运行） |
 
 ## 文档
 
