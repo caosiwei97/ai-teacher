@@ -87,15 +87,34 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createNewSession = useCallback(() => {
+    const currentSession = sessions.find((s) => s.id === currentSessionId);
+    if (currentSession && currentSession.status === "new") {
+      alert("当前对话已经是新对话");
+      return currentSessionId!;
+    }
+
     const newId = generateUUID();
     setCurrentSessionId(newId);
     window.history.replaceState(null, "", `/learn/${newId}`);
     return newId;
-  }, []);
+  }, [sessions, currentSessionId]);
 
   const archiveSession = useCallback(
     async (id: string) => {
-      setSessions((prev) => prev.filter((s) => s.id !== id));
+      const remaining = sessions.filter((s) => s.id !== id);
+      setSessions(remaining);
+
+      if (id === currentSessionId) {
+        if (remaining.length > 0) {
+          const next = remaining[0];
+          setCurrentSessionId(next.id);
+          window.history.replaceState(null, "", `/learn/${next.id}`);
+        } else {
+          setCurrentSessionId(null);
+          window.history.replaceState(null, "", "/");
+        }
+      }
+
       try {
         await archiveSessionApi(id);
       } catch (err) {
@@ -103,7 +122,7 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
         refreshSessions();
       }
     },
-    [refreshSessions],
+    [sessions, currentSessionId, refreshSessions],
   );
 
   const value = useMemo(

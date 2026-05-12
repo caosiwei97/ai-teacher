@@ -86,8 +86,9 @@ export function LeftSidebar({
             </h3>
             {newSessions.map((s) => {
               const isActive = s.id === currentSessionId;
+              const isLastSessionAndNew = sessions.length === 1 && s.status === "new";
               return (
-                <div key={s.id} className="mb-1">
+                <div key={s.id} className="group relative mb-1">
                   <button
                     onClick={() => onSelect(s.id)}
                     className={cn(
@@ -97,8 +98,16 @@ export function LeftSidebar({
                         : "text-sidebar-foreground hover:bg-sidebar-hover",
                     )}
                   >
-                    <p className="truncate text-[13px] font-medium leading-snug">{s.topic}</p>
+                    <p className="truncate text-[13px] font-medium leading-snug pr-6">{s.topic}</p>
                   </button>
+                  {onArchiveSession && !isLastSessionAndNew && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onArchiveSession(s.id); }}
+                      className="absolute right-2 top-2.5 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                    >
+                      <Archive className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -147,7 +156,7 @@ export function LeftSidebar({
                       </span>
                     ) : null}
                   </button>
-                  {onArchiveSession && !isActive && (
+                  {onArchiveSession && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onArchiveSession(s.id); }}
                       className="absolute right-2 top-2.5 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
@@ -182,7 +191,7 @@ export function LeftSidebar({
                     <p className="truncate text-[13px]">{s.topic}</p>
                   </div>
                 </button>
-                {onArchiveSession && s.id !== currentSessionId && (
+                {onArchiveSession && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onArchiveSession(s.id); }}
                     className="absolute right-2 top-2 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
