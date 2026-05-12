@@ -24,11 +24,11 @@ export function TableBlock({ block }: TableBlockProps) {
   return (
     <div className="space-y-2">
       {block.title && (
-        <h4 className="text-sm font-semibold text-roadmap-fill truncate">
+        <h4 className="text-sm font-semibold text-roadmap-fill whitespace-nowrap overflow-x-auto">
           {renderInlineCode(block.title)}
         </h4>
       )}
-      <div className="overflow-hidden rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-roadmap-fill/10">

@@ -22,10 +22,10 @@ function renderInlineCode(text: string) {
 
 export function ComparisonCard({ block }: ComparisonCardProps) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
+    <div className="overflow-x-auto rounded-lg border border-border">
       {block.title && (
         <div className="border-b border-border bg-muted/40 px-4 py-2">
-          <h4 className="text-sm font-semibold text-roadmap-fill truncate">
+          <h4 className="text-sm font-semibold text-roadmap-fill whitespace-nowrap">
             {renderInlineCode(block.title)}
           </h4>
         </div>

@@ -35,7 +35,7 @@ export function CalloutBlock({ block }: CalloutBlockProps) {
   return (
     <div className={`rounded-lg border-l-4 p-4 ${variantStyle}`}>
       {block.title && (
-        <p className="mb-1 text-sm font-bold text-foreground truncate">
+        <p className="mb-1 text-sm font-bold text-foreground whitespace-nowrap overflow-x-auto">
           {renderInlineCode(block.title)}
         </p>
       )}
