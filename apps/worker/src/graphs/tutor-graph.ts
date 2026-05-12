@@ -85,7 +85,7 @@ function createTutorGraph() {
         system: fullSystemPrompt,
         messages: state.messages,
         tools,
-        stopWhen: stepCountIs(5)
+        stopWhen: stepCountIs(7)
       });
 
       let assistantText = "";
