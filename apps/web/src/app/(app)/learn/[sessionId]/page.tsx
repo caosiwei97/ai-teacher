@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { RightSidebar } from "@/components/layout/right-sidebar";
-import { ResizableDivider } from "@/components/layout/resizable-divider";
 import {
   isAssessmentCardData,
   type AssessmentCardProps,
@@ -20,7 +19,7 @@ import {
 } from "@/lib/api-client";
 import { useSession } from "@/contexts/session-context";
 import type { UIMessage } from "ai";
-import { GraduationCap, PanelRightClose } from "lucide-react";
+import { GraduationCap, PanelRightClose, PanelRight } from "lucide-react";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -192,14 +191,8 @@ export default function LearnPage() {
   } | null>(null);
 
   const [rightCollapsed, setRightCollapsed] = useState(false);
-  const [rightWidth, setRightWidth] = useState(320);
+  const [rightTab, setRightTab] = useState<"roadmap" | "code">("roadmap");
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (codePanel && rightWidth < 480) {
-      setRightWidth(480);
-    }
-  }, [codePanel]);
 
   const chat = useChatStream(sessionId, {
     teachingMode,
@@ -302,6 +295,12 @@ export default function LearnPage() {
       }
     }
   }, [chat.messages]);
+
+  useEffect(() => {
+    if (codePanel) {
+      setRightTab("code");
+    }
+  }, [codePanel]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -423,22 +422,6 @@ export default function LearnPage() {
   const handleCodePanelChange = useCallback(
     (code: string) => {
       setCodePanel((prev) => (prev ? { ...prev, code } : null));
-    },
-    [],
-  );
-
-  const handleRightResize = useCallback(
-    (delta: number) => {
-      const container = containerRef.current;
-      if (!container) return;
-      const containerWidth = container.clientWidth;
-      const minChatWidth = 400;
-      const minWidth = 320;
-      const maxWidth = containerWidth - minChatWidth;
-      setRightWidth((prev) => {
-        const next = prev - delta;
-        return Math.max(minWidth, Math.min(maxWidth, next));
-      });
     },
     [],
   );
@@ -733,6 +716,16 @@ export default function LearnPage() {
             </button>
           </div>
         )}
+        {showRight && !rightCollapsed && (
+          <div className="absolute right-3 top-3 z-10 hidden lg:block">
+            <button
+              onClick={() => setRightCollapsed(true)}
+              className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
+            >
+              <PanelRight className="h-4 w-4 text-foreground" />
+            </button>
+          </div>
+        )}
         {isNewSession ? (
           <>
             <ChatArea
@@ -775,14 +768,19 @@ export default function LearnPage() {
       </div>
 
       {showRight && !rightCollapsed && (
-        <>
-          <div className="hidden lg:block">
-            <ResizableDivider direction="horizontal" onResize={handleRightResize} />
-          </div>
-          <div className="hidden lg:block" style={{ width: `${rightWidth}px` }}>
-            <RightSidebar nodes={nodes} codePanel={codePanel} onCodePanelChange={handleCodePanelChange} />
-          </div>
-        </>
+        <div
+          className={`hidden lg:block shrink-0 transition-all duration-300 ease-in-out ${
+            codePanel ? "w-1/2" : "w-[30%] min-w-[280px]"
+          }`}
+        >
+          <RightSidebar
+            nodes={nodes}
+            codePanel={codePanel}
+            onCodePanelChange={handleCodePanelChange}
+            activeTab={rightTab}
+            onTabChange={setRightTab}
+          />
+        </div>
       )}
     </div>
   );
