@@ -470,8 +470,8 @@ pnpm dev   # 重启 dev server
 - **命名导出**（不用 default export）
 - **中文 UI 文本**
 - **注释仅在必要时添加**
-- **端口**：Web 38421, Worker 38422, PG 25432, Redis 26379, MinIO 29000/29001
-- **LLM**：智谱 OpenAI 兼容接口，默认 `glm-5-turbo`
+- **端口**：Web 38421, Server 38422, Worker 38423, PG 25432, Redis 26379, MinIO 29000/29001
+- **LLM**：DeepSeek（@ai-sdk/deepseek 原生 provider），默认 `deepseek-v4-flash`
 - **PostCSS**：必须用 `module.exports`（不用 `export default`）
 - **.env**：通过 symlink `apps/web/.env → ../../.env` 共享
 - **Tailwind CSS 4**：颜色用 `@theme` CSS 变量，不用硬编码色值
@@ -484,12 +484,14 @@ pnpm dev   # 重启 dev server
 apps/
   web/          — Next.js 15 (App Router) + Chat UI（纯前端）
   server/       — Hono API Server (REST API + SSE)
-  worker/       — Agent Worker (BullMQ 队列消费 + AI SDK streamText + 5 tools)
+  worker/       — Agent Worker (BullMQ 队列消费 + AI SDK streamText + 10+ tools)
 packages/
   shared/       — Zod schemas, types
   db/           — Prisma schema + seed
+  agent/        — 共享 Agent 引擎（StateGraph + ToolRegistry + Checkpoint）
 docker-compose.yml  — Docker Compose (PG + Redis + MinIO)
 e2e/            — Playwright E2E tests
+scripts/        — 构建/部署/工具脚本
 docs/           — 项目文档（中文）
   产品/         — 产品定位、需求规格
   设计/         — 技术架构、API接口、Prompt设计、决策记录

@@ -20,7 +20,7 @@ pnpm dev
 | 命令 | 说明 |
 |------|------|
 | `pnpm bootstrap` | 一键初始化：配置环境变量 → 启动中间件 → 迁移数据库 → 种子数据 |
-| `pnpm dev` | 并行启动 Web（:38421）+ Worker（:38422） |
+| `pnpm dev` | 并行启动 Web（:38421）+ Server（:38422）+ Worker（:38423） |
 | `pnpm docker:up` | 启动所有中间件（PostgreSQL、Redis、MinIO） |
 | `pnpm docker:down` | 停止所有中间件 |
 | `pnpm build` | 构建所有包 |
@@ -45,8 +45,7 @@ apps/
 packages/
   shared/     — 共享类型、Zod Schema
   db/         — Prisma Schema + 数据库访问
-infra/
-  docker/     — Docker Compose 配置
+  agent/      — 共享 Agent 引擎（StateGraph + ToolRegistry + Checkpoint）
 docs/         — 项目文档
 data/         — 本地数据存储（已加入 .gitignore）
 ```
@@ -94,7 +93,7 @@ data/
 |---|------|
 | Web | Next.js 15, React 19, shadcn/ui, Tailwind CSS 4 |
 | Agent | AI SDK v6 (streamText + tool calling) |
-| LLM | 智谱 GLM（OpenAI 兼容接口） |
+| LLM | DeepSeek（@ai-sdk/deepseek 原生 provider），默认 `deepseek-v4-flash` |
 | DB | PostgreSQL 16 + pgvector + Prisma ORM |
 | Cache | Redis 7 |
 | Storage | MinIO (S3 兼容) |
