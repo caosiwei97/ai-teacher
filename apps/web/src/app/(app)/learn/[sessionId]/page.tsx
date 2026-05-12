@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { RightSidebar } from "@/components/layout/right-sidebar";
+import { ResizableDivider } from "@/components/layout/resizable-divider";
 import {
   isAssessmentCardData,
   type AssessmentCardProps,
@@ -90,6 +91,28 @@ function toAssessmentAnnotation(assessment: AssessmentCardProps): JsonObject {
   };
 }
 
+function getCodePushFromMetadata(metadata: unknown): { code: string; language: string; instruction?: string } | undefined {
+  if (!isObject(metadata) || !Array.isArray(metadata.toolResults)) {
+    return undefined;
+  }
+
+  for (const toolResult of metadata.toolResults) {
+    if (!isObject(toolResult) || toolResult.toolName !== "pushCode") {
+      continue;
+    }
+    const result = toolResult.result;
+    if (isObject(result) && typeof result.code === "string") {
+      return {
+        code: result.code as string,
+        language: (result.language as string) ?? "javascript",
+        instruction: result.instruction as string | undefined,
+      };
+    }
+  }
+
+  return undefined;
+}
+
 function getUIBlocksFromMetadata(metadata: unknown): unknown[] | undefined {
   if (!isObject(metadata) || !Array.isArray(metadata.toolResults)) {
     return undefined;
@@ -169,6 +192,14 @@ export default function LearnPage() {
   } | null>(null);
 
   const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [rightWidth, setRightWidth] = useState(320);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (codePanel && rightWidth < 480) {
+      setRightWidth(480);
+    }
+  }, [codePanel]);
 
   const chat = useChatStream(sessionId, {
     teachingMode,
@@ -259,12 +290,14 @@ export default function LearnPage() {
   });
 
   useEffect(() => {
-    const lastMsg = chat.messages[chat.messages.length - 1];
-    if (lastMsg?.role === "assistant" && lastMsg.metadata?.annotations) {
-      for (const ann of [...lastMsg.metadata.annotations].reverse()) {
-        if (ann.codePush) {
-          setCodePanel(ann.codePush);
-          break;
+    for (let i = chat.messages.length - 1; i >= 0; i--) {
+      const msg = chat.messages[i];
+      if (msg.role === "assistant" && msg.metadata?.annotations) {
+        for (const ann of [...msg.metadata.annotations].reverse()) {
+          if (ann.codePush) {
+            setCodePanel(ann.codePush);
+            return;
+          }
         }
       }
     }
@@ -354,10 +387,12 @@ export default function LearnPage() {
                 m.type === "assessment" ? getAssessmentFromMetadata(m.metadata) : undefined;
               const diagnosticQuestions = getDiagnosticQuestionsFromMetadata(m.metadata);
               const uiBlocks = getUIBlocksFromMetadata(m.metadata);
+              const codePush = getCodePushFromMetadata(m.metadata);
               const annotations: AnnotationData[] = [];
               if (assessment) annotations.push(toAssessmentAnnotation(assessment) as unknown as AnnotationData);
               if (diagnosticQuestions) annotations.push({ diagnosticQuestions });
               if (uiBlocks) annotations.push({ uiBlocks });
+              if (codePush) annotations.push({ codePush } as unknown as AnnotationData);
 
               return {
                 id: `init-${i}`,
@@ -388,6 +423,22 @@ export default function LearnPage() {
   const handleCodePanelChange = useCallback(
     (code: string) => {
       setCodePanel((prev) => (prev ? { ...prev, code } : null));
+    },
+    [],
+  );
+
+  const handleRightResize = useCallback(
+    (delta: number) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const containerWidth = container.clientWidth;
+      const minChatWidth = 400;
+      const minWidth = 320;
+      const maxWidth = containerWidth - minChatWidth;
+      setRightWidth((prev) => {
+        const next = prev - delta;
+        return Math.max(minWidth, Math.min(maxWidth, next));
+      });
     },
     [],
   );
@@ -670,8 +721,8 @@ export default function LearnPage() {
   };
 
   return (
-    <div className="flex h-full">
-      <div className="relative flex flex-1 flex-col">
+    <div ref={containerRef} className="flex h-full min-w-0">
+      <div className="relative flex min-w-0 flex-1 flex-col">
         {showRight && rightCollapsed && (
           <div className="absolute right-3 top-3 z-10 lg:hidden">
             <button
@@ -724,9 +775,14 @@ export default function LearnPage() {
       </div>
 
       {showRight && !rightCollapsed && (
-        <div className="hidden lg:block">
-          <RightSidebar nodes={nodes} codePanel={codePanel} onCodePanelChange={handleCodePanelChange} />
-        </div>
+        <>
+          <div className="hidden lg:block">
+            <ResizableDivider direction="horizontal" onResize={handleRightResize} />
+          </div>
+          <div className="hidden lg:block" style={{ width: `${rightWidth}px` }}>
+            <RightSidebar nodes={nodes} codePanel={codePanel} onCodePanelChange={handleCodePanelChange} />
+          </div>
+        </>
       )}
     </div>
   );

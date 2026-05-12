@@ -39,7 +39,7 @@ export function LeftSidebar({
     return (
       <button
         onClick={onToggle}
-        className="flex h-full w-12 items-center justify-center border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-colors hover:bg-sidebar-hover"
+        className="flex h-full w-12 shrink-0 items-center justify-center border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-colors hover:bg-sidebar-hover"
       >
         <ChevronRight className="h-4 w-4" />
       </button>
@@ -47,7 +47,7 @@ export function LeftSidebar({
   }
 
   return (
-    <div className="flex h-full w-[280px] flex-col bg-sidebar text-sidebar-foreground">
+    <div className="flex h-full w-[280px] shrink-0 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-accent">

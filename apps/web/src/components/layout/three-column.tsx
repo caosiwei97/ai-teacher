@@ -42,7 +42,7 @@ export function ThreeColumnLayout({
         onArchiveSession={onArchiveSession}
       />
 
-      <div className="relative flex flex-1 flex-col">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="absolute left-3 top-3 z-10 lg:hidden">
           <button
             onClick={() => setLeftCollapsed(!leftCollapsed)}
