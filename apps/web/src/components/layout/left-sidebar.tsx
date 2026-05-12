@@ -70,10 +70,10 @@ export function LeftSidebar({
         <div className="px-3 pb-2">
           <button
             onClick={onNewSession}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-sidebar-muted px-3 py-2 text-[13px] text-sidebar-muted transition-colors hover:border-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="rounded-md p-1.5 text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
+            title="新建会话"
           >
-            <Plus className="h-3.5 w-3.5" />
-            新建会话
+            <Plus className="h-4 w-4" />
           </button>
         </div>
       )}
