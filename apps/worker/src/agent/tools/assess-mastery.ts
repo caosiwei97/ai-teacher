@@ -75,7 +75,11 @@ export const assessMasteryTool: ToolDefinition = {
               masteredNodes: masteredCount,
               totalNodes: refreshedNodes.length,
             },
-            instruction: `Node "${nextNode.title}" is now active. Write a brief celebration (1 sentence) for mastering "${node.title}", then render a mastery summary report using renderUI (with heading, table showing key topics and mastery level, and badge blocks for core concepts), then write a bridge sentence connecting to the new topic, and immediately start teaching "${nextNode.title}" with a Socratic opening question. Do NOT wait for user input.`,
+            instruction: `Node "${nextNode.title}" is now active. You MUST do the following in order, then STOP:
+1. Render a mastery summary report using renderUI (with heading "${node.title}·掌握总结", table showing key topics and mastery level, and badge blocks for core concepts).
+2. Write 1 sentence of celebration for mastering "${node.title}".
+3. Write a bridge sentence like "接下来我们来学习「${nextNode.title}」".
+4. STOP here. Do NOT start teaching "${nextNode.title}" in this turn. The system will automatically start a new turn for the next knowledge point.`,
             activatedNextNode: { id: nextNode.id, title: nextNode.title },
           };
         }

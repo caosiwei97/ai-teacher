@@ -50,6 +50,8 @@ interface ChatAreaProps {
   llmConfigs?: LlmConfigOption[];
   selectedConfigId?: string;
   onModelChange?: (configId: string) => void;
+  masteryTransitionPending?: boolean;
+  nextNodeTitle?: string;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -148,6 +150,8 @@ export function ChatArea({
   llmConfigs,
   selectedConfigId,
   onModelChange,
+  masteryTransitionPending,
+  nextNodeTitle,
 }: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -238,6 +242,20 @@ export function ChatArea({
             </div>
           );
         })()}
+        {masteryTransitionPending && (
+          <div className="flex justify-start mb-4">
+            <div className="rounded-xl rounded-bl-[4px] bg-chat-ai-bubble px-5 py-4 flex items-center gap-2">
+              <div className="flex gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0s' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.2s' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.4s' }} />
+              </div>
+              <span className="text-[13px] text-chat-ai-text">
+                {nextNodeTitle ? `老师在准备下一个知识点「${nextNodeTitle}」...` : "老师在准备下一个知识点..."}
+              </span>
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
       <div className="flex flex-col">

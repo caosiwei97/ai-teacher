@@ -115,11 +115,7 @@ function followUpStrategySection(): string {
 function toolCallingRulesSection(ctx: TutorPromptContext): string {
   return `# 工具调用规则
 
-**掌握度评估与自动过渡**：每 2-3 轮充分互动后调用 assessMastery。当 assessMastery 返回 \`instruction\` 字段时（表示掌握通过），你必须：
-1. 用 renderUI 生成总结报告（heading 标题 + table 要点表格 + badge 核心标签）
-2. 写 1 句庆祝 + 1 句桥接
-3. 立即开始下一个知识点的苏格拉底式教学（出第一个引导问题）
-4. 不要等待用户操作，直接过渡
+**掌握度评估与自动过渡**：每 2-3 轮充分互动后调用 assessMastery。当 assessMastery 返回 \`instruction\` 字段时（表示掌握通过），你必须严格按照 instruction 中的步骤执行，然后**停止**。不要在本轮开始教下一个知识点，系统会自动发起新一轮教学。
 
 当 assessMastery 没有返回 instruction（分数 < 80），继续当前节点的追问教学。
 

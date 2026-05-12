@@ -10,6 +10,8 @@ interface UseChatStreamOptions {
   onError?: (error: string) => void;
   onRoadmapUpdate?: (nodes: unknown[]) => void;
   onSessionUpdate?: (data: { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string }) => void;
+  /** Fires when a node mastery transition is detected (assessMastery triggered roadmap-updated) */
+  onMasteryTransition?: (nextNodeTitle?: string) => void;
 }
 
 interface SSEEvent {
@@ -126,8 +128,9 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
         if (!reader) throw new Error("No stream body");
 
         const decoder = new TextDecoder();
-        let buffer = "";
-        let textFrozen = false;
+      let buffer = "";
+      let textFrozen = false;
+      let masteryDetected = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -182,6 +185,12 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                 const data = event.data as Record<string, unknown>;
                 const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
                 const toolName = String(data.toolName);
+                if (toolName === "assessMastery") {
+                  const result = data.result as Record<string, unknown> | undefined;
+                  if (result?.roadmapUpdate) {
+                    masteryDetected = true;
+                  }
+                }
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
                   parts: newMessages[assistantIdx].parts,
@@ -237,6 +246,12 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
               } else if (event.type === "roadmap-updated" && event.data) {
                 const data = event.data as { nodes: unknown[] };
                 options?.onRoadmapUpdate?.(data.nodes);
+                if (masteryDetected) {
+                  const nodesArr = data.nodes as Array<{ status: string; title: string }>;
+                  const nextInProgress = nodesArr.find(n => n.status === "in-progress");
+                  options?.onMasteryTransition?.(nextInProgress?.title);
+                  masteryDetected = false;
+                }
               } else if (event.type === "session-updated" && event.data) {
                 const data = event.data as { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string };
                 options?.onSessionUpdate?.(data);

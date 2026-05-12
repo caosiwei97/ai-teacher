@@ -90,6 +90,24 @@ function toAssessmentAnnotation(assessment: AssessmentCardProps): JsonObject {
   };
 }
 
+function getUIBlocksFromMetadata(metadata: unknown): unknown[] | undefined {
+  if (!isObject(metadata) || !Array.isArray(metadata.toolResults)) {
+    return undefined;
+  }
+
+  for (const toolResult of metadata.toolResults) {
+    if (!isObject(toolResult) || toolResult.toolName !== "renderUI") {
+      continue;
+    }
+    const result = toolResult.result;
+    if (isObject(result) && Array.isArray(result.uiBlocks) && result.uiBlocks.length > 0) {
+      return result.uiBlocks as unknown[];
+    }
+  }
+
+  return undefined;
+}
+
 function getDiagnosticQuestionsFromMetadata(metadata: unknown): DiagnosticQuestionsData | undefined {
   if (!isObject(metadata)) return undefined;
 
@@ -135,6 +153,9 @@ export default function LearnPage() {
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
   const [diagnosticAnalyzing, setDiagnosticAnalyzing] = useState(false);
 
+  const [masteryTransitionPending, setMasteryTransitionPending] = useState(false);
+  const [nextNodeTitle, setNextNodeTitle] = useState<string | undefined>(undefined);
+
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
 
@@ -156,6 +177,47 @@ export default function LearnPage() {
       if (isNewSession) {
         setIsNewSession(false);
         refreshSessions();
+      }
+      if (masteryTransitionPending) {
+        const title = nextNodeTitle;
+        setTimeout(() => {
+          const assistantMessage: UIMessage<MessageMetadata> = {
+            id: `assistant-next-${Date.now()}`,
+            role: "assistant",
+            parts: [{ type: "text" as const, text: "" }],
+            metadata: { annotations: [] },
+          };
+          chat.setMessages(prev => [...prev, assistantMessage]);
+
+          (async () => {
+            try {
+              const postRes = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  sessionId,
+                  messages: [{ role: "user", content: `[Continue] 开始教学知识点：${title ?? "下一个知识点"}` }],
+                  hidden: true,
+                  ...(selectedConfigId ? { llmConfigId: selectedConfigId } : {}),
+                }),
+              });
+
+              if (!postRes.ok) {
+                setMasteryTransitionPending(false);
+                setNextNodeTitle(undefined);
+                return;
+              }
+
+              chat.resumeStream();
+            } catch {
+              setMasteryTransitionPending(false);
+              setNextNodeTitle(undefined);
+            }
+          })();
+          setMasteryTransitionPending(false);
+          setNextNodeTitle(undefined);
+        }, 1500);
+        return;
       }
       fetchSession(sessionId)
         .then((data) => {
@@ -190,6 +252,10 @@ export default function LearnPage() {
         );
       }
     },
+    onMasteryTransition: (title) => {
+      setMasteryTransitionPending(true);
+      setNextNodeTitle(title);
+    },
   });
 
   useEffect(() => {
@@ -216,6 +282,8 @@ export default function LearnPage() {
       setIsNewSession(false);
       setDiagnosticSubmitted(false);
       setDiagnosticAnalyzing(false);
+      setMasteryTransitionPending(false);
+      setNextNodeTitle(undefined);
       setSuggestion(undefined);
     }
     prevSessionRef.current = sessionId;
@@ -285,9 +353,11 @@ export default function LearnPage() {
               const assessment =
                 m.type === "assessment" ? getAssessmentFromMetadata(m.metadata) : undefined;
               const diagnosticQuestions = getDiagnosticQuestionsFromMetadata(m.metadata);
+              const uiBlocks = getUIBlocksFromMetadata(m.metadata);
               const annotations: AnnotationData[] = [];
               if (assessment) annotations.push(toAssessmentAnnotation(assessment) as unknown as AnnotationData);
               if (diagnosticQuestions) annotations.push({ diagnosticQuestions });
+              if (uiBlocks) annotations.push({ uiBlocks });
 
               return {
                 id: `init-${i}`,
@@ -595,6 +665,8 @@ export default function LearnPage() {
     llmConfigs: llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault })),
     selectedConfigId,
     onModelChange: setSelectedConfigId,
+    masteryTransitionPending,
+    nextNodeTitle,
   };
 
   return (
