@@ -360,6 +360,75 @@ interface TutorPromptContext {
 - 不要每次都推送代码——只在需要学生动手实践时才使用
 - 推送的代码必须是完整可运行的
 
+### 3.9 askQuestion
+
+向学习者展示选择题来评估其基础水平。用于新会话开始时的诊断摸底，在聊天流中直接展示 Tab 选项卡。
+
+```typescript
+{
+  name: "askQuestion",
+  description: "向学习者展示选择题来评估其基础水平",
+  parameters: {
+    questions: [{
+      id: string,          // 题目唯一标识
+      question: string,    // 题目内容
+      title: string,       // Tab 标题（如'核心定义'、'背景调查'）
+      options: [{
+        id: string,        // 选项 ID（如 a/b/c/d）
+        text: string,      // 选项内容
+      }]
+    }],                    // 1-10 道诊断题
+    nodeId: string,        // 固定为 'diagnosis'
+    question: string,      // 整体标题（如'让我们了解一下你的基础'）
+  },
+  // 返回: { success, questions, nodeId, question }
+  // → SSE ask-question 事件 → 前端自动渲染 Tab 选项卡
+}
+```
+
+**Prompt 片段**（自动注入 system prompt）：
+
+```
+**askQuestion 工具**：在新会话开始、用户输入学习主题后，使用此工具评估学习者的基础水平。根据学习主题的复杂度生成 5-10 个诊断选择题，覆盖多个维度：核心概念定义、前置知识检查、实际应用场景、常见误区辨析、进阶理解深度。
+```
+
+**使用指引**：
+- 新会话的第一条用户消息是学习主题，此时应立即调用 askQuestion
+- 根据主题复杂度生成 5-10 个问题
+- 题目维度要多样：核心定义、前置知识、应用场景、常见误区、进阶概念
+- 每题的 title 字段必须唯一
+- 收到诊断答案后，综合分析用户各维度水平并自动开始教学
+
+### 3.10 generateRoadmap
+
+根据学习主题和学习者水平生成个性化学习路线图。在诊断摸底完成后调用。
+
+```typescript
+{
+  name: "generateRoadmap",
+  description: "根据学习主题和学习者水平生成个性化学习路线图",
+  parameters: {
+    topic: string,              // 学习主题
+    learnerLevel: "beginner" | "intermediate" | "advanced",  // 学习者水平
+    diagnosticSummary: string,  // 诊断答案的简要分析
+    startHint?: string,         // 建议从哪个方向开始
+  },
+  // 返回: { success, roadmapTitle, nodes: [{id, index, title, description, status}], firstNode }
+  // 自动将第一个节点设为 in-progress
+}
+```
+
+**Prompt 片段**（自动注入 system prompt）：
+
+```
+**generateRoadmap 工具**：在诊断摸底完成后、收到学习者答案并分析其水平后，立即调用此工具生成个性化学习路线图。系统会根据学习者水平生成合适的学习节点，并自动将第一个节点设为 in-progress。生成完成后立即从第一个知识点开始教学。
+```
+
+**使用指引**：
+- 必须在诊断摸底完成、分析完学习者水平后才能调用
+- learnerLevel 要根据诊断答案的实际质量判断
+- 生成完成后，立即从第一个知识点开始苏格拉底式教学
+
 ---
 
 ## 4. 对话示例

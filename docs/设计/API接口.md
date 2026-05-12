@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v0.8
+> 版本：v0.9
 > 更新日期：2026-05-12
-> 状态：已对齐实际实现（含迭代 031 多模型支持 + DeepSeek）
+> 状态：已对齐实际实现（含迭代 031 多模型支持 + DeepSeek，含 LLM 配置管理 + SSE 重连）
 
 ---
 
@@ -22,8 +22,13 @@
 | POST | `/api/suggest-reply` | AI 建议回复 | ✅ |
 | GET | `/api/suggested-topics` | 获取推荐学习话题 | ✅ |
 | POST | `/api/sandbox/execute` | 代码执行（Judge0 沙箱） | ✅ |
-| POST | `/api/llm-configs` | 管理用户 LLM 配置 | ✅ |
-| GET | `/api/llm-configs` | 获取用户 LLM 配置列表 | ✅ |
+| POST | `/api/llm` | 创建 LLM 配置 | ✅ |
+| GET | `/api/llm` | 获取用户 LLM 配置列表 | ✅ |
+| PATCH | `/api/llm/:id` | 更新 LLM 配置 | ✅ |
+| DELETE | `/api/llm/:id` | 删除 LLM 配置 | ✅ |
+| POST | `/api/llm/:id/test` | 测试 LLM 配置连通性 | ✅ |
+| GET | `/api/llm/models` | 获取 Provider 预设模型列表 | ✅ |
+| GET | `/api/chat/:sessionId/stream` | SSE 流式重连（断线恢复） | ✅ |
 
 > **架构说明**：API 路由已从 Next.js API Routes 迁移到独立 Hono Server（apps/server，端口 38422）。Next.js 仅保留 `/api/chat` 作为 SSE 代理。前端通过 `NEXT_PUBLIC_API_URL` 直接请求 Hono Server。
 
@@ -183,7 +188,10 @@ POST /api/chat
     { "role": "user", "content": "..." },
     { "role": "assistant", "content": "..." },
     { "role": "user", "content": "最新消息" }
-  ]
+  ],
+  "hidden": "boolean (可选，默认 false，诊断消息不显示在聊天中)",
+  "teachingMode": "warm | strict | interviewer (可选，覆盖会话默认教学模式)",
+  "llmConfigId": "string (可选，使用指定的用户 LLM 配置)"
 }
 ```
 
@@ -442,6 +450,90 @@ POST /api/sandbox/execute
 - Judge0 资源限制：CPU 5 秒、内存 256MB、墙钟 10 秒
 - 安全检查在 Agent 工具层执行（`execute-code.ts` 的 `DANGEROUS_PATTERNS`），此端点不做安全检查（信任前端传入的用户代码）
 - 语言 ID 映射：Python=71, JavaScript=63, Java=62, C++=54, TypeScript=74 等
+
+---
+
+## 13. SSE 流式重连
+
+```
+GET /api/chat/:sessionId/stream
+```
+
+### 说明
+
+- 用于 SSE 断线后重新连接到现有会话的流式通道
+- 通过 Redis Pub/Sub 订阅 `chat:{sessionId}` 频道
+- 如果会话已有正在执行的 Agent 任务，会接续收到后续 SSE 事件
+- 前端 Next.js 代理 `/api/chat/[sessionId]/stream` 转发到 Hono Server
+
+---
+
+## 14. LLM 配置管理（完整）
+
+### 14.1 获取配置列表
+
+```
+GET /api/llm?userId=...
+```
+
+返回用户的所有 LLM 配置（API Key 已脱敏，显示前4后4位）。
+
+### 14.2 创建配置
+
+```
+POST /api/llm?userId=...
+```
+
+请求体：
+```json
+{
+  "provider": "openai | anthropic | deepseek | qianwen | kimi | minimax | xiaomi | zhipu | custom",
+  "apiKey": "string (必填)",
+  "baseUrl": "string (可选，自定义 API 端点)",
+  "defaultModel": "string (必填)",
+  "label": "string (可选，配置显示名称)",
+  "isDefault": "boolean (可选，设为默认配置)"
+}
+```
+
+### 14.3 更新配置
+
+```
+PATCH /api/llm/:id?userId=...
+```
+
+请求体：同创建，所有字段均可选。
+
+### 14.4 删除配置
+
+```
+DELETE /api/llm/:id?userId=...
+```
+
+### 14.5 测试配置
+
+```
+POST /api/llm/:id/test?userId=...
+```
+
+使用指定的 LLM 配置发送测试请求，验证 API Key 和端点可用性。返回 `{ success: true }` 或错误信息。
+
+### 14.6 获取预设模型列表
+
+```
+GET /api/llm/models?provider=...
+```
+
+返回指定 Provider 的预设模型列表。
+
+```json
+{
+  "models": [
+    { "id": "deepseek-chat", "name": "DeepSeek Chat" },
+    { "id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash" }
+  ]
+}
+```
 
 ---
 

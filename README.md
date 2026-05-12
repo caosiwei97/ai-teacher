@@ -41,7 +41,7 @@ pnpm dev
 apps/
   web/        — Next.js App Router (Chat UI，纯前端)
   server/     — Hono API Server (REST API + SSE)
-  worker/     — Agent Worker (BullMQ 队列消费 + AI SDK streamText + 5 tools)
+  worker/     — Agent Worker (BullMQ 队列消费 + AI SDK streamText + 11 tools)
 packages/
   shared/     — 共享类型、Zod Schema
   db/         — Prisma Schema + 数据库访问
@@ -83,7 +83,7 @@ data/
 | [API 接口](docs/设计/API接口.md) | 已实现的接口文档 |
 | [Prompt 设计](docs/设计/Prompt设计.md) | 苏格拉底式教学 Prompt |
 | [决策记录](docs/设计/决策记录.md) | 关键技术决策及原因 |
-| [迭代计划](docs/开发/迭代计划.md) | 12 个迭代、状态、进度 |
+| [迭代计划](docs/开发/迭代计划.md) | 36 个迭代、状态、进度 |
 | [开发日志](docs/开发/开发日志.md) | 开发时间线记录 |
 | [E2E 测试](docs/测试/e2e/README.md) | 测试用例矩阵 |
 
