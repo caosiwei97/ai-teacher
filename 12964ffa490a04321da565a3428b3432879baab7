@@ -1,0 +1,64 @@
+docs/开发/迭代详情/0.4.0/039-组件流式生成.md
+  926ba42e16760bbe 1-189
+docs/开发/迭代计划.md
+  43e6e89f16d7ae18 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.14",
+  "base_commit_sha": "12964ffa490a04321da565a3428b3432879baab7",
+  "prompts": {
+    "31193cff35a750e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1df62bff5ffemEdot0HDI67FRX-4ee80f5f-29cc-42b2-8a09-a52a98d8cf56",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "43e6e89f16d7ae18": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1df441f60ffeWC1JW5JR8ZTmfJ-c3d18843-b0cc-400e-ad59-f7df48ca0406",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "532bdefbb87f0abd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1e0da53f3ffeP4MKQPDw3xL6z1",
+        "model": "cchClaude/claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 456,
+      "overriden_lines": 0
+    },
+    "926ba42e16760bbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1df441f60ffeWC1JW5JR8ZTmfJ-81d7a29b-eeed-4baa-8abc-35573fd0f03b",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 189,
+      "total_deletions": 0,
+      "accepted_lines": 189,
+      "overriden_lines": 0
+    }
+  }
+}
