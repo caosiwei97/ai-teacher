@@ -1,29 +1,29 @@
 # AI Teacher — E2E 测试用例
 
-> 版本：v0.2
-> 日期：2026-05-08
-> 基准产品：同类竞品 真实交互体验（Playwright 全功能探索）
+> 版本：v0.3
+> 日期：2026-05-13
 > 框架：Playwright + Chromium
+> 运行时机：发版前必须全量通过（日常开发只需 `pnpm build` 通过）
 
 ---
 
 ## 测试矩阵总览
 
-| 分类 | 文件 | 用例数 | P0 | P1 | P2 |
-|------|------|--------|----|----|-----|
-| A. 新会话与诊断 | [01-new-session-diagnostic.md](./01-new-session-diagnostic.md) | 5 | 4 | 1 | 0 |
-| B. 路线图与学习流程 | [02-roadmap-learning-flow.md](./02-roadmap-learning-flow.md) | 4 | 4 | 0 | 0 |
-| C. 苏格拉底式教学循环 | [03-socratic-teaching.md](./03-socratic-teaching.md) | 5 | 4 | 1 | 0 |
-| D. 评估与门控 | [04-assessment-gating.md](./04-assessment-gating.md) | 3 | 2 | 1 | 0 |
-| E. 会话管理 | [05-session-management.md](./05-session-management.md) | 6 | 3 | 2 | 1 |
-| F. 输入区功能 | [06-input-area.md](./06-input-area.md) | 5 | 1 | 3 | 1 |
-| G. 右侧栏交互 | [07-right-sidebar.md](./07-right-sidebar.md) | 3 | 1 | 2 | 0 |
-| H. 设置与账户 | [08-settings-account.md](./08-settings-account.md) | 5 | 0 | 2 | 3 |
-| I. 布局与导航 | [09-layout-navigation.md](./09-layout-navigation.md) | 5 | 2 | 2 | 1 |
-| J. 流式响应与性能 | [10-streaming-performance.md](./10-streaming-performance.md) | 2 | 2 | 0 | 0 |
-| K. 学习资料 | [11-learning-materials.md](./11-learning-materials.md) | 2 | 2 | 0 | 0 |
-| L. 消息操作 | [12-message-actions.md](./12-message-actions.md) | 2 | 0 | 2 | 0 |
-| **合计** | | **47** | **25** | **16** | **6** |
+| 分类 | 名称 | 测试文件 | 用例数 | P0 | P1 | P2 |
+|------|------|---------|--------|----|----|-----|
+| A | 新会话与诊断 | `home.spec.ts`, `diagnostic.spec.ts` | 5 | 4 | 1 | 0 |
+| B | 路线图与学习流程 | `learn.spec.ts` | 4 | 4 | 0 | 0 |
+| C | 苏格拉底式教学循环 | `chat.spec.ts`, `learn.spec.ts` | 5 | 4 | 1 | 0 |
+| D | 评估与门控 | `mastery.spec.ts` | 3 | 2 | 1 | 0 |
+| E | 会话管理 | `session-management.spec.ts` | 6 | 3 | 2 | 1 |
+| F | 输入区功能 | `quick-features.spec.ts` | 5 | 1 | 3 | 1 |
+| G | 右侧栏交互 | `learn.spec.ts` | 3 | 1 | 2 | 0 |
+| H | 设置与账户 | `settings.spec.ts` | 5 | 0 | 2 | 3 |
+| I | 布局与导航 | `learn.spec.ts` | 5 | 2 | 2 | 1 |
+| J | 流式响应与性能 | `chat.spec.ts` | 2 | 2 | 0 | 0 |
+| K | 学习资料 | 待创建 | 2 | 2 | 0 | 0 |
+| L | 消息操作 | 待创建 | 2 | 0 | 2 | 0 |
+| **合计** | | | **47** | **25** | **16** | **6** |
 
 ### A. 新会话与诊断 (New Session & Diagnostic)
 

@@ -1,0 +1,72 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "ai-teacher-layout",
+  "elements": [
+    {"type":"text","id":"title","x":350,"y":0,"text":"Industry: Chat + Code + Sidebar","fontSize":28,"strokeColor":"#1e1e1e","fontFamily":2,"width":600,"height":35},
+    {"type":"text","id":"h1","x":50,"y":55,"text":"ChatGPT Canvas","fontSize":20,"strokeColor":"#4a9eed","fontFamily":2,"width":200,"height":25},
+    {"type":"text","id":"d1","x":50,"y":80,"text":"Chat 30% | Code 70%","fontSize":16,"strokeColor":"#757575","fontFamily":2,"width":250,"height":20},
+    {"type":"rectangle","id":"g1","x":50,"y":110,"width":140,"height":120,"backgroundColor":"#a5d8ff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#4a9eed","strokeWidth":2},
+    {"type":"text","id":"g1t","x":80,"y":155,"text":"Chat","fontSize":16,"fontFamily":2,"containerId":"g1","width":60,"height":20},
+    {"type":"rectangle","id":"g2","x":200,"y":110,"width":290,"height":120,"backgroundColor":"#c3fae8","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#22c55e","strokeWidth":2},
+    {"type":"text","id":"g2t","x":280,"y":155,"text":"Code Canvas","fontSize":16,"fontFamily":2,"containerId":"g2","width":120,"height":20},
+    {"type":"text","id":"n1","x":50,"y":240,"text":"No sidebar. Code gets max width.","fontSize":16,"strokeColor":"#15803d","fontFamily":2,"width":300,"height":20},
+
+    {"type":"text","id":"h2","x":560,"y":55,"text":"Claude Artifacts","fontSize":20,"strokeColor":"#8b5cf6","fontFamily":2,"width":180,"height":25},
+    {"type":"text","id":"d2","x":560,"y":80,"text":"Chat 50% | Artifact 50%","fontSize":16,"strokeColor":"#757575","fontFamily":2,"width":250,"height":20},
+    {"type":"rectangle","id":"c1","x":560,"y":110,"width":210,"height":120,"backgroundColor":"#a5d8ff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#4a9eed","strokeWidth":2},
+    {"type":"text","id":"c1t","x":630,"y":155,"text":"Chat","fontSize":16,"fontFamily":2,"containerId":"c1","width":60,"height":20},
+    {"type":"rectangle","id":"c2","x":780,"y":110,"width":220,"height":120,"backgroundColor":"#d0bfff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#8b5cf6","strokeWidth":2},
+    {"type":"text","id":"c2t","x":850,"y":155,"text":"Artifact","fontSize":16,"fontFamily":2,"containerId":"c2","width":80,"height":20},
+    {"type":"text","id":"n2","x":560,"y":240,"text":"Equal split. Fullscreen toggle.","fontSize":16,"strokeColor":"#5b21b6","fontFamily":2,"width":300,"height":20},
+
+    {"type":"text","id":"h3","x":1070,"y":55,"text":"v0.dev / Replit","fontSize":20,"strokeColor":"#f59e0b","fontFamily":2,"width":200,"height":25},
+    {"type":"text","id":"d3","x":1070,"y":80,"text":"Chat 40% | Tab(Preview/Code) 60%","fontSize":16,"strokeColor":"#757575","fontFamily":2,"width":320,"height":20},
+    {"type":"rectangle","id":"v1","x":1070,"y":110,"width":170,"height":120,"backgroundColor":"#a5d8ff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#4a9eed","strokeWidth":2},
+    {"type":"text","id":"v1t","x":1120,"y":155,"text":"Chat","fontSize":16,"fontFamily":2,"containerId":"v1","width":60,"height":20},
+    {"type":"rectangle","id":"v2","x":1250,"y":110,"width":260,"height":120,"backgroundColor":"#ffd8a8","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#f59e0b","strokeWidth":2},
+    {"type":"text","id":"v2t","x":1310,"y":155,"text":"Tab: Code|Preview","fontSize":16,"fontFamily":2,"containerId":"v2","width":160,"height":20},
+    {"type":"text","id":"n3","x":1070,"y":240,"text":"Tab in right panel. Shared space.","fontSize":16,"strokeColor":"#92400e","fontFamily":2,"width":300,"height":20},
+
+    {"type":"rectangle","id":"sep","x":50,"y":280,"width":1460,"height":2,"backgroundColor":"#e5e5e5","fillStyle":"solid","strokeColor":"transparent","strokeWidth":0},
+
+    {"type":"text","id":"key","x":50,"y":300,"text":"Key: Code ALWAYS gets 50%+ width. Never in a narrow sidebar.","fontSize":20,"strokeColor":"#ef4444","fontFamily":2,"width":700,"height":25},
+
+    {"type":"rectangle","id":"rec_bg","x":50,"y":340,"width":1460,"height":510,"backgroundColor":"#d3f9d8","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#22c55e","strokeWidth":1,"opacity":25},
+    {"type":"text","id":"rec_t","x":70,"y":350,"text":"Recommended: ChatGPT Canvas Style","fontSize":22,"strokeColor":"#15803d","fontFamily":2,"width":450,"height":28},
+
+    {"type":"text","id":"s0t","x":70,"y":390,"text":"State 0: No code, no roadmap","fontSize":16,"strokeColor":"#757575","fontFamily":2,"width":300,"height":20},
+    {"type":"rectangle","id":"s0","x":70,"y":415,"width":1420,"height":45,"backgroundColor":"#a5d8ff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#4a9eed","strokeWidth":2},
+    {"type":"text","id":"s0l","x":650,"y":425,"text":"Chat - Full Width","fontSize":16,"fontFamily":2,"width":180,"height":20},
+
+    {"type":"text","id":"s1t","x":70,"y":475,"text":"State 1: Roadmap generated, no code","fontSize":16,"strokeColor":"#757575","fontFamily":2,"width":350,"height":20},
+    {"type":"rectangle","id":"s1a","x":70,"y":500,"width":1020,"height":50,"backgroundColor":"#a5d8ff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#4a9eed","strokeWidth":2},
+    {"type":"text","id":"s1al","x":500,"y":512,"text":"Chat (70%)","fontSize":16,"fontFamily":2,"width":100,"height":20},
+    {"type":"rectangle","id":"s1b","x":1100,"y":500,"width":390,"height":50,"backgroundColor":"#d0bfff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#8b5cf6","strokeWidth":2},
+    {"type":"text","id":"s1bl","x":1210,"y":512,"text":"Roadmap (30%)","fontSize":16,"fontFamily":2,"width":140,"height":20},
+
+    {"type":"text","id":"s2t","x":70,"y":565,"text":"State 2: Code pushed - Code replaces roadmap panel","fontSize":16,"strokeColor":"#757575","fontFamily":2,"width":500,"height":20},
+    {"type":"rectangle","id":"s2a","x":70,"y":590,"width":720,"height":110,"backgroundColor":"#a5d8ff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#4a9eed","strokeWidth":2},
+    {"type":"text","id":"s2al","x":360,"y":635,"text":"Chat (50%)","fontSize":16,"fontFamily":2,"width":100,"height":20},
+    {"type":"rectangle","id":"s2b","x":800,"y":590,"width":690,"height":110,"backgroundColor":"#c3fae8","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#22c55e","strokeWidth":2},
+    {"type":"rectangle","id":"s2t1","x":810,"y":600,"width":80,"height":22,"backgroundColor":"#22c55e","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#22c55e","strokeWidth":1},
+    {"type":"text","id":"s2t1l","x":825,"y":603,"text":"Code","fontSize":12,"fontFamily":2,"width":40,"height":15},
+    {"type":"rectangle","id":"s2t2","x":895,"y":600,"width":90,"height":22,"backgroundColor":"transparent","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#22c55e","strokeWidth":1,"opacity":40},
+    {"type":"text","id":"s2t2l","x":905,"y":603,"text":"Roadmap","fontSize":12,"fontFamily":2,"width":70,"height":15},
+    {"type":"text","id":"s2d","x":830,"y":640,"text":"Code 50% width + Fullscreen btn","fontSize":16,"strokeColor":"#15803d","fontFamily":2,"width":300,"height":20},
+
+    {"type":"text","id":"s3t","x":70,"y":715,"text":"State 3: User switches to Roadmap tab","fontSize":16,"strokeColor":"#757575","fontFamily":2,"width":380,"height":20},
+    {"type":"rectangle","id":"s3a","x":70,"y":740,"width":720,"height":90,"backgroundColor":"#a5d8ff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#4a9eed","strokeWidth":2},
+    {"type":"text","id":"s3al","x":360,"y":775,"text":"Chat (50%)","fontSize":16,"fontFamily":2,"width":100,"height":20},
+    {"type":"rectangle","id":"s3b","x":800,"y":740,"width":690,"height":90,"backgroundColor":"#d0bfff","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#8b5cf6","strokeWidth":2},
+    {"type":"rectangle","id":"s3t1b","x":810,"y":750,"width":80,"height":22,"backgroundColor":"transparent","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#8b5cf6","strokeWidth":1,"opacity":40},
+    {"type":"text","id":"s3t1bl","x":825,"y":753,"text":"Code","fontSize":12,"fontFamily":2,"width":40,"height":15},
+    {"type":"rectangle","id":"s3t2b","x":895,"y":750,"width":90,"height":22,"backgroundColor":"#8b5cf6","fillStyle":"solid","roundness":{"type":3},"strokeColor":"#8b5cf6","strokeWidth":1},
+    {"type":"text","id":"s3t2bl","x":905,"y":753,"text":"Roadmap","fontSize":12,"fontFamily":2,"width":70,"height":15},
+    {"type":"text","id":"s3d","x":830,"y":780,"text":"Roadmap list in same panel","fontSize":16,"strokeColor":"#5b21b6","fontFamily":2,"width":280,"height":20}
+  ],
+  "appState": {
+    "viewBackgroundColor": "#ffffff",
+    "gridSize": null
+  }
+}
