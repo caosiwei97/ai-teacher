@@ -40,11 +40,19 @@ export function RightSidebar({
   const total = nodes.length;
   const progress = total > 0 ? Math.round((mastered / total) * 100) : 0;
 
+  const isIdeMode = activeTab === "code" && hasCode;
+
   return (
-    <div className="flex h-full w-full flex-col bg-sidebar">
+    <div
+      className={`flex h-full w-full flex-col${isIdeMode ? "" : " bg-sidebar"}`}
+      style={isIdeMode ? { background: "#181825" } : undefined}
+    >
       {/* Tab bar — only show when both roadmap and code exist */}
       {hasCode && (
-        <div className="flex shrink-0 border-b border-border px-4 py-0">
+        <div
+          className={`flex shrink-0 px-4 py-0${isIdeMode ? "" : " border-b border-border"}`}
+          style={isIdeMode ? { borderBottom: "1px solid #313244" } : undefined}
+        >
           <button
             onClick={() => onTabChange("code")}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors ${
@@ -52,6 +60,7 @@ export function RightSidebar({
                 ? "border-b-2 border-primary text-foreground"
                 : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"
             }`}
+            style={isIdeMode && activeTab === "code" ? { color: "#cdd6f4", borderBottomColor: "#89b4fa" } : undefined}
           >
             <Code2 className="h-3.5 w-3.5" />
             代码
@@ -63,6 +72,7 @@ export function RightSidebar({
                 ? "border-b-2 border-primary text-foreground"
                 : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"
             }`}
+            style={isIdeMode ? { color: "#6c7086" } : undefined}
           >
             <MapPin className="h-3.5 w-3.5" />
             学习路线

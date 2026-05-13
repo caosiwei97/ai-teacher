@@ -5,6 +5,11 @@ import { Terminal as TerminalIcon, Trash2 } from "lucide-react";
 import { useSandbox } from "@/contexts/sandbox-context";
 import { getSandboxWsUrl } from "@/hooks/use-sandbox-api";
 
+const IDE = {
+  border: "#313244",
+  textMuted: "#6c7086",
+};
+
 let Terminal: typeof import("@xterm/xterm").Terminal;
 let FitAddon: typeof import("@xterm/addon-fit").FitAddon;
 let WebLinksAddon: typeof import("@xterm/addon-web-links").WebLinksAddon;
@@ -149,15 +154,21 @@ export function SandboxTerminal() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex shrink-0 items-center justify-between border-b border-white/8 px-3 py-1.5">
+      <div
+        className="flex shrink-0 items-center justify-between px-3 py-1.5"
+        style={{
+          borderBottom: `1px solid ${IDE.border}`,
+        }}
+      >
         <div className="flex items-center gap-2">
-          <TerminalIcon className="h-3.5 w-3.5 text-muted-foreground/60" />
-          <span className="text-xs font-medium text-muted-foreground/80">终端</span>
+          <TerminalIcon className="h-3.5 w-3.5" style={{ color: IDE.textMuted, opacity: 0.6 }} />
+          <span className="text-xs font-medium" style={{ color: IDE.textMuted, opacity: 0.8 }}>终端</span>
         </div>
         <button
           type="button"
           onClick={handleClear}
-          className="rounded p-0.5 text-muted-foreground/40 transition-colors hover:bg-white/5 hover:text-muted-foreground/70"
+          className="rounded p-0.5 transition-colors hover:bg-white/5"
+          style={{ color: IDE.textMuted, opacity: 0.4 }}
           title="清空终端"
         >
           <Trash2 className="h-3 w-3" />

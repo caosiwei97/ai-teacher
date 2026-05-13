@@ -37,6 +37,42 @@ interface SandboxInfo {
 let cachedSandboxId: string | null = null;
 let cachedExecdUrl: string | null = null;
 
+async function deleteSandbox(id: string): Promise<void> {
+  await fetch(`${OPENSANDBOX_URL}/v1/sandboxes/${id}`, { method: "DELETE" }).catch(() => {});
+}
+
+export async function cleanupOrphanSandboxes(): Promise<number> {
+  try {
+    const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes`);
+    if (!res.ok) return 0;
+    const data = (await res.json()) as { sandboxes?: SandboxInfo[] } | SandboxInfo[];
+    const list = Array.isArray(data) ? data : data.sandboxes ?? [];
+    let count = 0;
+    for (const sb of list) {
+      if (sb.id !== cachedSandboxId) {
+        await deleteSandbox(sb.id);
+        count++;
+      }
+    }
+    return count;
+  } catch {
+    return 0;
+  }
+}
+
+export function registerShutdownHook(): void {
+  const shutdown = async () => {
+    if (cachedSandboxId) {
+      await deleteSandbox(cachedSandboxId);
+      cachedSandboxId = null;
+      cachedExecdUrl = null;
+    }
+    process.exit(0);
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+}
+
 function languageIdToName(id: number): string {
   const map: Record<number, string> = { 71: "python", 63: "javascript", 74: "typescript", 62: "java", 54: "cpp" };
   return map[id] ?? "python";
@@ -132,6 +168,21 @@ export async function ensureSandbox(llmConfig?: SandboxLlmConfig): Promise<strin
     cachedSandboxId = null;
     cachedExecdUrl = null;
   }
+
+  try {
+    const listRes = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes`);
+    if (listRes.ok) {
+      const data = (await listRes.json()) as { sandboxes?: SandboxInfo[] } | SandboxInfo[];
+      const list = Array.isArray(data) ? data : data.sandboxes ?? [];
+      const running = list.find((sb) => sb.status.state === "Running");
+      if (running) {
+        const execdUrl = await getExecdUrl(running.id);
+        cachedSandboxId = running.id;
+        cachedExecdUrl = execdUrl;
+        return execdUrl;
+      }
+    }
+  } catch {}
 
   const id = await createSandbox(llmConfig);
   await waitForSandbox(id);

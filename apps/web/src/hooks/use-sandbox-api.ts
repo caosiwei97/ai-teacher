@@ -1,9 +1,11 @@
 "use client";
 
+import { useMemo } from "react";
+
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:38422";
 
 export function useSandboxApi() {
-  return {
+  return useMemo(() => ({
     searchFiles: (path: string, pattern: string) =>
       fetch(`${API}/api/sandbox/files/search?path=${encodeURIComponent(path)}&pattern=${encodeURIComponent(pattern)}`)
         .then((r) => r.json()),
@@ -36,7 +38,7 @@ export function useSandboxApi() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cwd: cwd ?? "/workspace" }),
       }).then((r) => r.json()),
-  };
+  }), []);
 }
 
 export function getSandboxWsUrl(sessionId: string): string {

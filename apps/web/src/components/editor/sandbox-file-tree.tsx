@@ -4,6 +4,15 @@ import { useState, useCallback } from "react";
 import { FolderOpen, FolderClosed, FileCode, FileText, Trash2 } from "lucide-react";
 import { type FileNode, useSandbox } from "@/contexts/sandbox-context";
 
+const IDE = {
+  sidebar: "#181825",
+  border: "#313244",
+  text: "#cdd6f4",
+  textMuted: "#6c7086",
+  hover: "#313244",
+  accent: "#89b4fa",
+};
+
 const CODE_EXTENSIONS = new Set(["ts", "tsx", "js", "jsx", "py", "java", "cpp", "go", "rs", "json"]);
 
 function getExtension(name: string): string {
@@ -42,12 +51,12 @@ function TreeItem({ node, depth }: { node: FileNode; depth: number }) {
         onClick={handleClick}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className={`flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-xs transition-colors ${
-          isActive
-            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-            : "text-muted-foreground hover:bg-sidebar-accent/50"
-        }`}
-        style={{ paddingLeft: `${depth * 12 + 6}px` }}
+        className="flex w-full items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-xs transition-colors"
+        style={{
+          paddingLeft: `${depth * 12 + 6}px`,
+          background: isActive ? IDE.hover : hovered ? IDE.hover : "transparent",
+          color: isActive ? IDE.accent : IDE.textMuted,
+        }}
       >
         {node.isDir ? (
           expanded ? (
@@ -58,7 +67,7 @@ function TreeItem({ node, depth }: { node: FileNode; depth: number }) {
         ) : isCode ? (
           <FileCode className="h-3.5 w-3.5 shrink-0 text-blue-400" />
         ) : (
-          <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+          <FileText className="h-3.5 w-3.5 shrink-0" style={{ color: IDE.textMuted, opacity: 0.6 }} />
         )}
         <span className="truncate">{node.name}</span>
         {hovered && (
@@ -67,7 +76,8 @@ function TreeItem({ node, depth }: { node: FileNode; depth: number }) {
             tabIndex={-1}
             onClick={handleDelete}
             onKeyDown={() => {}}
-            className="ml-auto shrink-0 rounded p-0.5 text-muted-foreground/40 hover:bg-red-500/10 hover:text-red-400"
+            className="ml-auto shrink-0 rounded p-0.5 transition-colors hover:bg-red-500/10 hover:text-red-400"
+            style={{ color: IDE.textMuted, opacity: 0.4 }}
           >
             <Trash2 className="h-3 w-3" />
           </span>
@@ -90,13 +100,13 @@ export function SandboxFileTree() {
   if (fileTree.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-4">
-        <p className="text-xs text-muted-foreground/40">暂无文件</p>
+        <p className="text-xs" style={{ color: IDE.textMuted, opacity: 0.4 }}>暂无文件</p>
       </div>
     );
   }
 
   return (
-    <div className="h-full w-[160px] shrink-0 overflow-y-auto border-r border-border p-1">
+    <div className="h-full w-full overflow-y-auto p-1">
       {fileTree.map((node) => (
         <TreeItem key={node.path} node={node} depth={0} />
       ))}
