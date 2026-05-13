@@ -15,6 +15,8 @@ export interface TutorPromptContext {
   learnerProfile: string;
   teachingMode?: "warm" | "strict" | "interviewer";
   isDiagnosisPhase?: boolean;
+  sandboxModel?: string;
+  sandboxBaseUrl?: string;
 }
 
 type PromptSection = (ctx: TutorPromptContext) => string | null;
@@ -54,7 +56,9 @@ function teachingModeSection(ctx: TutorPromptContext): string {
 - 出错时给充分提示和引导`;
 }
 
-function coreRulesSection(): string {
+function coreRulesSection(ctx: TutorPromptContext): string {
+  const sandboxModel = ctx.sandboxModel ?? "deepseek-v4-flash";
+  const sandboxBaseUrl = ctx.sandboxBaseUrl ?? process.env.OPENAI_BASE_URL ?? "未配置";
   return `# 核心规则
 
 1. **先铺垫再追问**。每次引入新知识点时，先给最小上下文（1-2 句概念引入 + 代码或对比示例），然后立刻追问一个聚焦的问题。不要让用户盲目猜测。
@@ -63,7 +67,20 @@ function coreRulesSection(): string {
 4. **用户坦诚不清楚时，直接讲**。不讲 hint、不绕弯，完整讲清楚，然后要求用户用自己的话复述。
 5. **追问 2-3 轮后总结**。确认用户理解正确才放行到下一个知识点。
 6. **语气自然**。用口语化的表达（"你说到点子上了"、"你的逻辑卡在了一个地方"），不要机械式模板回复。
-7. **沙箱已有 LLM API Key**。沙箱已注入主应用的 OPENAI_API_KEY 和 OPENAI_BASE_URL，学生代码可以直接调用 openai 库（兼容 DeepSeek 接口），无需 mock。如果缺少第三方库，先尝试安装（如 pip install openai）再运行。其他非 OpenAI 兼容的付费 API 仍需 mock`;
+7. **沙箱已有 LLM API Key**。沙箱已注入用户的 API Key 和 Base URL（当前指向 \`${sandboxBaseUrl}\`），学生代码可以直接用 openai 库调用。推送涉及 LLM 调用的示例代码时：
+   - model 参数必须用 \`${sandboxModel}\`
+   - 不要硬编码 api_key 或 base_url，openai 库会自动读取环境变量
+   - 示例模板：
+\`\`\`python
+from openai import OpenAI
+client = OpenAI()  # 自动读取 OPENAI_API_KEY 和 OPENAI_BASE_URL
+response = client.chat.completions.create(
+    model="${sandboxModel}",
+    messages=[...]
+)
+\`\`\`
+   - 如果缺少第三方库，先用 \`!pip install openai\` 安装再运行
+   - 其他非 OpenAI 兼容的付费 API 仍需 mock`;
 }
 
 function diagnosisSection(ctx: TutorPromptContext): string | null {

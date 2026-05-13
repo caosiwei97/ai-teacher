@@ -17,6 +17,7 @@ interface ChatInputProps {
   onSubmit: (e: React.FormEvent) => void;
   onStop: () => void;
   isLoading: boolean;
+  disabled?: boolean;
   isSuggesting?: boolean;
   suggestion?: string;
   onSuggest?: () => void;
@@ -36,6 +37,7 @@ export function ChatInput({
   onSubmit,
   onStop,
   isLoading,
+  disabled,
   isSuggesting,
   suggestion,
   onSuggest,
@@ -60,6 +62,11 @@ export function ChatInput({
 
   return (
     <div className="border-t border-border p-4">
+      {disabled && (
+        <div className="mx-auto mb-2 max-w-3xl rounded-lg bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-500">
+          请先在<a href="/settings" className="underline font-medium hover:text-amber-400">设置页</a>配置模型后再开始对话
+        </div>
+      )}
       <form onSubmit={onSubmit} className="mx-auto max-w-3xl">
         <div className="relative rounded-[12px] border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input-bg)] transition-[border-color,box-shadow] duration-200 ease-in-out focus-within:border-[var(--color-chat-input-focus)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-ring)_25%,transparent)]">
           <div className="flex items-start">
@@ -72,7 +79,8 @@ export function ChatInput({
               value={value}
               onChange={onChange}
               onKeyDown={handleKeyDown}
-              placeholder="写下你的思考…"
+              placeholder={disabled ? "请先配置模型…" : "写下你的思考…"}
+              disabled={disabled}
               rows={1}
               className="flex-1 resize-none bg-transparent px-4 py-4 pr-12 text-[16px] leading-relaxed text-[var(--color-chat-input-text)] placeholder:text-[var(--color-chat-input-placeholder)] focus:outline-none focus-visible:shadow-none focus-visible:ring-0"
               style={{ minHeight: "56px", maxHeight: "280px" }}
@@ -144,7 +152,7 @@ export function ChatInput({
             ) : (
               <button
                 type="submit"
-                disabled={!value.trim()}
+                disabled={!value.trim() || disabled}
                 className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
               >
                 <ArrowUp className="h-4 w-4" />

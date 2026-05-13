@@ -183,6 +183,7 @@ export default function LearnPage() {
 
   const [llmConfigs, setLlmConfigs] = useState<LlmConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState<string | undefined>(undefined);
+  const [hasEnvConfig, setHasEnvConfig] = useState(true);
 
   const [codePanel, setCodePanel] = useState<{
     code: string;
@@ -323,6 +324,11 @@ export default function LearnPage() {
     getLlmConfigs(USER_ID)
       .then((data) => setLlmConfigs(data.configs))
       .catch(() => setLlmConfigs([]));
+
+    fetch(`/api/llm/env-status`)
+      .then((r) => r.json())
+      .then((data: { hasEnvConfig?: boolean }) => setHasEnvConfig(data.hasEnvConfig ?? false))
+      .catch(() => setHasEnvConfig(false));
 
     fetchSessions(USER_ID)
       .then((data) => {
@@ -699,6 +705,7 @@ export default function LearnPage() {
     llmConfigs: llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault })),
     selectedConfigId,
     onModelChange: setSelectedConfigId,
+    disabled: llmConfigs.length === 0 && !hasEnvConfig,
     masteryTransitionPending,
     nextNodeTitle,
   };
@@ -773,6 +780,7 @@ export default function LearnPage() {
             onCodePanelChange={handleCodePanelChange}
             activeTab={rightTab}
             onTabChange={setRightTab}
+            llmConfigId={selectedConfigId}
           />
         </div>
       )}

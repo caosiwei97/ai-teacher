@@ -200,3 +200,9 @@ export async function getProviderModels(provider: string) {
   if (!res.ok) throw new Error("Failed to fetch provider models");
   return res.json() as Promise<{ provider: string; name: string; models: ModelInfo[] }>;
 }
+
+export async function getEnvStatus() {
+  const res = await fetch(`${LLM_BASE}/env-status`);
+  if (!res.ok) return { hasEnvConfig: false, baseUrl: "" };
+  return res.json() as Promise<{ hasEnvConfig: boolean; baseUrl: string }>;
+}

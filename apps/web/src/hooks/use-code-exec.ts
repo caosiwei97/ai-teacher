@@ -18,6 +18,7 @@ interface UseCodeExecReturn {
     sourceCode: string,
     languageId: number,
     stdin?: string,
+    llmConfigId?: string,
   ) => Promise<CodeExecResult | null>;
   result: CodeExecResult | null;
   isExecuting: boolean;
@@ -30,7 +31,7 @@ export function useCodeExec(): UseCodeExecReturn {
   const [error, setError] = useState<string | null>(null);
 
   const execute = useCallback(
-    async (sourceCode: string, languageId: number, stdin?: string) => {
+    async (sourceCode: string, languageId: number, stdin?: string, llmConfigId?: string) => {
       setIsExecuting(true);
       setError(null);
 
@@ -42,6 +43,7 @@ export function useCodeExec(): UseCodeExecReturn {
             source_code: sourceCode,
             language_id: languageId,
             stdin,
+            ...(llmConfigId ? { llmConfigId } : {}),
           }),
         });
 

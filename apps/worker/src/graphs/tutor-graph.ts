@@ -26,6 +26,8 @@ export interface TutorGraphContext extends GraphExecutionContext {
   providerFn?: (modelId: string) => LanguageModel;
   /** Default model name from job-level LLM config. Falls back to "deepseek-v4-flash". */
   defaultModel?: string;
+  sandboxModel?: string;
+  sandboxBaseUrl?: string;
 }
 
 function createTutorGraph() {
@@ -63,6 +65,8 @@ function createTutorGraph() {
         learnerProfile: state.learnerProfile || "首次学习",
         teachingMode: state.teachingMode,
         isDiagnosisPhase,
+        sandboxModel: graphCtx.sandboxModel,
+        sandboxBaseUrl: graphCtx.sandboxBaseUrl,
       });
 
       const toolPromptSection = graphCtx.toolRegistry.toPromptSection();

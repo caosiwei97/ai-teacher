@@ -41,18 +41,28 @@ function createPublisher(): Redis {
   return new Redis(REDIS_URL, { maxRetriesPerRequest: null });
 }
 
-async function getProviderForJob(llmConfigId?: string) {
+interface LlmJobConfig {
+  providerFn: (modelId: string) => ReturnType<ReturnType<typeof createProviderForConfig>>;
+  sandboxModel?: string;
+  sandboxBaseUrl?: string;
+}
+
+async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
   if (llmConfigId) {
     const config = await prisma.llmConfig.findUnique({ where: { id: llmConfigId } });
     if (!config) throw new Error(`LlmConfig ${llmConfigId} not found`);
     const apiKey = decrypt(config.encryptedKey);
-    return createProviderForConfig({
-      provider: config.provider,
-      apiKey,
-      baseUrl: config.baseUrl ?? undefined,
-    });
+    return {
+      providerFn: createProviderForConfig({
+        provider: config.provider,
+        apiKey,
+        baseUrl: config.baseUrl ?? undefined,
+      }),
+      sandboxModel: config.defaultModel,
+      sandboxBaseUrl: config.baseUrl ?? undefined,
+    };
   }
-  return getFallbackProvider();
+  return { providerFn: getFallbackProvider() };
 }
 
 export function createChatTurnWorker(
@@ -144,7 +154,8 @@ export function createChatTurnWorker(
           : [];
 
         const subagentRegistry = createSubagentRegistry();
-        const providerFn = await getProviderForJob(job.data.llmConfigId);
+        const llmJobConfig = await getProviderForJob(job.data.llmConfigId);
+        const providerFn = llmJobConfig.providerFn;
         const toolRegistry = createTutorToolRegistry(subagentRegistry, providerFn);
         const checkpoint = new PrismaCheckpointStore(prisma);
 
@@ -196,6 +207,8 @@ export function createChatTurnWorker(
           contextManager,
           subagentRegistry,
           providerFn,
+          sandboxModel: llmJobConfig.sandboxModel,
+          sandboxBaseUrl: llmJobConfig.sandboxBaseUrl,
         };
 
         const timeoutPromise = new Promise<never>((_, reject) =>

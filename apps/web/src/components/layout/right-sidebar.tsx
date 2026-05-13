@@ -23,6 +23,7 @@ interface RightSidebarProps {
   onCodePanelChange?: (code: string) => void;
   activeTab: "roadmap" | "code";
   onTabChange: (tab: "roadmap" | "code") => void;
+  llmConfigId?: string;
 }
 
 export function RightSidebar({
@@ -31,6 +32,7 @@ export function RightSidebar({
   onCodePanelChange,
   activeTab,
   onTabChange,
+  llmConfigId,
 }: RightSidebarProps) {
   const hasCode = !!codePanel;
 
@@ -136,6 +138,7 @@ export function RightSidebar({
             language={codePanel!.language}
             instruction={codePanel!.instruction}
             onCodeChange={onCodePanelChange ?? (() => {})}
+            llmConfigId={llmConfigId}
           />
         )}
       </div>

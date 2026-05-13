@@ -252,4 +252,10 @@ export const llmConfigRoute = new Hono()
       name: preset.name,
       models: preset.models,
     });
+  })
+
+  .get("/env-status", (c) => {
+    const hasKey = !!process.env.OPENAI_API_KEY;
+    const baseUrl = process.env.OPENAI_BASE_URL ?? "";
+    return c.json({ hasEnvConfig: hasKey, baseUrl });
   });

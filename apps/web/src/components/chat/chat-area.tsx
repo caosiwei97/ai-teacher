@@ -50,6 +50,7 @@ interface ChatAreaProps {
   llmConfigs?: LlmConfigOption[];
   selectedConfigId?: string;
   onModelChange?: (configId: string) => void;
+  disabled?: boolean;
   masteryTransitionPending?: boolean;
   nextNodeTitle?: string;
 }
@@ -150,6 +151,7 @@ export function ChatArea({
   llmConfigs,
   selectedConfigId,
   onModelChange,
+  disabled,
   masteryTransitionPending,
   nextNodeTitle,
 }: ChatAreaProps) {
@@ -270,6 +272,7 @@ export function ChatArea({
           onSubmit={onSubmit}
           onStop={onStop}
           isLoading={isLoading}
+          disabled={disabled}
           isSuggesting={isSuggesting}
           suggestion={suggestion}
           onSuggest={onSuggest}
