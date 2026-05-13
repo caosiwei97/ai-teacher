@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightActiveLine } from "@codemirror/view";
 import { EditorState, Compartment } from "@codemirror/state";
 import { defaultKeymap } from "@codemirror/commands";
+import { syntaxHighlighting, defaultHighlightStyle, bracketMatching } from "@codemirror/language";
 import { warmTheme } from "./warm-theme";
 import { getLanguageExtension } from "./language-map";
 
@@ -26,6 +27,11 @@ export function CodeEditor({ language, value, onChange, readOnly = false, compac
 
     const extensions = [
       warmTheme,
+      lineNumbers(),
+      highlightActiveLineGutter(),
+      highlightActiveLine(),
+      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+      bracketMatching(),
       keymap.of(defaultKeymap),
       EditorView.lineWrapping,
       langCompartment.of([]),
@@ -75,7 +81,7 @@ export function CodeEditor({ language, value, onChange, readOnly = false, compac
   return (
     <div
       ref={containerRef}
-      className={`overflow-hidden rounded-lg border border-code-border ${compact ? "max-h-[200px] overflow-y-auto" : ""}`}
+      className={`overflow-hidden rounded-lg border border-code-border ${compact ? "max-h-[200px] overflow-y-auto" : "min-h-[200px]"}`}
     />
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { CodeEditor } from "@/components/editor/code-editor";
 import { useCodeExec } from "@/hooks/use-code-exec";
-import { Play, Loader2, Trash2 } from "lucide-react";
+import { Play, Loader2, Trash2, Copy, Check } from "lucide-react";
 
 interface CodePanelProps {
   code: string;
@@ -31,6 +31,7 @@ const JUDGE0_IDS: Record<string, number> = {
 export function CodePanel({ code, language, instruction, onCodeChange }: CodePanelProps) {
   const [currentCode, setCurrentCode] = useState(code);
   const { execute, result, isExecuting, error } = useCodeExec();
+  const [copied, setCopied] = useState(false);
 
   function handleCodeChange(value: string) {
     setCurrentCode(value);
@@ -47,20 +48,55 @@ export function CodePanel({ code, language, instruction, onCodeChange }: CodePan
     await execute(currentCode, langId);
   }
 
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(currentCode).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, [currentCode]);
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <span className="text-xs font-medium text-roadmap-fill">
           {LANGUAGE_LABELS[language] ?? language}
         </span>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <Trash2 className="h-3 w-3" />
-          清空
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            title="复制代码"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-green-500" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleClear}
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            title="清空"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+          <div className="mx-1 h-4 w-px bg-border" />
+          <button
+            type="button"
+            onClick={handleRun}
+            disabled={isExecuting || !currentCode.trim()}
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-green-500/10 hover:text-green-600 disabled:opacity-40 disabled:cursor-not-allowed"
+            title="运行"
+          >
+            {isExecuting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
       </div>
 
       {instruction && (
@@ -80,23 +116,15 @@ export function CodePanel({ code, language, instruction, onCodeChange }: CodePan
         />
       </div>
 
-      <div className="border-t border-border px-4 py-3">
-        <button
-          type="button"
-          onClick={handleRun}
-          disabled={isExecuting || !currentCode.trim()}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isExecuting ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Play className="h-3.5 w-3.5" />
-          )}
-          运行
-        </button>
-
-        {(result || error) && (
-          <div className="mt-3 rounded-lg bg-[#1e1e2e] p-3">
+      {(result || error) && (
+        <div className="border-t border-border px-4 py-3">
+          <div className="mb-2 flex items-center gap-1.5">
+            <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Output</span>
+            {result?.time && (
+              <span className="text-[10px] text-muted-foreground/60">{result.time}s</span>
+            )}
+          </div>
+          <div className="rounded-lg bg-[#1e1e2e] p-3">
             {error && (
               <pre className="whitespace-pre-wrap font-mono text-xs text-red-400">{error}</pre>
             )}
@@ -118,8 +146,8 @@ export function CodePanel({ code, language, instruction, onCodeChange }: CodePan
               </>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
