@@ -49,6 +49,33 @@ function toHostUrl(endpoint: string): string {
   return `localhost:${match[1]}`;
 }
 
+/**
+ * Build environment variables to inject into sandbox containers.
+ *
+ * ⚠️ SECURITY WARNING — API Key Exposure
+ *
+ * Current: single-user local app — injecting API keys is safe (user's own machine, own keys).
+ *
+ * Future (web service / multi-user): DO NOT inject raw keys. User code can read env vars
+ * via `os.environ` and exfiltrate them. Instead, implement an API proxy on the server:
+ *   1. Sandbox code calls `http://host.docker.internal:38422/api/proxy/llm` (no key needed)
+ *   2. Server injects the key server-side and forwards the request
+ *   3. Optionally add rate limiting / quota per session
+ *
+ * TODO(web-service): Replace direct key injection with server-side API proxy.
+ */
+function buildSandboxEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  const baseUrl = process.env.OPENAI_BASE_URL;
+
+  if (apiKey) env.OPENAI_API_KEY = apiKey;
+  if (baseUrl) env.OPENAI_BASE_URL = baseUrl;
+
+  return env;
+}
+
 async function createSandbox(): Promise<string> {
   const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes`, {
     method: "POST",
@@ -56,7 +83,7 @@ async function createSandbox(): Promise<string> {
     body: JSON.stringify({
       image: { uri: SANDBOX_IMAGE },
       entrypoint: ["/opt/opensandbox/code-interpreter.sh"],
-      env: {},
+      env: buildSandboxEnv(),
       timeout: 86400,
       resourceLimits: { cpu: "1", memory: "2Gi" },
     }),

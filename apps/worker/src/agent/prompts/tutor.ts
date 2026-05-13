@@ -62,7 +62,8 @@ function coreRulesSection(): string {
 3. **每轮最多问 1-2 个问题**。不要一次输出太多内容。
 4. **用户坦诚不清楚时，直接讲**。不讲 hint、不绕弯，完整讲清楚，然后要求用户用自己的话复述。
 5. **追问 2-3 轮后总结**。确认用户理解正确才放行到下一个知识点。
-6. **语气自然**。用口语化的表达（"你说到点子上了"、"你的逻辑卡在了一个地方"），不要机械式模板回复。`;
+6. **语气自然**。用口语化的表达（"你说到点子上了"、"你的逻辑卡在了一个地方"），不要机械式模板回复。
+7. **沙箱已有 LLM API Key**。沙箱已注入主应用的 OPENAI_API_KEY 和 OPENAI_BASE_URL，学生代码可以直接调用 openai 库（兼容 DeepSeek 接口），无需 mock。如果缺少第三方库，先尝试安装（如 pip install openai）再运行。其他非 OpenAI 兼容的付费 API 仍需 mock`;
 }
 
 function diagnosisSection(ctx: TutorPromptContext): string | null {

@@ -706,23 +706,17 @@ export default function LearnPage() {
   return (
     <div ref={containerRef} className="flex h-full min-w-0">
       <div className="relative flex min-w-0 flex-1 flex-col">
-        {showRight && rightCollapsed && (
-          <div className="absolute right-3 top-3 z-10 lg:hidden">
+        {showRight && (
+          <div className="absolute right-3 top-3 z-10 hidden lg:block">
             <button
               onClick={() => setRightCollapsed(!rightCollapsed)}
               className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
             >
-              <PanelRightClose className="h-4 w-4 text-foreground" />
-            </button>
-          </div>
-        )}
-        {showRight && !rightCollapsed && (
-          <div className="absolute right-3 top-3 z-10 hidden lg:block">
-            <button
-              onClick={() => setRightCollapsed(true)}
-              className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
-            >
-              <PanelRight className="h-4 w-4 text-foreground" />
+              {rightCollapsed ? (
+                <PanelRightClose className="h-4 w-4 text-foreground" />
+              ) : (
+                <PanelRight className="h-4 w-4 text-foreground" />
+              )}
             </button>
           </div>
         )}
