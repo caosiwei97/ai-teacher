@@ -17,13 +17,13 @@
 | D | 评估与门控 | `mastery.spec.ts` | 3 | 2 | 1 | 0 |
 | E | 会话管理 | `session-management.spec.ts` | 6 | 3 | 2 | 1 |
 | F | 输入区功能 | `quick-features.spec.ts` | 5 | 1 | 3 | 1 |
-| G | 右侧栏交互 | `learn.spec.ts` | 3 | 1 | 2 | 0 |
+| G | 右侧栏交互 | `learn.spec.ts` | 6 | 1 | 4 | 1 |
 | H | 设置与账户 | `settings.spec.ts` | 5 | 0 | 2 | 3 |
 | I | 布局与导航 | `learn.spec.ts` | 5 | 2 | 2 | 1 |
 | J | 流式响应与性能 | `chat.spec.ts` | 2 | 2 | 0 | 0 |
 | K | 学习资料 | 待创建 | 2 | 2 | 0 | 0 |
 | L | 消息操作 | 待创建 | 2 | 0 | 2 | 0 |
-| **合计** | | | **47** | **25** | **16** | **6** |
+| **合计** | | | **50** | **25** | **19** | **7** |
 
 ### A. 新会话与诊断 (New Session & Diagnostic)
 
@@ -90,6 +90,9 @@
 | E2E-G01 | 路线图 Tab 节点状态与点击 | P0 | E2E-B01 |
 | E2E-G02 | 学习笔记 Tab 内容渲染 | P1 | E2E-D02 |
 | E2E-G03 | 右侧栏折叠与展开 | P1 | E2E-B01 |
+| E2E-G04 | 代码 Tab 切换与 Monaco 编辑器渲染 | P1 | 代码已推送 |
+| E2E-G05 | 终端面板显示与代码执行输出 | P1 | E2E-G04 |
+| E2E-G06 | 右侧栏拖拽调整宽度 | P2 | E2E-B01 |
 
 ### H. 设置与账户 (Settings & Account)
 

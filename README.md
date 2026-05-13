@@ -92,7 +92,7 @@ data/
 
 | 层 | 技术 |
 |---|------|
-| Web | Next.js 15, React 19, shadcn/ui, Tailwind CSS 4 |
+| Web | Next.js 15, React 19, shadcn/ui, Tailwind CSS 4, Monaco Editor |
 | Agent | AI SDK v6 (streamText + tool calling) |
 | LLM | DeepSeek（@ai-sdk/deepseek 原生 provider），默认 `deepseek-v4-flash` |
 | DB | PostgreSQL 16 + pgvector + Prisma ORM |
