@@ -23,7 +23,7 @@
     "setup:env": "node scripts/setup-env.mjs",
     "bootstrap": "run-s setup:env docker:up db:generate db:migrate",
     "dev": "node scripts/kill-ports.mjs && run-p dev:*",
-    "dev:fresh": "rm -rf apps/web/.next && node scripts/kill-ports.mjs && run-p dev:*",
+    "fresh": "rm -rf apps/web/.next && node scripts/kill-ports.mjs && run-p dev:*",
     "start": "node scripts/kill-ports.mjs && run-p start:*",
     "start:web": "pnpm --filter @ai-teacher/web start",
     "start:server": "pnpm --filter @ai-teacher/server start",
