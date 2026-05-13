@@ -19,6 +19,7 @@ import {
   type LlmConfig,
 } from "@/lib/api-client";
 import { useSession } from "@/contexts/session-context";
+import { SandboxProvider } from "@/contexts/sandbox-context";
 import type { UIMessage } from "ai";
 import { GraduationCap, PanelRightClose, PanelRight } from "lucide-react";
 
@@ -734,6 +735,7 @@ export default function LearnPage() {
   };
 
   return (
+    <SandboxProvider>
     <div ref={containerRef} className="flex h-full min-w-0">
       <div className="relative flex min-w-0 flex-1 flex-col">
         {showRight && (
@@ -813,5 +815,6 @@ export default function LearnPage() {
         </>
       )}
     </div>
+    </SandboxProvider>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, BookOpen, GraduationCap, Plus, Archive, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, GraduationCap, Plus, Archive, Settings, MessageSquare } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 
@@ -37,12 +37,51 @@ export function LeftSidebar({
 
   if (collapsed) {
     return (
-      <button
-        onClick={onToggle}
-        className="flex h-full w-12 shrink-0 items-center justify-center border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-colors hover:bg-sidebar-hover"
-      >
-        <ChevronRight className="h-4 w-4" />
-      </button>
+      <div className="flex h-full w-14 shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar py-4 transition-all duration-300">
+        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-accent" title="AI Teacher">
+          <GraduationCap className="h-4 w-4 text-sidebar-accent-foreground" />
+        </div>
+
+        {onNewSession && (
+          <button
+            onClick={onNewSession}
+            className="mt-4 flex h-8 w-8 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
+            title="新建会话"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
+
+        <button
+          onClick={onToggle}
+          className="mt-2 flex h-8 w-8 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
+          title="展开会话列表"
+        >
+          <MessageSquare className="h-4 w-4" />
+        </button>
+
+        <div className="flex-1" />
+
+        <div className="mb-2">
+          <ThemeToggle />
+        </div>
+
+        <Link
+          href="/settings"
+          className="mb-2 flex h-8 w-8 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
+          title="模型设置"
+        >
+          <Settings className="h-4 w-4" />
+        </Link>
+
+        <button
+          onClick={onToggle}
+          className="flex h-8 w-8 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
+          title="展开侧栏"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
     );
   }
 
