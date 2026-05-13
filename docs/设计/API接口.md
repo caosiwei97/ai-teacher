@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v0.9
-> 更新日期：2026-05-12
-> 状态：已对齐实际实现（含迭代 031 多模型支持 + DeepSeek，含 LLM 配置管理 + SSE 重连）
+> 版本：v1.0
+> 更新日期：2026-05-13
+> 状态：已对齐实际实现（含迭代 038 沙箱文件系统 + PTY 终端代理）
 
 ---
 
@@ -21,7 +21,16 @@
 | POST | `/api/quick-question` | 快问（选中文字提问） | ✅ |
 | POST | `/api/suggest-reply` | AI 建议回复 | ✅ |
 | GET | `/api/suggested-topics` | 获取推荐学习话题 | ✅ |
-| POST | `/api/sandbox/execute` | 代码执行（Judge0 沙箱） | ✅ |
+| POST | `/api/sandbox/execute` | 代码执行（OpenSandbox） | ✅ |
+| GET | `/api/sandbox/files/search` | 沙箱文件搜索 | ✅ |
+| GET | `/api/sandbox/files/content` | 获取文件内容 | ✅ |
+| GET | `/api/sandbox/files/download` | 下载文件（原始内容） | ✅ |
+| POST | `/api/sandbox/files/upload` | 上传/保存文件 | ✅ |
+| DELETE | `/api/sandbox/files` | 删除文件 | ✅ |
+| POST | `/api/sandbox/directories` | 创建目录 | ✅ |
+| DELETE | `/api/sandbox/directories` | 删除目录 | ✅ |
+| POST | `/api/sandbox/pty` | 创建 PTY 终端会话 | ✅ |
+| GET | `/api/sandbox/pty/:sessionId/ws` | PTY WebSocket 代理 | ✅ |
 | POST | `/api/llm` | 创建 LLM 配置 | ✅ |
 | GET | `/api/llm` | 获取用户 LLM 配置列表 | ✅ |
 | PATCH | `/api/llm/:id` | 更新 LLM 配置 | ✅ |
@@ -450,6 +459,105 @@ POST /api/sandbox/execute
 - Judge0 资源限制：CPU 5 秒、内存 256MB、墙钟 10 秒
 - 安全检查在 Agent 工具层执行（`execute-code.ts` 的 `DANGEROUS_PATTERNS`），此端点不做安全检查（信任前端传入的用户代码）
 - 语言 ID 映射：Python=71, JavaScript=63, Java=62, C++=54, TypeScript=74 等
+
+---
+
+## 12.1 沙箱文件系统
+
+所有文件系统请求通过 Hono Server 代理到 OpenSandbox execd 容器内部，前端不直接访问 execd。
+
+### 文件搜索
+
+```
+GET /api/sandbox/files/search?path=/workspace&pattern=**/*
+```
+
+响应：execd `/files/search` 的原始 JSON（文件信息数组，含 path/size/mode/mtime）
+
+### 获取文件内容
+
+```
+GET /api/sandbox/files/content?path=/workspace/main.py
+```
+
+响应 `200`：
+
+```json
+{
+  "content": "print('hello')\n",
+  "path": "/workspace/main.py"
+}
+```
+
+### 下载文件（原始内容）
+
+```
+GET /api/sandbox/files/download?path=/workspace/main.py
+```
+
+响应：原始文件内容（text/plain）
+
+### 上传/保存文件
+
+```
+POST /api/sandbox/files/upload
+Content-Type: multipart/form-data
+```
+
+请求体：multipart form，包含文件数据 + 路径
+
+### 删除文件
+
+```
+DELETE /api/sandbox/files?path=/workspace/main.py
+```
+
+### 创建目录
+
+```
+POST /api/sandbox/directories
+```
+
+请求体：`{ "path": "/workspace/src" }`
+
+### 删除目录
+
+```
+DELETE /api/sandbox/directories?path=/workspace/src
+```
+
+---
+
+## 12.2 PTY 交互式终端
+
+### 创建 PTY 会话
+
+```
+POST /api/sandbox/pty
+```
+
+请求体：`{ "cwd": "/workspace" }`（可选）
+
+响应 `200`：
+
+```json
+{
+  "session_id": "abc123"
+}
+```
+
+### WebSocket 终端连接
+
+```
+WS /api/sandbox/pty/:sessionId/ws
+```
+
+二进制帧协议：
+- 发送：`0x00` + UTF-8 编码的 stdin 数据
+- 接收：`0x01` + stdout 数据
+- 控制帧（JSON）：`{"type":"resize","cols":120,"rows":40}` 或 `{"type":"signal","signal":"SIGINT"}`
+
+Hono Server 双向代理 WebSocket 帧到 execd 容器内的 PTY。
 
 ---
 
