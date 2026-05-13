@@ -64,11 +64,16 @@ function toHostUrl(endpoint: string): string {
  *
  * TODO(web-service): Replace direct key injection with server-side API proxy.
  */
-function buildSandboxEnv(): Record<string, string> {
+interface SandboxLlmConfig {
+  apiKey: string;
+  baseUrl?: string;
+}
+
+function buildSandboxEnv(llmConfig?: SandboxLlmConfig): Record<string, string> {
   const env: Record<string, string> = {};
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  const baseUrl = process.env.OPENAI_BASE_URL;
+  const apiKey = llmConfig?.apiKey ?? process.env.OPENAI_API_KEY;
+  const baseUrl = llmConfig?.baseUrl ?? process.env.OPENAI_BASE_URL;
 
   if (apiKey) env.OPENAI_API_KEY = apiKey;
   if (baseUrl) env.OPENAI_BASE_URL = baseUrl;
@@ -76,14 +81,14 @@ function buildSandboxEnv(): Record<string, string> {
   return env;
 }
 
-async function createSandbox(): Promise<string> {
+async function createSandbox(llmConfig?: SandboxLlmConfig): Promise<string> {
   const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       image: { uri: SANDBOX_IMAGE },
       entrypoint: ["/opt/opensandbox/code-interpreter.sh"],
-      env: buildSandboxEnv(),
+      env: buildSandboxEnv(llmConfig),
       timeout: 86400,
       resourceLimits: { cpu: "1", memory: "2Gi" },
     }),
@@ -117,7 +122,7 @@ async function getExecdUrl(sandboxId: string): Promise<string> {
   return toHostUrl(data.endpoint);
 }
 
-async function ensureSandbox(): Promise<string> {
+async function ensureSandbox(llmConfig?: SandboxLlmConfig): Promise<string> {
   if (cachedExecdUrl && cachedSandboxId) {
     const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes/${cachedSandboxId}`).catch(() => null);
     if (res?.ok) {
@@ -128,7 +133,7 @@ async function ensureSandbox(): Promise<string> {
     cachedExecdUrl = null;
   }
 
-  const id = await createSandbox();
+  const id = await createSandbox(llmConfig);
   await waitForSandbox(id);
   const execdUrl = await getExecdUrl(id);
   cachedSandboxId = id;
@@ -145,9 +150,21 @@ function parseExecdSse(text: string): { stdout: string; stderr: string } {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("{") === false) continue;
     try {
-      const event = JSON.parse(trimmed) as { type?: string; text?: string };
+      const event = JSON.parse(trimmed) as {
+        type?: string;
+        text?: string;
+        error?: { ename?: string; evalue?: string; traceback?: string[] };
+      };
       if (event.type === "stdout" && event.text) stdout += event.text;
       else if (event.type === "stderr" && event.text) stderr += event.text;
+      else if (event.type === "error" && event.error) {
+        const { ename, evalue, traceback } = event.error;
+        if (traceback?.length) {
+          stderr += traceback.map((l) => l.replace(/\u001b\[[0-9;]*m/g, "")).join("\n");
+        } else {
+          stderr += `${ename ?? "Error"}: ${evalue ?? "unknown error"}`;
+        }
+      }
     } catch { /* skip malformed lines */ }
   }
 
@@ -155,23 +172,36 @@ function parseExecdSse(text: string): { stdout: string; stderr: string } {
 }
 
 async function execCode(execdUrl: string, code: string, language: string): Promise<{ stdout: string; stderr: string }> {
-  const res = await fetch(`http://${execdUrl}/code`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, context: { language } }),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
 
-  if (!res.ok) {
-    throw new Error(`execd code failed: ${res.status} ${await res.text()}`);
+  try {
+    const res = await fetch(`http://${execdUrl}/code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, context: { language } }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      throw new Error(`execd code failed: ${res.status} ${await res.text()}`);
+    }
+
+    const text = await res.text();
+    return parseExecdSse(text);
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") {
+      return { stdout: "", stderr: "代码执行超时（15秒限制）" };
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
   }
-
-  const text = await res.text();
-  return parseExecdSse(text);
 }
 
-export async function submitCode(submission: SandboxSubmission): Promise<SandboxResult> {
+export async function submitCode(submission: SandboxSubmission, llmConfig?: SandboxLlmConfig): Promise<SandboxResult> {
   const language = LANGUAGE_MAP[languageIdToName(submission.language_id)] ?? "python";
-  const execdUrl = await ensureSandbox();
+  const execdUrl = await ensureSandbox(llmConfig);
   const { stdout, stderr } = await execCode(execdUrl, submission.source_code, language);
 
   return {
