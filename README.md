@@ -19,7 +19,7 @@ pnpm dev
 
 | 命令 | 说明 |
 |------|------|
-| `pnpm bootstrap` | 一键初始化：配置环境变量 → 启动中间件 → 迁移数据库 → 种子数据 |
+| `pnpm bootstrap` | 一键初始化：配置环境变量 → 启动中间件 → 生成 Prisma Client → 迁移数据库 |
 | `pnpm dev` | 并行启动 Web（:38421）+ Server（:38422）+ Worker（:38423） |
 | `pnpm docker:up` | 启动所有中间件（PostgreSQL、Redis、MinIO） |
 | `pnpm docker:down` | 停止所有中间件 |
