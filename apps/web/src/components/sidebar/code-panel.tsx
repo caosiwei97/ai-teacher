@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { CodeEditor } from "@/components/editor/code-editor";
+import { TerminalPanel } from "@/components/editor/terminal-panel";
 import { useCodeExec } from "@/hooks/use-code-exec";
 import { Play, Loader2, Trash2, Copy, Check } from "lucide-react";
 
@@ -10,6 +11,7 @@ interface CodePanelProps {
   language: string;
   instruction?: string;
   onCodeChange: (code: string) => void;
+  llmConfigId?: string;
 }
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -28,7 +30,7 @@ const JUDGE0_IDS: Record<string, number> = {
   cpp: 54,
 };
 
-export function CodePanel({ code, language, instruction, onCodeChange }: CodePanelProps) {
+export function CodePanel({ code, language, instruction, onCodeChange, llmConfigId }: CodePanelProps) {
   const [currentCode, setCurrentCode] = useState(code);
   const { execute, result, isExecuting, error } = useCodeExec();
   const [copied, setCopied] = useState(false);
@@ -45,7 +47,7 @@ export function CodePanel({ code, language, instruction, onCodeChange }: CodePan
 
   async function handleRun() {
     const langId = JUDGE0_IDS[language] ?? 63;
-    await execute(currentCode, langId);
+    await execute(currentCode, langId, undefined, llmConfigId);
   }
 
   const handleCopy = useCallback(() => {
@@ -107,47 +109,20 @@ export function CodePanel({ code, language, instruction, onCodeChange }: CodePan
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-3">
-        <CodeEditor
-          key={code}
-          language={language}
-          value={currentCode}
-          onChange={handleCodeChange}
-        />
-      </div>
-
-      {(result || error) && (
-        <div className="border-t border-border px-4 py-3">
-          <div className="mb-2 flex items-center gap-1.5">
-            <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Output</span>
-            {result?.time && (
-              <span className="text-[10px] text-muted-foreground/60">{result.time}s</span>
-            )}
-          </div>
-          <div className="rounded-lg bg-[#1e1e2e] p-3">
-            {error && (
-              <pre className="whitespace-pre-wrap font-mono text-xs text-red-400">{error}</pre>
-            )}
-            {result && (
-              <>
-                {result.stdout && (
-                  <pre className="whitespace-pre-wrap font-mono text-xs text-green-400">
-                    {result.stdout}
-                  </pre>
-                )}
-                {result.stderr && (
-                  <pre className="whitespace-pre-wrap font-mono text-xs text-red-400">
-                    {result.stderr}
-                  </pre>
-                )}
-                {!result.stdout && !result.stderr && (
-                  <p className="font-mono text-xs text-muted-foreground">（无输出）</p>
-                )}
-              </>
-            )}
-          </div>
+      <div className="flex flex-1 flex-col overflow-y-auto bg-[#1e1e2e]">
+        <div className="min-h-[120px] p-3">
+          <CodeEditor
+            key={code}
+            language={language}
+            value={currentCode}
+            onChange={handleCodeChange}
+          />
         </div>
-      )}
+
+        <div className="mx-3 border-t border-white/8" />
+
+        <TerminalPanel result={result} error={error} isExecuting={isExecuting} />
+      </div>
     </div>
   );
 }
