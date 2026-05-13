@@ -1,21 +1,21 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Home Page", () => {
-  test("should redirect to learn page with welcome content", async ({ page }) => {
+  test("should redirect to learn page", async ({ page }) => {
     const response = await page.goto("/");
     expect(response).not.toBeNull();
     expect(response!.status()).toBeLessThan(400);
 
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
+  });
+
+  test("should show welcome content for new session", async ({ page }) => {
+    // Navigate directly to a non-existent session ID to get the new-session welcome screen
+    await page.goto("/learn/e2e-test-new-session-welcome");
 
     await expect(
       page.getByText("你好，我是 AI Teacher"),
     ).toBeVisible({ timeout: 10000 });
-  });
-
-  test("should show suggested topic cards after redirect", async ({ page }) => {
-    await page.goto("/");
-    await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
     await expect(
       page.getByText("或者试试这些"),

@@ -103,7 +103,7 @@ test.describe("Session Management — Home Page", () => {
 
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
-    const newBtn = page.locator("button", { hasText: "新建会话" });
+    const newBtn = page.locator('button[title="新建会话"]');
     await expect(newBtn).toBeVisible();
   });
 });
@@ -113,7 +113,7 @@ test.describe("Session Management — Left Sidebar", () => {
     await page.goto("/learn/seed-session-react-hooks");
     await page.waitForSelector("text=学习路线", { timeout: 10000 });
 
-    const newBtn = page.locator("button", { hasText: "新建会话" });
+    const newBtn = page.locator('button[title="新建会话"]');
     await expect(newBtn).toBeVisible();
   });
 

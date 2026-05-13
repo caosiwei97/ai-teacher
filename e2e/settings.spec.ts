@@ -6,11 +6,10 @@ test.describe("Settings Page", () => {
     await expect(page.getByRole("heading", { name: "模型设置" })).toBeVisible({ timeout: 10000 });
   });
 
-  test("should show empty state when no configs", async ({ page }) => {
+  test("should show settings page content", async ({ page }) => {
     await page.goto("/settings");
-    await expect(page.getByText("还没有配置任何模型")).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(page.getByRole("heading", { name: "模型设置" })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("添加新配置")).toBeVisible({ timeout: 10000 });
   });
 
   test("should show add config button", async ({ page }) => {

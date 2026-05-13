@@ -10,6 +10,7 @@ const TEST_DATABASE_URL =
 const TEST_WEB_PORT = 48421;
 const TEST_SERVER_PORT = 48422;
 const TEST_WORKER_PORT = 48423;
+const TEST_ENCRYPTION_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 const pnpmLocations = [
   path.join(homedir(), ".volta", "bin"),
@@ -54,7 +55,7 @@ export default defineConfig({
   globalTeardown: require.resolve("./e2e/global-teardown"),
   webServer: [
     {
-      command: `${PATH_INJECT}MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} SERVER_PORT=${TEST_SERVER_PORT} pnpm --filter @ai-teacher/server dev`,
+      command: `${PATH_INJECT}MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} SERVER_PORT=${TEST_SERVER_PORT} LLM_ENCRYPTION_KEY=${TEST_ENCRYPTION_KEY} pnpm --filter @ai-teacher/server dev`,
       port: TEST_SERVER_PORT,
       reuseExistingServer: false,
       timeout: 60000,

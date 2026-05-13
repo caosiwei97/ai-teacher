@@ -12,6 +12,7 @@ async function resetTestDb(prisma: PrismaClient) {
   await prisma.node.deleteMany();
   await prisma.roadmap.deleteMany();
   await prisma.learnerProfile.deleteMany();
+  await prisma.llmConfig.deleteMany();
   await prisma.session.deleteMany();
   await prisma.source.deleteMany();
   await prisma.user.deleteMany();

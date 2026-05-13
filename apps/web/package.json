@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 38421",
+    "dev:test": "next dev",
     "dev:fresh": "rm -rf .next && next dev -p 38421",
     "build": "next build",
     "start": "next start -p 38421",
