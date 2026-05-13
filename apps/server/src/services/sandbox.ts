@@ -122,7 +122,7 @@ async function getExecdUrl(sandboxId: string): Promise<string> {
   return toHostUrl(data.endpoint);
 }
 
-async function ensureSandbox(llmConfig?: SandboxLlmConfig): Promise<string> {
+export async function ensureSandbox(llmConfig?: SandboxLlmConfig): Promise<string> {
   if (cachedExecdUrl && cachedSandboxId) {
     const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes/${cachedSandboxId}`).catch(() => null);
     if (res?.ok) {
