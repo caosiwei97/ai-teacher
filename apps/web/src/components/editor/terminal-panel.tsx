@@ -41,11 +41,11 @@ export function TerminalPanel({ result, error, isExecuting }: TerminalPanelProps
   const showPlaceholder = !hasContent && !isExecuting;
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between px-3 py-1.5">
+    <div className="flex h-full flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/8 px-3 py-1.5">
         <div className="flex items-center gap-2">
-          <Terminal className="h-3 w-3 text-muted-foreground/60" />
-          <span className="text-[11px] font-medium text-muted-foreground/80">终端</span>
+          <Terminal className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <span className="text-xs font-medium text-muted-foreground/80">终端</span>
           {isExecuting && (
             <Loader2 className="h-3 w-3 animate-spin text-blue-400" />
           )}
@@ -59,7 +59,9 @@ export function TerminalPanel({ result, error, isExecuting }: TerminalPanelProps
         </div>
         <div className="flex items-center gap-1">
           {result?.time && (
-            <span className="mr-2 text-[10px] text-muted-foreground/40">{result.time}s</span>
+            <span className="mr-2 text-[11px] tabular-nums text-muted-foreground/40">
+              {result.time}s
+            </span>
           )}
           <button
             type="button"
@@ -74,7 +76,7 @@ export function TerminalPanel({ result, error, isExecuting }: TerminalPanelProps
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-3 font-mono text-xs leading-relaxed"
+        className="flex-1 overflow-y-auto px-3 py-2 font-mono text-sm leading-relaxed"
       >
         {isExecuting && !hasContent && (
           <div className="flex items-center gap-2 text-muted-foreground/50">
@@ -84,20 +86,24 @@ export function TerminalPanel({ result, error, isExecuting }: TerminalPanelProps
         )}
 
         {showPlaceholder && (
-          <p className="text-muted-foreground/30">点击 ▶ 运行代码...</p>
+          <div className="flex h-full items-center justify-center">
+            <p className="text-muted-foreground/30">点击 ▶ 运行代码查看输出</p>
+          </div>
         )}
 
         {hasContent && (
-          <>
+          <div className="space-y-2">
             {isSandboxError && (
-              <div className="mb-2 flex items-start gap-2 rounded bg-amber-500/10 px-2 py-1.5">
-                <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-400" />
+              <div className="flex items-start gap-2.5 rounded-lg bg-amber-500/10 px-3 py-2.5">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
                 <span className="text-amber-300">{result.stderr || "沙箱连接失败，请稍后重试"}</span>
               </div>
             )}
 
             {error && (
-              <pre className="whitespace-pre-wrap text-red-400">{error}</pre>
+              <pre className="whitespace-pre-wrap rounded-lg bg-red-500/5 px-3 py-2 text-red-400">
+                {error}
+              </pre>
             )}
 
             {result && result.stdout && (
@@ -105,7 +111,9 @@ export function TerminalPanel({ result, error, isExecuting }: TerminalPanelProps
             )}
 
             {result && result.stderr && !isSandboxError && (
-              <pre className="whitespace-pre-wrap text-red-400">{result.stderr}</pre>
+              <pre className="whitespace-pre-wrap rounded-lg bg-red-500/5 px-3 py-2 text-red-400">
+                {result.stderr}
+              </pre>
             )}
 
             {result && !result.stdout && !result.stderr && !error && (
@@ -113,10 +121,10 @@ export function TerminalPanel({ result, error, isExecuting }: TerminalPanelProps
             )}
 
             {result && (
-              <div className="mt-2 flex items-center gap-1.5 border-t border-white/5 pt-2">
-                <span className="text-[10px] text-muted-foreground/40">退出码</span>
+              <div className="flex items-center gap-2 border-t border-white/5 pt-2">
+                <span className="text-[11px] text-muted-foreground/40">退出码</span>
                 <span
-                  className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                  className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${
                     result.exitCode === 0
                       ? "bg-green-500/15 text-green-400"
                       : "bg-red-500/15 text-red-400"
@@ -124,9 +132,14 @@ export function TerminalPanel({ result, error, isExecuting }: TerminalPanelProps
                 >
                   {result.exitCode}
                 </span>
+                {result.time && (
+                  <span className="text-[11px] tabular-nums text-muted-foreground/30">
+                    {result.time}s
+                  </span>
+                )}
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>

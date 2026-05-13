@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { CodeEditor } from "@/components/editor/code-editor";
 import { TerminalPanel } from "@/components/editor/terminal-panel";
+import { ResizableDivider } from "@/components/layout/resizable-divider";
 import { useCodeExec } from "@/hooks/use-code-exec";
 import { Play, Loader2, Trash2, Copy, Check } from "lucide-react";
 
@@ -30,10 +31,15 @@ const JUDGE0_IDS: Record<string, number> = {
   cpp: 54,
 };
 
+const EDITOR_MIN = 100;
+const TERMINAL_MIN = 80;
+
 export function CodePanel({ code, language, instruction, onCodeChange, llmConfigId }: CodePanelProps) {
   const [currentCode, setCurrentCode] = useState(code);
   const { execute, result, isExecuting, error } = useCodeExec();
   const [copied, setCopied] = useState(false);
+  const [editorRatio, setEditorRatio] = useState(0.6);
+  const splitContainerRef = useRef<HTMLDivElement>(null);
 
   function handleCodeChange(value: string) {
     setCurrentCode(value);
@@ -57,10 +63,28 @@ export function CodePanel({ code, language, instruction, onCodeChange, llmConfig
     });
   }, [currentCode]);
 
+  const handleResize = useCallback((delta: number) => {
+    const container = splitContainerRef.current;
+    if (!container) return;
+    const totalHeight = container.clientHeight;
+    if (totalHeight <= 0) return;
+
+    setEditorRatio((prev) => {
+      const currentPx = prev * totalHeight;
+      const newPx = currentPx + delta;
+      const clampedPx = Math.max(EDITOR_MIN, Math.min(totalHeight - TERMINAL_MIN, newPx));
+      return clampedPx / totalHeight;
+    });
+  }, []);
+
+  const editorHeight = splitContainerRef.current
+    ? `${Math.round(editorRatio * splitContainerRef.current.clientHeight)}px`
+    : "60%";
+
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <span className="text-xs font-medium text-roadmap-fill">
+        <span className="text-sm font-medium text-roadmap-fill">
           {LANGUAGE_LABELS[language] ?? language}
         </span>
         <div className="flex items-center gap-1">
@@ -109,8 +133,8 @@ export function CodePanel({ code, language, instruction, onCodeChange, llmConfig
         </div>
       )}
 
-      <div className="flex flex-1 flex-col overflow-y-auto bg-[#1e1e2e]">
-        <div className="min-h-[120px] p-3">
+      <div ref={splitContainerRef} className="flex min-h-0 flex-1 flex-col">
+        <div style={{ height: editorHeight }} className="shrink-0 overflow-hidden">
           <CodeEditor
             key={code}
             language={language}
@@ -119,9 +143,11 @@ export function CodePanel({ code, language, instruction, onCodeChange, llmConfig
           />
         </div>
 
-        <div className="mx-3 border-t border-white/8" />
+        <ResizableDivider direction="vertical" onResize={handleResize} />
 
-        <TerminalPanel result={result} error={error} isExecuting={isExecuting} />
+        <div className="min-h-[80px] flex-1 overflow-y-auto">
+          <TerminalPanel result={result} error={error} isExecuting={isExecuting} />
+        </div>
       </div>
     </div>
   );

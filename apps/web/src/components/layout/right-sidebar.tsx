@@ -41,7 +41,7 @@ export function RightSidebar({
   const progress = total > 0 ? Math.round((mastered / total) * 100) : 0;
 
   return (
-    <div className="flex h-full shrink-0 flex-col border-l border-border bg-sidebar">
+    <div className="flex h-full w-full flex-col bg-sidebar">
       {/* Tab bar — only show when both roadmap and code exist */}
       {hasCode && (
         <div className="flex shrink-0 border-b border-border px-4 py-0">

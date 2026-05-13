@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { RightSidebar } from "@/components/layout/right-sidebar";
+import { ResizableDivider } from "@/components/layout/resizable-divider";
 import {
   isAssessmentCardData,
   type AssessmentCardProps,
@@ -194,6 +195,28 @@ export default function LearnPage() {
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [rightTab, setRightTab] = useState<"roadmap" | "code">("roadmap");
   const containerRef = useRef<HTMLDivElement>(null);
+  const [rightWidth, setRightWidth] = useState<number>(320);
+
+  useEffect(() => {
+    const containerWidth = containerRef.current?.clientWidth ?? 0;
+    if (containerWidth > 0) {
+      const maxWidth = containerWidth * 0.7;
+      if (codePanel) {
+        setRightWidth(Math.min(Math.floor(containerWidth * 0.5), maxWidth));
+      } else {
+        setRightWidth(Math.min(320, maxWidth));
+      }
+    }
+  }, [codePanel]);
+
+  const handleRightResize = useCallback((delta: number) => {
+    setRightWidth((prev) => {
+      const containerWidth = containerRef.current?.clientWidth ?? 0;
+      const minW = 280;
+      const maxW = containerWidth > 0 ? Math.floor(containerWidth * 0.7) : 800;
+      return Math.max(minW, Math.min(prev - delta, maxW));
+    });
+  }, []);
 
   const chat = useChatStream(sessionId, {
     teachingMode,
@@ -769,20 +792,25 @@ export default function LearnPage() {
       </div>
 
       {showRight && !rightCollapsed && (
-        <div
-          className={`hidden lg:block shrink-0 transition-all duration-300 ease-in-out ${
-            codePanel ? "w-1/2" : "w-[30%] min-w-[280px]"
-          }`}
-        >
-          <RightSidebar
-            nodes={nodes}
-            codePanel={codePanel}
-            onCodePanelChange={handleCodePanelChange}
-            activeTab={rightTab}
-            onTabChange={setRightTab}
-            llmConfigId={selectedConfigId}
+        <>
+          <ResizableDivider
+            direction="horizontal"
+            onResize={handleRightResize}
           />
-        </div>
+          <div
+            className="hidden lg:block shrink-0"
+            style={{ width: rightWidth }}
+          >
+            <RightSidebar
+              nodes={nodes}
+              codePanel={codePanel}
+              onCodePanelChange={handleCodePanelChange}
+              activeTab={rightTab}
+              onTabChange={setRightTab}
+              llmConfigId={selectedConfigId}
+            />
+          </div>
+        </>
       )}
     </div>
   );
