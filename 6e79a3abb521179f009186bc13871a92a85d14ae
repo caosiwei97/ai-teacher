@@ -1,0 +1,51 @@
+docs/开发/迭代详情/1.0.0/041-Agent引擎重构删壳归位.md
+  5b38738b05bdee20 1-140
+docs/开发/迭代计划.md
+  5b38738b05bdee20 36,143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.14",
+  "base_commit_sha": "6e79a3abb521179f009186bc13871a92a85d14ae",
+  "prompts": {
+    "532bdefbb87f0abd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1e0da53f3ffeP4MKQPDw3xL6z1",
+        "model": "cchClaude/claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 456,
+      "overriden_lines": 0
+    },
+    "5b38738b05bdee20": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05dfaf23-1213-413b-921c-a939a5ed144e",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 142,
+      "total_deletions": 1,
+      "accepted_lines": 142,
+      "overriden_lines": 0
+    },
+    "77c9096e3f5ab3ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "84e3fa69-97e8-421d-a3e1-f6d70d35dde4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
