@@ -16,9 +16,15 @@ export function useSandboxApi() {
 
     uploadFile: (path: string, content: string) => {
       const form = new FormData();
+      form.append(
+        "metadata",
+        new Blob([JSON.stringify({ path })], { type: "application/json" }),
+        "metadata",
+      );
       form.append("file", new Blob([content], { type: "text/plain" }), path.split("/").pop() ?? "file");
-      form.append("path", path);
-      return fetch(`${API}/api/sandbox/files/upload`, { method: "POST", body: form }).then((r) => r.json());
+      return fetch(`${API}/api/sandbox/files/upload`, { method: "POST", body: form }).then((r) =>
+        r.text().then((t) => (t ? JSON.parse(t) : {})),
+      );
     },
 
     createDirectory: (path: string) =>

@@ -70,6 +70,11 @@ async function proxyToExecd(path: string, init?: RequestInit): Promise<Response>
   return fetch(`http://${execdUrl}${path}`, init);
 }
 
+async function safeJson(res: Response): Promise<unknown> {
+  const text = (await res.text()).trim();
+  return text ? JSON.parse(text) : { ok: true };
+}
+
 // ---------------------------------------------------------------------------
 // File System APIs
 // ---------------------------------------------------------------------------
@@ -79,7 +84,7 @@ sandboxRoute.get("/files/search", async (c) => {
   const pattern = c.req.query("pattern") ?? "";
   const params = new URLSearchParams({ path, ...(pattern && { pattern }) });
   const res = await proxyToExecd(`/files/search?${params}`);
-  return c.json(await res.json());
+  return c.json(await safeJson(res));
 });
 
 sandboxRoute.get("/files/download", async (c) => {
@@ -105,14 +110,20 @@ sandboxRoute.get("/files/content", async (c) => {
 });
 
 sandboxRoute.post("/files/upload", async (c) => {
-  const body = await c.req.raw.clone().arrayBuffer();
-  const contentType = c.req.header("Content-Type") ?? "multipart/form-data";
+  const formData = await c.req.formData();
+  const upstream = new FormData();
+  for (const [key, value] of formData.entries()) {
+    if (value instanceof File) {
+      upstream.append(key, value, value.name);
+    } else {
+      upstream.append(key, value);
+    }
+  }
   const res = await proxyToExecd("/files/upload", {
     method: "POST",
-    headers: { "Content-Type": contentType },
-    body,
+    body: upstream,
   });
-  return c.json(await res.json());
+  return c.json(await safeJson(res));
 });
 
 sandboxRoute.post("/directories", zValidator("json", z.object({ path: z.string().min(1) })), async (c) => {
@@ -122,21 +133,21 @@ sandboxRoute.post("/directories", zValidator("json", z.object({ path: z.string()
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ path }),
   });
-  return c.json(await res.json());
+  return c.json(await safeJson(res));
 });
 
 sandboxRoute.delete("/files", async (c) => {
   const path = c.req.query("path");
   if (!path) return c.json({ error: "path is required" }, 400);
   const res = await proxyToExecd(`/files?path=${encodeURIComponent(path)}`, { method: "DELETE" });
-  return c.json(await res.json());
+  return c.json(await safeJson(res));
 });
 
 sandboxRoute.delete("/directories", async (c) => {
   const path = c.req.query("path");
   if (!path) return c.json({ error: "path is required" }, 400);
   const res = await proxyToExecd(`/directories?path=${encodeURIComponent(path)}`, { method: "DELETE" });
-  return c.json(await res.json());
+  return c.json(await safeJson(res));
 });
 
 // ---------------------------------------------------------------------------
@@ -150,7 +161,7 @@ sandboxRoute.post("/pty", async (c) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ cwd: body.cwd }),
   });
-  return c.json(await res.json());
+  return c.json(await safeJson(res));
 });
 
 // TODO(pty-ws): Hono on Node.js lacks native WebSocket upgrade for binary frame proxying.
