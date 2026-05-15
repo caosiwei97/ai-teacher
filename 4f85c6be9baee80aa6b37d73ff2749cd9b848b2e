@@ -1,0 +1,71 @@
+docs/开发/开发日志.md
+  8a722988aaefc729 84,92-99,131-132,143
+apps/web/src/components/ui-blocks/block-skeleton.tsx
+  8a722988aaefc729 1-13
+packages/shared/src/schemas/ui-block.ts
+  8a722988aaefc729 137-146
+apps/web/src/components/chat/chat-message.tsx
+  8a722988aaefc729 14,26,52,66
+apps/worker/src/streaming/block-parser.ts
+  8a722988aaefc729 1-107
+apps/web/src/app/globals.css
+  8a722988aaefc729 265-275
+docs/开发/迭代计划.md
+  8a722988aaefc729 16,28
+docs/开发/迭代详情/0.4.0/039-组件流式生成.md
+  8a722988aaefc729 3
+apps/worker/src/graphs/tutor-graph.ts
+  8a722988aaefc729 14,98-99,103-131
+apps/web/src/hooks/use-chat-stream.ts
+  8a722988aaefc729 39,204,211,215-233,237-258,435-462,468-479
+apps/web/src/components/chat/chat-area.tsx
+  8a722988aaefc729 89,92-98,102,199,207-208
+apps/web/src/components/ui-blocks/index.tsx
+  8a722988aaefc729 6,11,14,16-18,27-31,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.14",
+  "base_commit_sha": "4f85c6be9baee80aa6b37d73ff2749cd9b848b2e",
+  "prompts": {
+    "532bdefbb87f0abd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1e0da53f3ffeP4MKQPDw3xL6z1",
+        "model": "cchClaude/claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 456,
+      "overriden_lines": 0
+    },
+    "8a722988aaefc729": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad5abb32-7809-4918-b704-b2c7f4db49d4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 383,
+      "total_deletions": 103,
+      "accepted_lines": 309,
+      "overriden_lines": 0
+    },
+    "d59ce06eedda86d3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1027570e-86c0-4755-95be-3bc5c7fe3e50",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
