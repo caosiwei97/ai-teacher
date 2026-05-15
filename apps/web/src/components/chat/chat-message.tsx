@@ -11,6 +11,7 @@ interface ChatMessageProps {
   content: string;
   assessment?: AssessmentCardProps;
   uiBlocks?: UIBlock[];
+  streamingBlocks?: boolean;
   diagnosticQuestions?: DiagnosticQuestionsData;
   onDiagnosticSubmit?: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
   diagnosticSubmitted?: boolean;
@@ -22,6 +23,7 @@ export function ChatMessage({
   content,
   assessment,
   uiBlocks,
+  streamingBlocks,
   diagnosticQuestions,
   onDiagnosticSubmit,
   diagnosticSubmitted,
@@ -47,7 +49,7 @@ export function ChatMessage({
     effectiveBlocks = blocks;
   }
 
-  const hasBlocks = effectiveBlocks && effectiveBlocks.length > 0;
+  const hasBlocks = (effectiveBlocks && effectiveBlocks.length > 0) || streamingBlocks;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
@@ -61,7 +63,7 @@ export function ChatMessage({
             }`}
             style={{ animation: 'message-in 300ms cubic-bezier(0.33, 1, 0.68, 1) both' }}
           >
-            <MessageContent content={content} uiBlocks={effectiveBlocks} />
+            <MessageContent content={content} uiBlocks={effectiveBlocks} streamingBlocks={streamingBlocks} />
           </div>
         )}
         {!isUser && diagnosticQuestions && onDiagnosticSubmit && (

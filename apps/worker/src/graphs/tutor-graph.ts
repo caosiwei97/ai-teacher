@@ -11,6 +11,7 @@ import {
 import { buildTutorSystemPrompt } from "../agent/prompts/tutor";
 import { ContextManager } from "../agent/context-manager";
 import { getProvider } from "../agent/provider";
+import { StreamingBlockParser } from "../streaming/block-parser";
 
 export interface TutorGraphContext extends GraphExecutionContext {
   toolRegistry: ToolRegistry;
@@ -94,10 +95,40 @@ function createTutorGraph() {
 
       let assistantText = "";
       const toolResults: Array<{ toolName: string; result: unknown }> = [];
+      let blockParser: StreamingBlockParser | null = null;
+      let streamingToolName: string | null = null;
 
       for await (const event of result.fullStream) {
         const eventType = event.type as string;
-        if (eventType === "text-delta" && "text" in event) {
+
+        if (eventType === "tool-input-start" && "toolName" in event) {
+          const toolName = (event as { toolName: string }).toolName;
+          if (toolName === "renderUI") {
+            streamingToolName = toolName;
+            blockParser = new StreamingBlockParser({
+              onBlock: async (block, index) => {
+                await graphCtx.publisher.publish(
+                  graphCtx.channel,
+                  JSON.stringify({ type: "ui-block-delta", data: { block, index } }),
+                );
+              },
+            });
+            await graphCtx.publisher.publish(
+              graphCtx.channel,
+              JSON.stringify({ type: "ui-stream-start", data: {} }),
+            );
+          }
+        } else if (eventType === "tool-input-delta" && "inputTextDelta" in event) {
+          if (streamingToolName === "renderUI" && blockParser) {
+            blockParser.feed((event as { inputTextDelta: string }).inputTextDelta);
+          }
+        } else if (eventType === "tool-input-available" || eventType === "tool-input-end") {
+          if (blockParser) {
+            blockParser.flush();
+            blockParser = null;
+            streamingToolName = null;
+          }
+        } else if (eventType === "text-delta" && "text" in event) {
           assistantText += (event as { text: string }).text;
           await graphCtx.publisher.publish(
             graphCtx.channel,

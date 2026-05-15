@@ -134,3 +134,13 @@ export type ComparisonCardBlock = z.infer<typeof ComparisonCardSchema>;
 export type HeadingBlock = z.infer<typeof HeadingBlockSchema>;
 export type BadgeBlock = z.infer<typeof BadgeBlockSchema>;
 export type MasteryReportBlock = z.infer<typeof MasteryReportBlockSchema>;
+
+export interface UIStreamStartEvent {
+  type: "ui-stream-start";
+  data: Record<string, never>;
+}
+
+export interface UIBlockDeltaEvent {
+  type: "ui-block-delta";
+  data: { block: UIBlock; index: number };
+}

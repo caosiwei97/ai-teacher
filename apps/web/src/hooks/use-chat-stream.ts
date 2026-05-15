@@ -36,6 +36,7 @@ export interface AnnotationData {
   args?: unknown;
   result?: unknown;
   uiBlocks?: unknown[];
+  streamingBlocks?: boolean;
   codePush?: { code: string; language: string; instruction?: string };
   diagnosticQuestions?: DiagnosticQuestionsData;
   roadmapUpdate?: { nodes: unknown[] };
@@ -200,17 +201,61 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   },
                 };
                 setMessages([...newMessages]);
-              } else if (event.type === "ui-blocks" && event.data) {
-                const data = event.data as { uiBlocks: unknown[] };
+              } else if (event.type === "ui-stream-start") {
                 const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
                   parts: newMessages[assistantIdx].parts,
                   metadata: {
                     ...newMessages[assistantIdx].metadata,
-                    annotations: [...existing, { uiBlocks: data.uiBlocks }],
+                    annotations: [...existing, { streamingBlocks: true, uiBlocks: [] }],
                   },
                 };
+                setMessages([...newMessages]);
+              } else if (event.type === "ui-block-delta" && event.data) {
+                const data = event.data as { block: unknown; index: number };
+                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                let streamIdx = -1;
+                for (let j = existing.length - 1; j >= 0; j--) {
+                  if ((existing[j] as AnnotationData).streamingBlocks === true) { streamIdx = j; break; }
+                }
+                if (streamIdx !== -1) {
+                  const streamAnno = existing[streamIdx] as AnnotationData;
+                  const blocks = [...(streamAnno.uiBlocks ?? []), data.block];
+                  const updated = [...existing];
+                  updated[streamIdx] = { ...streamAnno, uiBlocks: blocks };
+                  newMessages[assistantIdx] = {
+                    ...newMessages[assistantIdx],
+                    parts: newMessages[assistantIdx].parts,
+                    metadata: { ...newMessages[assistantIdx].metadata, annotations: updated },
+                  };
+                  setMessages([...newMessages]);
+                }
+              } else if (event.type === "ui-blocks" && event.data) {
+                const data = event.data as { uiBlocks: unknown[] };
+                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                let streamIdx = -1;
+                for (let j = existing.length - 1; j >= 0; j--) {
+                  if ((existing[j] as AnnotationData).streamingBlocks === true) { streamIdx = j; break; }
+                }
+                if (streamIdx !== -1) {
+                  const updated = [...existing];
+                  updated[streamIdx] = { uiBlocks: data.uiBlocks };
+                  newMessages[assistantIdx] = {
+                    ...newMessages[assistantIdx],
+                    parts: newMessages[assistantIdx].parts,
+                    metadata: { ...newMessages[assistantIdx].metadata, annotations: updated },
+                  };
+                } else {
+                  newMessages[assistantIdx] = {
+                    ...newMessages[assistantIdx],
+                    parts: newMessages[assistantIdx].parts,
+                    metadata: {
+                      ...newMessages[assistantIdx].metadata,
+                      annotations: [...existing, { uiBlocks: data.uiBlocks }],
+                    },
+                  };
+                }
                 setMessages([...newMessages]);
               } else if (event.type === "code-push" && event.data) {
                 const data = event.data as { code: string; language: string; instruction?: string };
@@ -387,11 +432,51 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: [...existing, { toolName, result: data.result }] } },
                 ];
               });
+            } else if (event.type === "ui-stream-start") {
+              setMessages(prev => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: [...existing, { streamingBlocks: true, uiBlocks: [] }] } },
+                ];
+              });
+            } else if (event.type === "ui-block-delta" && event.data) {
+              const data = event.data as { block: unknown; index: number };
+              setMessages(prev => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                let streamIdx = -1;
+                for (let j = existing.length - 1; j >= 0; j--) {
+                  if ((existing[j] as AnnotationData).streamingBlocks === true) { streamIdx = j; break; }
+                }
+                if (streamIdx === -1) return prev;
+                const streamAnno = existing[streamIdx] as AnnotationData;
+                const blocks = [...(streamAnno.uiBlocks ?? []), data.block];
+                const updated = [...existing];
+                updated[streamIdx] = { ...streamAnno, uiBlocks: blocks };
+                return [
+                  ...prev.slice(0, idx),
+                  { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: updated } },
+                ];
+              });
             } else if (event.type === "ui-blocks" && event.data) {
               const data = event.data as { uiBlocks: unknown[] };
               setMessages(prev => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
+                let streamIdx = -1;
+                for (let j = existing.length - 1; j >= 0; j--) {
+                  if ((existing[j] as AnnotationData).streamingBlocks === true) { streamIdx = j; break; }
+                }
+                if (streamIdx !== -1) {
+                  const updated = [...existing];
+                  updated[streamIdx] = { uiBlocks: data.uiBlocks };
+                  return [
+                    ...prev.slice(0, idx),
+                    { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: updated } },
+                  ];
+                }
                 return [
                   ...prev.slice(0, idx),
                   { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: [...existing, { uiBlocks: data.uiBlocks }] } },

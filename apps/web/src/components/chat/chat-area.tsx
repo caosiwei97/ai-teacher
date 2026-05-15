@@ -86,19 +86,20 @@ function getAssessmentFromMessage(message: UIMessage<MessageMetadata>) {
   return getAssessmentFromAnnotations(message.metadata?.annotations);
 }
 
-function getUIBlocksFromMessage(message: UIMessage<MessageMetadata>): UIBlock[] | undefined {
+function getUIBlocksFromMessage(message: UIMessage<MessageMetadata>): { blocks?: UIBlock[]; streaming: boolean } {
   const annotations = message.metadata?.annotations;
   if (annotations) {
-    for (const annotation of annotations) {
-      if (isObject(annotation)) {
-        const blocks = annotation.uiBlocks;
-        if (Array.isArray(blocks) && blocks.length > 0) {
-          return blocks as UIBlock[];
-        }
+    for (let i = annotations.length - 1; i >= 0; i--) {
+      const annotation = annotations[i];
+      if (isObject(annotation) && Array.isArray(annotation.uiBlocks)) {
+        return {
+          blocks: annotation.uiBlocks.length > 0 ? annotation.uiBlocks as UIBlock[] : undefined,
+          streaming: !!(annotation as Record<string, unknown>).streamingBlocks,
+        };
       }
     }
   }
-  return undefined;
+  return { blocks: undefined, streaming: false };
 }
 
 function hasToolCallPending(message: UIMessage<MessageMetadata>, toolName: string): boolean {
@@ -195,6 +196,7 @@ export function ChatArea({
           }
 
           const diagnosticQuestions = msg.role === "assistant" ? getDiagnosticQuestionsFromMessage(msg) : undefined;
+          const uiBlocksResult = msg.role === "assistant" ? getUIBlocksFromMessage(msg) : { blocks: undefined, streaming: false };
 
           return (
             <ChatMessage
@@ -202,7 +204,8 @@ export function ChatArea({
               role={msg.role}
               content={getTextFromParts(msg.parts)}
               assessment={msg.role === "assistant" ? getAssessmentFromMessage(msg) : undefined}
-              uiBlocks={msg.role === "assistant" ? getUIBlocksFromMessage(msg) : undefined}
+              uiBlocks={uiBlocksResult.blocks}
+              streamingBlocks={uiBlocksResult.streaming}
               diagnosticQuestions={diagnosticQuestions}
               onDiagnosticSubmit={diagnosticQuestions ? onDiagnosticSubmit : undefined}
               diagnosticSubmitted={diagnosticSubmitted}

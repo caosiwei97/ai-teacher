@@ -3,14 +3,19 @@
 import type { UIBlock } from "@ai-teacher/shared";
 import { UIBlockRegistry } from "./registry";
 import { TextBlock } from "./text-block";
+import { BlockSkeleton } from "./block-skeleton";
 
 interface MessageContentProps {
   content: string;
   uiBlocks?: UIBlock[];
+  streamingBlocks?: boolean;
 }
 
-export function MessageContent({ content, uiBlocks }: MessageContentProps) {
+export function MessageContent({ content, uiBlocks, streamingBlocks }: MessageContentProps) {
   if (!uiBlocks || uiBlocks.length === 0) {
+    if (streamingBlocks) {
+      return <BlockSkeleton />;
+    }
     return <TextBlock block={{ type: "text", content }} />;
   }
 
@@ -19,8 +24,13 @@ export function MessageContent({ content, uiBlocks }: MessageContentProps) {
       {uiBlocks.map((block, i) => {
         const Renderer = UIBlockRegistry[block.type];
         if (!Renderer) return null;
-        return <Renderer key={i} block={block} />;
+        return (
+          <div key={i} className="animate-[fadeSlideIn_0.3s_ease-out_both]">
+            <Renderer block={block} />
+          </div>
+        );
       })}
+      {streamingBlocks && <BlockSkeleton />}
     </>
   );
 }
