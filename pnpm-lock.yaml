@@ -215,9 +215,6 @@ importers:
       '@ai-sdk/openai':
         specifier: ^3.0.0
         version: 3.0.63(zod@4.4.3)
-      '@ai-teacher/agent':
-        specifier: workspace:*
-        version: link:../../packages/agent
       '@ai-teacher/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -243,22 +240,6 @@ importers:
       tsx:
         specifier: ^4.19.0
         version: 4.21.0
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-
-  packages/agent:
-    dependencies:
-      ai:
-        specifier: ^6.0.0
-        version: 6.0.177(zod@4.4.3)
-      zod:
-        specifier: ^4.0.0
-        version: 4.4.3
-    devDependencies:
-      '@prisma/client':
-        specifier: ^6.8.0
-        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

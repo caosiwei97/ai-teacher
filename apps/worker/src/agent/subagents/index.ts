@@ -1,11 +1,10 @@
-import { SubagentRegistry } from "@ai-teacher/agent";
+import type { SubagentDefinition } from "../types";
 import { assessmentSubagent } from "./assessment";
 import { researchSubagent } from "./research";
 
-export function createSubagentRegistry(): SubagentRegistry {
-  const registry = new SubagentRegistry();
-  registry.register(assessmentSubagent).register(researchSubagent);
-  return registry;
-}
+export const subagentConfigs: SubagentDefinition[] = [
+  assessmentSubagent,
+  researchSubagent,
+];
 
 export { assessmentSubagent, researchSubagent };

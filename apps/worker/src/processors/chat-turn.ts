@@ -1,16 +1,22 @@
 import { Worker as BullWorker } from "bullmq";
 import Redis from "ioredis";
 import { prisma } from "@ai-teacher/db";
-import { PrismaCheckpointStore, type TutorState } from "@ai-teacher/agent";
 import { StructuredSummarySchema } from "@ai-teacher/shared";
-import { getTutorGraph, type TutorGraphContext } from "../graphs/tutor-graph";
-import { createTutorToolRegistry } from "../agent/tools/create-tools";
-import { createSubagentRegistry } from "../agent/subagents";
+import { tool as aiTool, type Tool } from "ai";
+import { runAgentLoop } from "../agent/run-agent-loop";
+import { tutorToolDefinitions } from "../agent/tools/create-tools";
+import { createDelegateTaskTool } from "../agent/tools/delegate-task";
+import { subagentConfigs } from "../agent/subagents";
 import { MessageService } from "../agent/services/message-service";
 import { buildLearnerProfile } from "../lib/learner-profile";
 import { ContextManager } from "../agent/context-manager";
-import { createProviderForConfig, getFallbackProvider } from "../agent/provider-registry.js";
+import { buildTutorSystemPrompt } from "../agent/prompts/tutor";
+import {
+  createProviderForConfig,
+  getFallbackProvider,
+} from "../agent/provider-registry.js";
 import { decrypt } from "../../../server/src/services/crypto.js";
+import type { ToolDefinition, ToolExecutionContext } from "../agent/types";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
 const STREAM_TIMEOUT_MS = 120_000;
@@ -49,7 +55,9 @@ interface LlmJobConfig {
 
 async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
   if (llmConfigId) {
-    const config = await prisma.llmConfig.findUnique({ where: { id: llmConfigId } });
+    const config = await prisma.llmConfig.findUnique({
+      where: { id: llmConfigId },
+    });
     if (!config) throw new Error(`LlmConfig ${llmConfigId} not found`);
     const apiKey = decrypt(config.encryptedKey);
     return {
@@ -63,6 +71,35 @@ async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
     };
   }
   return { providerFn: getFallbackProvider() };
+}
+
+function buildToolsRecord(
+  toolDefs: ToolDefinition[],
+  ctx: ToolExecutionContext,
+): Record<string, Tool> {
+  const result: Record<string, Tool> = {};
+  for (const def of toolDefs) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    result[def.name] = aiTool({
+      description: def.description,
+      inputSchema: def.inputSchema as any,
+      execute: async (params) => {
+        return def.execute(params as Record<string, unknown>, ctx);
+      },
+    });
+  }
+  return result;
+}
+
+function collectPromptSection(toolDefs: ToolDefinition[]): string {
+  const sections: string[] = [];
+  for (const def of toolDefs) {
+    if (def.promptSnippet) sections.push(def.promptSnippet);
+    if (def.promptGuidelines && def.promptGuidelines.length > 0) {
+      sections.push(def.promptGuidelines.map((g) => `- ${g}`).join("\n"));
+    }
+  }
+  return sections.join("\n\n");
 }
 
 export function createChatTurnWorker(
@@ -86,7 +123,8 @@ export function createChatTurnWorker(
       });
 
       try {
-        const hasPayloadData = job.data.topic !== undefined && job.data.userId !== undefined;
+        const hasPayloadData =
+          job.data.topic !== undefined && job.data.userId !== undefined;
 
         let topic: string;
         let teachingMode: string;
@@ -107,7 +145,9 @@ export function createChatTurnWorker(
           if (!user) throw new Error(`User ${userId} not found`);
           userProfile = user.profile;
         } else {
-          console.log(`[chat-turn] job ${job.id} missing payload data, falling back to DB query`);
+          console.log(
+            `[chat-turn] job ${job.id} missing payload data, falling back to DB query`,
+          );
           const session = await prisma.session.findUnique({
             where: { id: sessionId },
             include: {
@@ -149,36 +189,48 @@ export function createChatTurnWorker(
 
         const masteredNodes = hasNodes
           ? roadmapNodes
-              .filter((node) => node.status === "mastered" || node.masteryScore >= 80)
+              .filter(
+                (node) =>
+                  node.status === "mastered" || node.masteryScore >= 80,
+              )
               .map((node) => node.title)
           : [];
 
-        const subagentRegistry = createSubagentRegistry();
         const llmJobConfig = await getProviderForJob(job.data.llmConfigId);
         const providerFn = llmJobConfig.providerFn;
-        const toolRegistry = createTutorToolRegistry(subagentRegistry, providerFn);
-        const checkpoint = new PrismaCheckpointStore(prisma);
 
         const contextManager = new ContextManager({
           loadSummary: async (sid) => {
-            const s = await prisma.session.findUnique({ where: { id: sid }, select: { summary: true } });
+            const s = await prisma.session.findUnique({
+              where: { id: sid },
+              select: { summary: true },
+            });
             if (!s?.summary) return null;
             const parsed = StructuredSummarySchema.safeParse(s.summary);
             return parsed.success ? parsed.data : null;
           },
           saveSummary: async (sid, summary) => {
-            await prisma.session.update({ where: { id: sid }, data: { summary: JSON.parse(JSON.stringify(summary)) } });
+            await prisma.session.update({
+              where: { id: sid },
+              data: { summary: JSON.parse(JSON.stringify(summary)) },
+            });
           },
           model: providerFn("deepseek-v4-flash"),
         });
 
-        const initialState: TutorState = {
-          sessionId,
+        const isDiagnosisPhase = hasNodes
+          ? roadmapNodes.every((n) => n.status === "not-started")
+          : true;
+
+        const systemPrompt = buildTutorSystemPrompt({
           topic,
-          currentNodeId: currentNode?.id ?? "pending",
           currentNode: currentNode
-            ? { id: currentNode.id, title: currentNode.title, description: currentNode.description }
-            : { id: "pending", title: topic, description: `等待诊断后生成学习路线` },
+            ? {
+                id: currentNode.id,
+                title: currentNode.title,
+                description: currentNode.description,
+              }
+            : { id: "pending", title: topic, description: "等待诊断后生成学习路线" },
           allNodes: hasNodes
             ? roadmapNodes.map((n) => ({
                 id: n.id,
@@ -187,43 +239,68 @@ export function createChatTurnWorker(
                 status: n.status,
               }))
             : [],
-          masteredNodes,
-          learnerProfile: buildLearnerProfile(userProfile),
+          masteredNodes: masteredNodes.join(", ") || "无",
+          learnerProfile: buildLearnerProfile(userProfile) || "首次学习",
           teachingMode: (teachingMode as "warm" | "strict") ?? "warm",
-          messages: messages.map((m) => ({
-            role: m.role as "user" | "assistant",
-            content: m.content,
-          })),
-        };
+          isDiagnosisPhase,
+          sandboxModel: llmJobConfig.sandboxModel,
+          sandboxBaseUrl: llmJobConfig.sandboxBaseUrl,
+        });
 
-        const graphCtx: TutorGraphContext = {
-          toolRegistry,
-          checkpoint,
+        // Build tools
+        const toolCtx: ToolExecutionContext = {
           prisma,
           sessionId,
           userId,
-          publisher,
-          channel,
-          contextManager,
-          subagentRegistry,
-          providerFn,
-          sandboxModel: llmJobConfig.sandboxModel,
-          sandboxBaseUrl: llmJobConfig.sandboxBaseUrl,
         };
 
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Stream timeout")), STREAM_TIMEOUT_MS),
+        const delegateTaskDef = createDelegateTaskTool(
+          subagentConfigs,
+          { get: (name: string) => allToolDefs.find((t) => t.name === name), getAll: () => allToolDefs },
+          providerFn,
+        );
+        const allToolDefs = [...tutorToolDefinitions, delegateTaskDef];
+
+        const toolPromptSection = collectPromptSection(allToolDefs);
+        const fullSystemPrompt = toolPromptSection
+          ? `${systemPrompt}\n\n# 工具使用说明\n\n${toolPromptSection}`
+          : systemPrompt;
+
+        const tools = buildToolsRecord(allToolDefs, toolCtx);
+
+        // Prepare context (compaction check)
+        const prepared = await contextManager.prepareForStream(
+          sessionId,
+          messages.map((m) => ({ role: m.role, content: m.content })),
         );
 
-        const graphResult = await Promise.race([
-          getTutorGraph().execute(initialState, graphCtx),
-          timeoutPromise,
-        ]);
+        const modelName = llmJobConfig.sandboxModel ?? "deepseek-v4-flash";
+        const model = providerFn(modelName);
+
+        const loopResult = await runAgentLoop({
+          model,
+          system: fullSystemPrompt,
+          messages: prepared.messages,
+          tools,
+          publisher,
+          channel,
+          maxSteps: 7,
+          timeoutMs: STREAM_TIMEOUT_MS,
+        });
+
+        // Post-process: async compaction if needed
+        if (prepared.needsCompaction) {
+          contextManager
+            .compactAfterStream(sessionId, prepared.messages)
+            .catch((err) => {
+              console.error("[chat-turn] async compaction failed:", err);
+            });
+        }
 
         await MessageService.persistTurn(
           sessionId,
-          graphResult.assistantText ?? "",
-          graphResult.toolResults ?? [],
+          loopResult.assistantText,
+          loopResult.toolResults,
         );
 
         await prisma.message.update({
@@ -233,7 +310,9 @@ export function createChatTurnWorker(
 
         await publisher.publish(channel, JSON.stringify({ type: "done" }));
 
-        console.log(`[chat-turn] completed job ${job.id} for session ${sessionId}`);
+        console.log(
+          `[chat-turn] completed job ${job.id} for session ${sessionId} (${loopResult.steps} steps, stop: ${loopResult.stopReason})`,
+        );
       } catch (error) {
         console.error(
           `[chat-turn] error in job ${job.id} for session ${sessionId}:`,
@@ -245,7 +324,8 @@ export function createChatTurnWorker(
           data: { status: "failed" },
         });
 
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         await publisher.publish(
           channel,
           JSON.stringify({ type: "error", message: errorMessage }),

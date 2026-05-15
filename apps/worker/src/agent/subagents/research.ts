@@ -1,4 +1,4 @@
-import type { SubagentDefinition } from "@ai-teacher/agent";
+import type { SubagentDefinition } from "../types";
 
 export const researchSubagent: SubagentDefinition = {
   name: "research",

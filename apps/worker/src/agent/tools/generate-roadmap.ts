@@ -1,4 +1,4 @@
-import type { ToolDefinition } from "@ai-teacher/agent";
+import type { ToolDefinition } from "../types";
 import { z } from "zod";
 import { generateObject } from "ai";
 import { RoadmapOutput } from "@ai-teacher/shared";

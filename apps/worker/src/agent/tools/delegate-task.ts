@@ -1,19 +1,25 @@
 import { streamText, stepCountIs, tool as aiTool, type LanguageModel } from "ai";
 import type { Tool } from "ai";
-import type { ToolDefinition, SubagentRegistry, AgentResult } from "@ai-teacher/agent";
-import { z } from 'zod';
+import { z } from "zod";
+import type { ToolDefinition, SubagentDefinition, AgentResult } from "../types";
 import { getProvider } from "../provider";
 
 export function createDelegateTaskTool(
-  subagentRegistry: SubagentRegistry,
-  toolRegistry: { get: (name: string) => ToolDefinition | undefined; getAll: () => ToolDefinition[] },
+  subagents: SubagentDefinition[],
+  toolLookup: {
+    get: (name: string) => ToolDefinition | undefined;
+    getAll: () => ToolDefinition[];
+  },
   providerFn?: (modelId: string) => LanguageModel,
 ): ToolDefinition {
-  const agentDescriptions = subagentRegistry.getAgentDescriptions();
+  const agentDescriptions = subagents
+    .map((a) => `- ${a.name}: ${a.description}`)
+    .join("\n");
 
   return {
     name: "delegateTask",
-    description: "将任务委派给专业子 Agent 执行，可选子 Agent：assessment（出题评估）、research（资料检索）",
+    description:
+      "将任务委派给专业子 Agent 执行，可选子 Agent：assessment（出题评估）、research（资料检索）",
     inputSchema: z.object({
       agent: z.string().describe("子 Agent 名称（assessment 或 research）"),
       task: z.string().describe("任务描述，子 Agent 会独立执行"),
@@ -21,7 +27,7 @@ export function createDelegateTaskTool(
     execute: async (params) => {
       const p = params as { agent: string; task: string };
 
-      const agentDef = subagentRegistry.get(p.agent);
+      const agentDef = subagents.find((a) => a.name === p.agent);
       if (!agentDef) {
         return {
           success: false,
@@ -29,27 +35,29 @@ export function createDelegateTaskTool(
         };
       }
 
-      const subToolDefs = agentDef.tools.reduce<Record<string, ToolDefinition>>((acc, name) => {
-        const tool = toolRegistry.get(name);
-        if (tool) acc[name] = tool;
-        return acc;
-      }, {});
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const subTools: Record<string, Tool<any, any>> = {};
-      for (const [name, def] of Object.entries(subToolDefs)) {
-        subTools[name] = aiTool({
-          description: def.description,
+      const subTools: Record<string, Tool> = {};
+      for (const toolName of agentDef.tools) {
+        const def = toolLookup.get(toolName);
+        if (def) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          inputSchema: def.inputSchema as any,
-          execute: async (toolParams: Record<string, unknown>) => {
-            return def.execute(toolParams, { prisma: null, sessionId: "", userId: "" });
-          },
-        });
+          subTools[toolName] = aiTool({
+            description: def.description,
+            inputSchema: def.inputSchema as any,
+            execute: async (toolParams: Record<string, unknown>) => {
+              return def.execute(toolParams, {
+                prisma: null,
+                sessionId: "",
+                userId: "",
+              });
+            },
+          });
+        }
       }
 
       try {
-        const model = (providerFn ?? getProvider())(agentDef.model ?? "deepseek-v4-flash");
+        const model = (providerFn ?? getProvider())(
+          agentDef.model ?? "deepseek-v4-flash",
+        );
         const result = streamText({
           model,
           system: agentDef.systemPrompt,

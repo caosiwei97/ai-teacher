@@ -1,26 +1,35 @@
 import { test, expect } from "@playwright/test";
 
-const API = "http://localhost:38422";
+const API = process.env.API_URL ?? "http://localhost:48422";
+
+test.describe.configure({ mode: "serial" });
 
 test.describe("Sandbox IDE — API Integration", () => {
+  test.describe.configure({ timeout: 60_000 });
+
   test("sandbox file CRUD works end-to-end", async ({ request }) => {
-    // 1. Upload
-    const uploadRes = await request.post(`${API}/api/sandbox/files/upload`, {
-      multipart: {
-        metadata: {
-          name: "metadata",
-          mimeType: "application/json",
-          buffer: Buffer.from(JSON.stringify({ path: "/workspace/e2e-test.py" })),
+    // 1. Upload (with retry — sandbox may need warm-up time)
+    let uploadRes;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      uploadRes = await request.post(`${API}/api/sandbox/files/upload`, {
+        multipart: {
+          metadata: {
+            name: "metadata",
+            mimeType: "application/json",
+            buffer: Buffer.from(JSON.stringify({ path: "/workspace/e2e-test.py" })),
+          },
+          file: {
+            name: "e2e-test.py",
+            mimeType: "text/plain",
+            buffer: Buffer.from('print("e2e sandbox test")'),
+          },
         },
-        file: {
-          name: "e2e-test.py",
-          mimeType: "text/plain",
-          buffer: Buffer.from('print("e2e sandbox test")'),
-        },
-      },
-    });
-    expect(uploadRes.ok()).toBeTruthy();
-    expect(await uploadRes.json()).toEqual({ ok: true });
+      });
+      if (uploadRes.ok()) break;
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+    expect(uploadRes!.ok()).toBeTruthy();
+    expect(await uploadRes!.json()).toEqual({ ok: true });
 
     // 2. Search
     const searchRes = await request.get(

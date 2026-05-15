@@ -80,9 +80,7 @@ function languageIdToName(id: number): string {
 
 /** OpenSandbox endpoint uses "host.docker.internal" (Docker-only DNS); we map to localhost. */
 function toHostUrl(endpoint: string): string {
-  const match = endpoint.match(/:(\d+)/);
-  if (!match) throw new Error(`Cannot parse endpoint port: ${endpoint}`);
-  return `localhost:${match[1]}`;
+  return endpoint.replace("host.docker.internal", "localhost");
 }
 
 /**
