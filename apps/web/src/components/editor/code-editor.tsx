@@ -1,4 +1,3 @@
-"use client";
 
 import { useCallback, useRef } from "react";
 import Editor, { type OnMount, type BeforeMount } from "@monaco-editor/react";

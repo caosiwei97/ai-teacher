@@ -1,4 +1,3 @@
-"use client";
 
 import type { ComparisonCardBlock as ComparisonCardType } from "@ai-teacher/shared";
 

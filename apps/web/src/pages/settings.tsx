@@ -1,7 +1,5 @@
-"use client";
-
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router";
 import { ArrowLeft, Plus, Loader2, Star, Zap, Trash2, ShieldCheck, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -16,8 +14,8 @@ import { LlmConfigForm } from "@/components/settings/llm-config-form";
 
 const USER_ID = "seed-user-ai-teacher";
 
-export default function SettingsPage() {
-  const router = useRouter();
+export function Component() {
+  const navigate = useNavigate();
   const [configs, setConfigs] = useState<LlmConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -84,7 +82,7 @@ export default function SettingsPage() {
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => navigate("/")}
               className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />

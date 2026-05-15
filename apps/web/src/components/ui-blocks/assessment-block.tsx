@@ -1,4 +1,3 @@
-"use client";
 
 import type { AssessmentBlock } from "@ai-teacher/shared";
 import { AssessmentCard } from "@/components/chat/assessment-card";

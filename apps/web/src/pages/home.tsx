@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router";
 import { fetchSessions } from "@/lib/api-client";
 
 const USER_ID = "seed-user-ai-teacher";
@@ -13,8 +11,8 @@ function generateNewSessionId() {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${(parseInt(hex[16], 16) & 0x3 | 0x8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
-export default function HomePage() {
-  const router = useRouter();
+export function Component() {
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchSessions(USER_ID)
@@ -23,15 +21,15 @@ export default function HomePage() {
           (s) => s.status === "active" || s.status === "diagnosing",
         );
         if (learning) {
-          router.replace(`/learn/${learning.id}`);
+          navigate(`/learn/${learning.id}`, { replace: true });
         } else {
-          router.replace(`/learn/${generateNewSessionId()}`);
+          navigate(`/learn/${generateNewSessionId()}`, { replace: true });
         }
       })
       .catch(() => {
-        router.replace(`/learn/${generateNewSessionId()}`);
+        navigate(`/learn/${generateNewSessionId()}`, { replace: true });
       });
-  }, [router]);
+  }, [navigate]);
 
   return (
     <div className="flex h-full items-center justify-center">

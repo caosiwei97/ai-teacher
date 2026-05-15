@@ -1,4 +1,3 @@
-"use client";
 
 import type { BadgeBlock as BadgeBlockType } from "@ai-teacher/shared";
 

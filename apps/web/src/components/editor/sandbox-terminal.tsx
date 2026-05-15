@@ -1,4 +1,3 @@
-"use client";
 
 import { useEffect, useRef, useCallback } from "react";
 import { Terminal as TerminalIcon, Trash2 } from "lucide-react";
@@ -21,7 +20,6 @@ async function loadXterm() {
     import("@xterm/addon-fit"),
     import("@xterm/addon-web-links"),
   ]);
-  // @ts-expect-error -- CSS module import handled by bundler
   await import("@xterm/xterm/css/xterm.css");
   Terminal = xtermMod.Terminal;
   FitAddon = fitMod.FitAddon;

@@ -1,4 +1,3 @@
-"use client";
 
 import type { UIBlock } from "@ai-teacher/shared";
 import { UIBlockRegistry } from "./registry";

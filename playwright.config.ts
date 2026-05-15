@@ -67,7 +67,7 @@ export default defineConfig({
       timeout: 60000,
     },
     {
-      command: `${PATH_INJECT}API_SERVER_URL=http://localhost:${TEST_SERVER_PORT} NEXT_PUBLIC_API_URL=http://localhost:${TEST_SERVER_PORT} PORT=${TEST_WEB_PORT} pnpm --filter @ai-teacher/web dev:test`,
+      command: `${PATH_INJECT}API_SERVER_URL=http://localhost:${TEST_SERVER_PORT} VITE_API_URL=http://localhost:${TEST_SERVER_PORT} PORT=${TEST_WEB_PORT} pnpm --filter @ai-teacher/web dev:test`,
       port: TEST_WEB_PORT,
       reuseExistingServer: false,
       timeout: 60000,

@@ -1,4 +1,3 @@
-"use client";
 
 import { cn } from "@/lib/utils";
 import { getColorClasses, type ProviderColor } from "@/lib/llm-presets";

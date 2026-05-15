@@ -1,5 +1,3 @@
-"use client";
-
 import {
   createContext,
   useCallback,
@@ -9,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
+import { useLocation } from "react-router";
 import { fetchSessions, archiveSession as archiveSessionApi } from "@/lib/api-client";
 
 const USER_ID = "seed-user-ai-teacher";
@@ -42,7 +40,7 @@ function generateUUID(): string {
 }
 
 export function SessionContextProvider({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {

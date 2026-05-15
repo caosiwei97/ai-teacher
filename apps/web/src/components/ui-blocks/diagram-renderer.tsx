@@ -1,4 +1,3 @@
-"use client";
 
 import type { DiagramBlock } from "@ai-teacher/shared";
 import { BarChart3 } from "lucide-react";

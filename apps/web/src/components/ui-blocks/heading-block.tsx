@@ -1,4 +1,3 @@
-"use client";
 
 import type { HeadingBlock as HeadingBlockType } from "@ai-teacher/shared";
 

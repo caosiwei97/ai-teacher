@@ -26,7 +26,7 @@
 
 ```
 apps/
-  web/          — Next.js 15 (App Router) + Chat UI
+  web/          — Vite + React 19 (SPA) + Chat UI
   server/       — Hono API Server (REST API + SSE)
   worker/       — Agent Worker (BullMQ + AI SDK streamText + tools)
 packages/
@@ -40,10 +40,12 @@ docs/           — 项目文档（中文）
 
 ## 开发规范
 
+- 动手实现前先 Review 迭代方案：读迭代详情 → 对照实际代码审查完整性 → 报告遗漏/风险 → 确认后才动手
 - 代码变更前读取 `.agents/references/文档同步规则.md` 评估文档影响
 - 涉及 UI/API/路由变更时读取 `.agents/references/质量门控.md` 检查 E2E
 - 涉及 CSS/env/config/prisma 变更时读取 `.agents/references/缓存与重启.md`
 - 大范围改动（3+ 文件）时读取 `.agents/references/大改动讨论.md`，先讨论方案再动手
+- 开发日志详情必须同步到 `docs/开发/开发日志/YYYY/MM/DD.md`，归档目录表链接不能为 `—`
 - 子 Agent 只做代码实现，不修改 `docs/` 目录
 
 ## 意图路由

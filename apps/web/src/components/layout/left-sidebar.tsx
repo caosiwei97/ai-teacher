@@ -1,9 +1,7 @@
-"use client";
-
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, BookOpen, GraduationCap, Plus, Archive, Settings, MessageSquare } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import Link from "next/link";
+import { Link } from "react-router";
 
 interface Session {
   id: string;
@@ -67,7 +65,7 @@ export function LeftSidebar({
         </div>
 
         <Link
-          href="/settings"
+          to="/settings"
           className="mb-2 flex h-8 w-8 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
           title="模型设置"
         >
@@ -246,7 +244,7 @@ export function LeftSidebar({
 
       <div className="border-t border-sidebar-border px-3 py-3">
         <Link
-          href="/settings"
+          to="/settings"
           className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
         >
           <Settings className="h-4 w-4" />

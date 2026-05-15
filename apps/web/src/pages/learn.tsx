@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useNavigate } from "react-router";
 import { RightSidebar } from "@/components/layout/right-sidebar";
 import { ResizableDivider } from "@/components/layout/resizable-divider";
 import {
@@ -160,12 +158,12 @@ function getDiagnosticQuestionsFromMetadata(metadata: unknown): DiagnosticQuesti
   return undefined;
 }
 
-export default function LearnPage() {
+export function Component() {
   const params = useParams<{ sessionId: string }>();
-  const router = useRouter();
+  const navigate = useNavigate();
   const { setSessions, currentSessionId, refreshSessions } = useSession();
 
-  const sessionId = currentSessionId ?? params.sessionId;
+  const sessionId = currentSessionId ?? params.sessionId!;
 
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -697,7 +695,7 @@ export default function LearnPage() {
           </div>
           <button
             type="button"
-            onClick={() => router.push("/")}
+            onClick={() => navigate("/")}
             className="mt-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             返回首页

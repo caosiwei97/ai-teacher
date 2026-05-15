@@ -1,4 +1,3 @@
-"use client";
 
 import { useState, useCallback } from "react";
 import { FolderOpen, FolderClosed, FileCode, FileText, Trash2 } from "lucide-react";

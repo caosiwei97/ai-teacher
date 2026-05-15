@@ -1,4 +1,3 @@
-"use client";
 
 import type { FormulaBlock } from "@ai-teacher/shared";
 import katex from "katex";

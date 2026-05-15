@@ -1,4 +1,3 @@
-"use client";
 
 import type { TableBlock as TableBlockType } from "@ai-teacher/shared";
 

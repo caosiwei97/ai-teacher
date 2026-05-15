@@ -1,4 +1,3 @@
-"use client";
 
 import { RoadmapNode } from "@/components/roadmap/roadmap-node";
 import { CodePanel } from "@/components/sidebar/code-panel";

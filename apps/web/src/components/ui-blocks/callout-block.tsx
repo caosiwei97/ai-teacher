@@ -1,4 +1,3 @@
-"use client";
 
 import type { CalloutBlock as CalloutBlockType } from "@ai-teacher/shared";
 import ReactMarkdown from "react-markdown";

@@ -1,4 +1,3 @@
-"use client";
 
 import { useState } from "react";
 import type { CodeResultBlock as CodeResultBlockType } from "@ai-teacher/shared";

@@ -1,8 +1,7 @@
-"use client";
 
 import { useMemo } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:38422";
+const API = import.meta.env.VITE_API_URL ?? "http://localhost:38422";
 
 export function useSandboxApi() {
   return useMemo(() => ({

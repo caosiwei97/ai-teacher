@@ -1,4 +1,3 @@
-"use client";
 
 import { Trophy } from "lucide-react";
 import type { MasteryReportBlock as MasteryReportBlockType } from "@ai-teacher/shared";

@@ -1,10 +1,8 @@
-"use client";
-
+import { Outlet } from "react-router";
 import { SessionContextProvider, useSession } from "@/contexts/session-context";
 import { ThreeColumnLayout } from "@/components/layout/three-column";
-import type { ReactNode } from "react";
 
-function AppShell({ children }: { children: ReactNode }) {
+function AppShell() {
   const { sessions, currentSessionId, selectSession, createNewSession, archiveSession } = useSession();
 
   return (
@@ -15,15 +13,15 @@ function AppShell({ children }: { children: ReactNode }) {
       onNewSession={createNewSession}
       onArchiveSession={archiveSession}
     >
-      {children}
+      <Outlet />
     </ThreeColumnLayout>
   );
 }
 
-export default function AppGroupLayout({ children }: { children: ReactNode }) {
+export function AppLayout() {
   return (
     <SessionContextProvider>
-      <AppShell>{children}</AppShell>
+      <AppShell />
     </SessionContextProvider>
   );
 }
