@@ -20,7 +20,7 @@
 - .env 通过 symlink `apps/web/.env → ../../.env` 共享
 - Tailwind CSS 4：颜色用 `@theme` CSS 变量，不用硬编码色值
 - LLM：DeepSeek（@ai-sdk/deepseek），默认 `deepseek-v4-flash`
-- 端口：Web 38421, Server 38422, Worker 38423, PG 25432, Redis 26379, MinIO 29000/29001, Judge0 2358
+- 端口：Web 38421, Server 38422, Worker 38423, PG 25432, Redis 26379, MinIO 29000/29001, OpenSandbox 2358
 
 ## 项目结构
 
@@ -28,12 +28,11 @@
 apps/
   web/          — Vite + React 19 (SPA) + Chat UI
   server/       — Hono API Server (REST API + SSE)
-  worker/       — Agent Worker (BullMQ + AI SDK streamText + tools)
+  worker/       — Agent Worker (BullMQ + AI SDK streamText + 11 tools)
 packages/
   shared/       — Zod schemas, types
   db/           — Prisma schema + seed
-  agent/        — 共享 Agent 引擎（StateGraph + ToolRegistry + Checkpoint）
-docker-compose.yml  — PG + Redis + MinIO
+docker-compose.yml  — PG + Redis + MinIO + OpenSandbox
 e2e/            — Playwright E2E tests
 docs/           — 项目文档（中文）
 ```
