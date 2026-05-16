@@ -177,6 +177,7 @@ export function Component() {
 
   const [masteryTransitionPending, setMasteryTransitionPending] = useState(false);
   const [nextNodeTitle, setNextNodeTitle] = useState<string | undefined>(undefined);
+  const streamErrorRef = useRef(false);
 
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
@@ -221,6 +222,11 @@ export function Component() {
     teachingMode,
     llmConfigId: selectedConfigId,
     onFinish: () => {
+      if (streamErrorRef.current) {
+        streamErrorRef.current = false;
+        return;
+      }
+
       if (isNewSession) {
         setIsNewSession(false);
         refreshSessions();
@@ -275,7 +281,10 @@ export function Component() {
         .catch(console.error);
     },
     onError: (error) => {
+      streamErrorRef.current = true;
       setChatError(error);
+      setMasteryTransitionPending(false);
+      setNextNodeTitle(undefined);
       setTimeout(() => setChatError(null), 5000);
     },
     onRoadmapUpdate: (updatedNodes) => {
@@ -339,6 +348,7 @@ export function Component() {
       setDiagnosticAnalyzing(false);
       setMasteryTransitionPending(false);
       setNextNodeTitle(undefined);
+      streamErrorRef.current = false;
       setSuggestion(undefined);
     }
     prevSessionRef.current = sessionId;
@@ -563,7 +573,18 @@ export function Component() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
-          messages: [{ role: "user", content: hiddenContent }],
+          messages: [
+            ...chat.messages
+              .filter((m) => m.role === "user" || m.role === "assistant")
+              .map((m) => ({
+                role: m.role as "user" | "assistant",
+                content: m.parts
+                  ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+                  .map((p) => p.text)
+                  .join("") ?? "",
+              })),
+            { role: "user" as const, content: hiddenContent },
+          ],
           hidden: true,
         }),
       });

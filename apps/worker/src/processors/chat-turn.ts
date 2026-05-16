@@ -326,9 +326,12 @@ export function createChatTurnWorker(
 
         const errorMessage =
           error instanceof Error ? error.message : String(error);
+        const userMessage = errorMessage.includes("ModelMessage[] schema")
+          ? "AI 服务内部错误，请重新发送消息"
+          : errorMessage;
         await publisher.publish(
           channel,
-          JSON.stringify({ type: "error", message: errorMessage }),
+          JSON.stringify({ type: "error", message: userMessage }),
         );
 
         throw error;

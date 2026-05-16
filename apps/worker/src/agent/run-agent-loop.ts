@@ -154,6 +154,10 @@ export async function runAgentLoop(
       break;
     }
 
+    if (stepToolResults.some((r) => r.toolName === "askQuestion")) {
+      break;
+    }
+
     if (step === maxSteps - 1) {
       stopReason = "max-steps";
       break;
@@ -163,7 +167,11 @@ export async function runAgentLoop(
     // in the stream. The response messages include the assistant + tool results,
     // so we append them for the next iteration.
     const response = await result.response;
-    currentMessages = [...currentMessages, ...response.messages];
+    // Safety: ensure all values in tool results are JSON-serializable
+    // (e.g. Prisma Date objects → ISO strings) to prevent schema validation
+    // failures on subsequent streamText calls.
+    const sanitized = JSON.parse(JSON.stringify(response.messages)) as ModelMessage[];
+    currentMessages = [...currentMessages, ...sanitized];
   }
 
   return {

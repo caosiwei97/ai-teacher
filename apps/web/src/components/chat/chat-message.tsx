@@ -52,7 +52,7 @@ export function ChatMessage({
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
-      <div className={`max-w-[80%] space-y-3 ${isUser ? "order-1" : ""}`}>
+      <div className={`max-w-[80%] min-w-0 space-y-3 ${isUser ? "order-1" : ""}`}>
         {(hasContent || hasBlocks) && (
           <div
             className={`rounded-xl px-4 py-3 text-base leading-relaxed ${

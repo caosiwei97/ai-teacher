@@ -65,12 +65,15 @@ export const assessMasteryTool: ToolDefinition = {
           where: { roadmapId: node.roadmapId },
           orderBy: { index: "asc" },
         });
+        // Strip Prisma objects to plain JSON (Date → ISO string) to avoid
+        // AI SDK ModelMessage[] schema validation errors on subsequent steps.
+        const plainNodes = JSON.parse(JSON.stringify(refreshedNodes));
         const masteredCount = refreshedNodes.filter((n) => n.status === "mastered").length;
         if (nextNode) {
           return {
             success: true,
             ...p,
-            roadmapUpdate: { nodes: refreshedNodes },
+            roadmapUpdate: { nodes: plainNodes },
             sessionUpdate: {
               masteredNodes: masteredCount,
               totalNodes: refreshedNodes.length,
@@ -86,7 +89,7 @@ export const assessMasteryTool: ToolDefinition = {
         return {
           success: true,
           ...p,
-          roadmapUpdate: { nodes: refreshedNodes },
+          roadmapUpdate: { nodes: plainNodes },
           sessionUpdate: {
             masteredNodes: masteredCount,
             totalNodes: refreshedNodes.length,

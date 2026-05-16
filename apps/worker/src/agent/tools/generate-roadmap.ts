@@ -116,7 +116,9 @@ ${p.startHint ? `起点建议：${p.startHint}` : ""}`;
         description: n.description,
         status: n.status,
       })),
-      roadmapUpdate: { nodes: createdNodes },
+      // Strip Prisma objects to plain JSON (Date → ISO string) to avoid
+      // AI SDK ModelMessage[] schema validation errors on subsequent steps.
+      roadmapUpdate: { nodes: JSON.parse(JSON.stringify(createdNodes)) },
       sessionUpdate: {
         masteredNodes: 0,
         totalNodes: createdNodes.length,
