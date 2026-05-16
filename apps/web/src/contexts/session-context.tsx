@@ -108,8 +108,16 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
           setCurrentSessionId(next.id);
           window.history.replaceState(null, "", `/learn/${next.id}`);
         } else {
-          setCurrentSessionId(null);
-          window.history.replaceState(null, "", "/");
+          const newId = generateUUID();
+          const newSession: SessionInfo = {
+            id: newId,
+            topic: "新对话",
+            status: "new",
+            progress: { totalNodes: 0, masteredNodes: 0, currentNodeId: null },
+          };
+          setSessions([newSession]);
+          setCurrentSessionId(newId);
+          window.history.replaceState(null, "", `/learn/${newId}`);
         }
       }
 
