@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v1.0
-> 更新日期：2026-05-13
-> 状态：已对齐实际实现（含迭代 038 沙箱文件系统 + PTY 终端代理）
+> 版本：v1.1
+> 更新日期：2026-05-16
+> 状态：已对齐实际实现（含迭代 038 沙箱文件系统 + PTY 终端代理 + Vite 迁移后）
 
 ---
 
@@ -39,7 +39,7 @@
 | GET | `/api/llm/models` | 获取 Provider 预设模型列表 | ✅ |
 | GET | `/api/chat/:sessionId/stream` | SSE 流式重连（断线恢复） | ✅ |
 
-> **架构说明**：API 路由已从 Next.js API Routes 迁移到独立 Hono Server（apps/server，端口 38422）。Next.js 仅保留 `/api/chat` 作为 SSE 代理。前端通过 `NEXT_PUBLIC_API_URL` 直接请求 Hono Server。
+> **架构说明**：API 路由全部在独立 Hono Server（apps/server，端口 38422）中实现。前端通过 Vite dev server proxy（开发环境）或 `VITE_API_URL` 直接请求 Hono Server。
 
 > 以下为实际已实现的接口详情。
 
@@ -349,7 +349,7 @@ POST /api/quick-question
 
 AI SDK SSE 流式响应。
 
-- 基于 `glm-4-flash`，使用苏格拉底式追问风格回答
+- 基于 `deepseek-v4-flash`，使用苏格拉底式追问风格回答
 - 回答 1-3 句话，聚焦选中内容
 
 ### 说明
@@ -456,7 +456,7 @@ POST /api/sandbox/execute
 
 - 前端"编辑并重新运行"按钮直接调用此接口
 - Worker 的 `executeCode` Agent 工具也调用同一底层 `submitCode()` 函数
-- Judge0 资源限制：CPU 5 秒、内存 256MB、墙钟 10 秒
+- 沙箱资源限制：CPU 5 秒、内存 256MB、墙钟 10 秒
 - 安全检查在 Agent 工具层执行（`execute-code.ts` 的 `DANGEROUS_PATTERNS`），此端点不做安全检查（信任前端传入的用户代码）
 - 语言 ID 映射：Python=71, JavaScript=63, Java=62, C++=54, TypeScript=74 等
 
@@ -572,7 +572,7 @@ GET /api/chat/:sessionId/stream
 - 用于 SSE 断线后重新连接到现有会话的流式通道
 - 通过 Redis Pub/Sub 订阅 `chat:{sessionId}` 频道
 - 如果会话已有正在执行的 Agent 任务，会接续收到后续 SSE 事件
-- 前端 Next.js 代理 `/api/chat/[sessionId]/stream` 转发到 Hono Server
+- 前端通过 Hono Server 的 SSE 流式重连端点恢复连接
 
 ---
 

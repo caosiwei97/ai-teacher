@@ -39,13 +39,12 @@ pnpm dev
 
 ```
 apps/
-  web/        — Next.js App Router (Chat UI，纯前端)
+  web/        — Vite + React 19 SPA (Chat UI，纯前端)
   server/     — Hono API Server (REST API + SSE)
   worker/     — Agent Worker (BullMQ 队列消费 + AI SDK streamText + 11 tools)
 packages/
   shared/     — 共享类型、Zod Schema
   db/         — Prisma Schema + 数据库访问
-  agent/      — 共享 Agent 引擎（StateGraph + ToolRegistry + Checkpoint）
 docs/         — 项目文档
 data/         — 本地数据存储（已加入 .gitignore）
 ```
@@ -65,7 +64,7 @@ data/
 
 | 服务 | 端口 | 说明 |
 |------|------|------|
-| Web | 38421 | Next.js 开发服务器（纯前端） |
+| Web | 38421 | Vite 开发服务器（纯前端） |
 | API Server | 38422 | Hono API Server |
 | Worker | 38423 | BullMQ Worker（Agent 执行） |
 | PostgreSQL | 25432 | 数据库（非标准端口避免冲突） |
@@ -84,7 +83,7 @@ data/
 | [API 接口](docs/设计/API接口.md) | 已实现的接口文档 |
 | [Prompt 设计](docs/设计/Prompt设计.md) | 苏格拉底式教学 Prompt |
 | [决策记录](docs/设计/决策记录.md) | 关键技术决策及原因 |
-| [迭代计划](docs/开发/迭代计划.md) | 36 个迭代、状态、进度 |
+| [迭代计划](docs/开发/迭代计划.md) | 41 个迭代、状态、进度 |
 | [开发日志](docs/开发/开发日志.md) | 开发时间线记录 |
 | [E2E 测试](docs/测试/e2e/README.md) | 测试用例矩阵 |
 
@@ -92,7 +91,7 @@ data/
 
 | 层 | 技术 |
 |---|------|
-| Web | Next.js 15, React 19, shadcn/ui, Tailwind CSS 4, Monaco Editor |
+| Web | Vite 8, React 19, shadcn/ui, Tailwind CSS 4, Monaco Editor |
 | Agent | AI SDK v6 (streamText + tool calling) |
 | LLM | DeepSeek（@ai-sdk/deepseek 原生 provider），默认 `deepseek-v4-flash` |
 | DB | PostgreSQL 16 + pgvector + Prisma ORM |

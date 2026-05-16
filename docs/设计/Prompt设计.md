@@ -212,7 +212,7 @@ interface TutorPromptContext {
   description: "在安全沙箱中执行学生代码，返回运行结果（stdout/stderr/exitCode）",
   parameters: {
     sourceCode: string,     // 要执行的代码
-    languageId: number,     // Judge0 语言 ID（71=Python, 63=JavaScript, 62=Java, 54=C++, 74=TypeScript）
+    languageId: number,     // 沙箱语言 ID（71=Python, 63=JavaScript, 62=Java, 54=C++, 74=TypeScript）
     stdin?: string,         // 标准输入
     expectedOutput?: string // 期望输出，用于自动判定
   },
