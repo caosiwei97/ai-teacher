@@ -1,6 +1,6 @@
-const JUDGE0_URL = process.env.JUDGE0_URL ?? "http://localhost:2358";
+const SANDBOX_URL = process.env.OPENSANDBOX_URL ?? "http://localhost:2358";
 
-export interface Judge0Submission {
+export interface SandboxSubmission {
   source_code: string;
   language_id: number;
   stdin?: string;
@@ -10,7 +10,7 @@ export interface Judge0Submission {
   wall_time_limit: number;
 }
 
-export interface Judge0Result {
+export interface SandboxResult {
   stdout: string | null;
   stderr: string | null;
   exit_code: number;
@@ -19,8 +19,8 @@ export interface Judge0Result {
   status: { id: number; description: string };
 }
 
-export async function submitCode(submission: Judge0Submission): Promise<Judge0Result> {
-  const submitRes = await fetch(`${JUDGE0_URL}/submissions?base64_encoded=false`, {
+export async function submitCode(submission: SandboxSubmission): Promise<SandboxResult> {
+  const submitRes = await fetch(`${SANDBOX_URL}/submissions?base64_encoded=false`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -32,20 +32,20 @@ export async function submitCode(submission: Judge0Submission): Promise<Judge0Re
   });
 
   if (!submitRes.ok) {
-    throw new Error(`Judge0 submit failed: ${submitRes.status} ${await submitRes.text()}`);
+    throw new Error(`Sandbox submit failed: ${submitRes.status} ${await submitRes.text()}`);
   }
 
   const { token } = (await submitRes.json()) as { token: string };
 
   const maxAttempts = 30;
   for (let i = 0; i < maxAttempts; i++) {
-    const pollRes = await fetch(`${JUDGE0_URL}/submissions/${token}?base64_encoded=false`);
+    const pollRes = await fetch(`${SANDBOX_URL}/submissions/${token}?base64_encoded=false`);
     if (!pollRes.ok) {
-      throw new Error(`Judge0 poll failed: ${pollRes.status}`);
+      throw new Error(`Sandbox poll failed: ${pollRes.status}`);
     }
-    const result = (await pollRes.json()) as Judge0Result;
+    const result = (await pollRes.json()) as SandboxResult;
     if (result.status.id >= 3) return result;
     await new Promise((r) => setTimeout(r, 500));
   }
-  throw new Error("Judge0 execution timeout");
+  throw new Error("Sandbox execution timeout");
 }

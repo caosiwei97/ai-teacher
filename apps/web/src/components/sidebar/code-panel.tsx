@@ -36,7 +36,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
   cpp: "C++",
 };
 
-const JUDGE0_IDS: Record<string, number> = {
+const SANDBOX_IDS: Record<string, number> = {
   python: 71,
   javascript: 63,
   typescript: 74,
@@ -157,7 +157,7 @@ export function CodePanel({ code, language, instruction, onCodeChange, llmConfig
 
   async function handleRun() {
     const codeToRun = activeTabPath ? sandbox.openFileContent : code;
-    const langId = JUDGE0_IDS[displayLanguage] ?? 63;
+    const langId = SANDBOX_IDS[displayLanguage] ?? 63;
     await execute(codeToRun, langId, undefined, llmConfigId);
   }
 
