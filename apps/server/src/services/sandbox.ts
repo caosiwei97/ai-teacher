@@ -36,6 +36,7 @@ interface SandboxInfo {
 
 let cachedSandboxId: string | null = null;
 let cachedExecdUrl: string | null = null;
+let ensurePromise: Promise<string> | null = null;
 
 async function deleteSandbox(id: string): Promise<void> {
   await fetch(`${OPENSANDBOX_URL}/v1/sandboxes/${id}`, { method: "DELETE" }).catch(() => {});
@@ -45,8 +46,8 @@ export async function cleanupOrphanSandboxes(): Promise<number> {
   try {
     const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes`);
     if (!res.ok) return 0;
-    const data = (await res.json()) as { sandboxes?: SandboxInfo[] } | SandboxInfo[];
-    const list = Array.isArray(data) ? data : data.sandboxes ?? [];
+    const data = (await res.json()) as { items?: SandboxInfo[]; sandboxes?: SandboxInfo[] } | SandboxInfo[];
+    const list = Array.isArray(data) ? data : (data.items ?? data.sandboxes ?? []);
     let count = 0;
     for (const sb of list) {
       if (sb.id !== cachedSandboxId) {
@@ -157,6 +158,17 @@ async function getExecdUrl(sandboxId: string): Promise<string> {
 }
 
 export async function ensureSandbox(llmConfig?: SandboxLlmConfig): Promise<string> {
+  if (ensurePromise) return ensurePromise;
+
+  ensurePromise = ensureSandboxInner(llmConfig);
+  try {
+    return await ensurePromise;
+  } finally {
+    ensurePromise = null;
+  }
+}
+
+async function ensureSandboxInner(llmConfig?: SandboxLlmConfig): Promise<string> {
   if (cachedExecdUrl && cachedSandboxId) {
     const res = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes/${cachedSandboxId}`).catch(() => null);
     if (res?.ok) {
@@ -170,8 +182,8 @@ export async function ensureSandbox(llmConfig?: SandboxLlmConfig): Promise<strin
   try {
     const listRes = await fetch(`${OPENSANDBOX_URL}/v1/sandboxes`);
     if (listRes.ok) {
-      const data = (await listRes.json()) as { sandboxes?: SandboxInfo[] } | SandboxInfo[];
-      const list = Array.isArray(data) ? data : data.sandboxes ?? [];
+      const data = (await listRes.json()) as { items?: SandboxInfo[]; sandboxes?: SandboxInfo[] } | SandboxInfo[];
+      const list = Array.isArray(data) ? data : (data.items ?? data.sandboxes ?? []);
       const running = list.find((sb) => sb.status.state === "Running");
       if (running) {
         const execdUrl = await getExecdUrl(running.id);

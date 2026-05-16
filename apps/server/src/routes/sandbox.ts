@@ -123,6 +123,10 @@ sandboxRoute.post("/files/upload", async (c) => {
     method: "POST",
     body: upstream,
   });
+  if (!res.ok) {
+    const errText = await res.text();
+    return c.json({ error: "Upload failed", detail: errText }, res.status as 400);
+  }
   return c.json(await safeJson(res));
 });
 
