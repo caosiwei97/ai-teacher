@@ -2,7 +2,8 @@ import "dotenv/config";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { serve } from "@hono/node-server";
+import { createAdaptorServer } from "@hono/node-server";
+import { WebSocket as WsClient, WebSocketServer } from "ws";
 import { errorHandler } from "./middleware/error-handler";
 import { sessionsRoute } from "./routes/sessions";
 import { sessionDetailRoute } from "./routes/session-detail";
@@ -13,7 +14,7 @@ import { quickQuestionRoute } from "./routes/quick-question";
 import { chatRoute } from "./routes/chat";
 import { sandboxRoute } from "./routes/sandbox";
 import { llmConfigRoute } from "./routes/llm-config";
-import { cleanupOrphanSandboxes, registerShutdownHook } from "./services/sandbox";
+import { cleanupOrphanSandboxes, ensureSandbox, registerShutdownHook } from "./services/sandbox";
 
 const app = new Hono();
 
@@ -34,9 +35,61 @@ app.route("/api/llm", llmConfigRoute);
 
 const port = Number(process.env.SERVER_PORT) || 38422;
 
-serve({ fetch: app.fetch, port }, async (info) => {
+const server = createAdaptorServer({ fetch: app.fetch, port });
+
+const wss = new WebSocketServer({ noServer: true });
+
+server.on("upgrade", async (req, socket, head) => {
+  const match = req.url?.match(/^\/api\/sandbox\/pty\/([^/]+)\/ws/);
+  if (!match) {
+    socket.destroy();
+    return;
+  }
+
+  const origin = req.headers.origin;
+  if (origin && origin !== "http://localhost:38421") {
+    socket.destroy();
+    return;
+  }
+
+  const sessionId = match[1];
+
+  try {
+    const execdUrl = await ensureSandbox();
+    const upstream = new WsClient(`ws://${execdUrl}/pty/${sessionId}/ws`);
+
+    upstream.on("open", () => {
+      wss.handleUpgrade(req, socket, head, (clientWs) => {
+        upstream.on("message", (data: Buffer | string, isBinary: boolean) => {
+          if (clientWs.readyState === WsClient.OPEN) {
+            clientWs.send(data, { binary: isBinary });
+          }
+        });
+
+        clientWs.on("message", (data: Buffer | string, isBinary: boolean) => {
+          if (upstream.readyState === WsClient.OPEN) {
+            upstream.send(data, { binary: isBinary });
+          }
+        });
+
+        clientWs.on("close", () => upstream.close());
+        upstream.on("close", () => clientWs.close());
+        upstream.on("error", () => clientWs.close());
+        clientWs.on("error", () => upstream.close());
+      });
+    });
+
+    upstream.on("error", () => {
+      socket.destroy();
+    });
+  } catch {
+    socket.destroy();
+  }
+});
+
+server.listen(port, async () => {
   registerShutdownHook();
   const cleaned = await cleanupOrphanSandboxes();
   if (cleaned > 0) console.log(`[server] Cleaned up ${cleaned} orphan sandbox(es)`);
-  console.log(`[server] Hono API server running on http://localhost:${info.port}`);
+  console.log(`[server] Hono API server running on http://localhost:${port}`);
 });

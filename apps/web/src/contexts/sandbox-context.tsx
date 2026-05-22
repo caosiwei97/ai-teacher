@@ -27,11 +27,14 @@ export interface SandboxContextValue {
   refreshFileTree: () => Promise<void>;
   openFile: (path: string) => Promise<void>;
   saveFile: (path: string, content: string) => Promise<void>;
+  writeAndOpen: (path: string, content: string) => Promise<void>;
   setOpenFileContent: (content: string) => void;
   createFile: (path: string) => Promise<void>;
   deleteFile: (path: string) => Promise<void>;
   ptySessionId: string | null;
   initPty: () => Promise<void>;
+  registerPtySender: (sender: ((data: string) => void) | null) => void;
+  sendPtyCommand: (cmd: string) => void;
 }
 
 const SandboxContext = createContext<SandboxContextValue | null>(null);
@@ -101,7 +104,10 @@ export function SandboxProvider({ children }: { children: ReactNode }) {
   const refreshFileTree = useCallback(async () => {
     try {
       const data = await api.searchFiles("/workspace", "**/*");
-      const paths: string[] = Array.isArray(data) ? data : data.files ?? [];
+      const raw: unknown[] = Array.isArray(data) ? data : data.files ?? [];
+      const paths: string[] = raw.map((item: unknown) =>
+        typeof item === "string" ? item : (item as { path: string }).path,
+      );
       setFileTree(sortTree(buildTreeFromPaths(paths)));
     } catch {
     }
@@ -149,6 +155,17 @@ export function SandboxProvider({ children }: { children: ReactNode }) {
     [api],
   );
 
+  const writeAndOpen = useCallback(
+    async (path: string, content: string) => {
+      await api.uploadFile(path, content);
+      await refreshFileTree();
+      setOpenFilePath(path);
+      setOpenFileContent(content);
+      setDirty(false);
+    },
+    [api, refreshFileTree],
+  );
+
   const createFile = useCallback(
     async (path: string) => {
       await api.uploadFile(path, "");
@@ -176,6 +193,16 @@ export function SandboxProvider({ children }: { children: ReactNode }) {
     setPtySessionId(data.session_id ?? data.sessionId);
   }, [api, ptySessionId]);
 
+  const ptySenderRef = useRef<((data: string) => void) | null>(null);
+
+  const registerPtySender = useCallback((sender: ((data: string) => void) | null) => {
+    ptySenderRef.current = sender;
+  }, []);
+
+  const sendPtyCommand = useCallback((cmd: string) => {
+    ptySenderRef.current?.(cmd + "\n");
+  }, []);
+
   const value = useMemo<SandboxContextValue>(
     () => ({
       fileTree,
@@ -186,11 +213,14 @@ export function SandboxProvider({ children }: { children: ReactNode }) {
       refreshFileTree,
       openFile,
       saveFile,
+      writeAndOpen,
       setOpenFileContent: handleContentChange,
       createFile,
       deleteFile: deleteFileFn,
       ptySessionId,
       initPty,
+      registerPtySender,
+      sendPtyCommand,
     }),
     [
       fileTree,
@@ -201,11 +231,14 @@ export function SandboxProvider({ children }: { children: ReactNode }) {
       refreshFileTree,
       openFile,
       saveFile,
+      writeAndOpen,
       handleContentChange,
       createFile,
       deleteFileFn,
       ptySessionId,
       initPty,
+      registerPtySender,
+      sendPtyCommand,
     ],
   );
 

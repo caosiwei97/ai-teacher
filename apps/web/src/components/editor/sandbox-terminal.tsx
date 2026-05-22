@@ -29,7 +29,7 @@ async function loadXterm() {
 const RECONNECT_DELAY = 2000;
 
 export function SandboxTerminal() {
-  const { ptySessionId, initPty } = useSandbox();
+  const { ptySessionId, initPty, registerPtySender } = useSandbox();
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<InstanceType<typeof import("@xterm/xterm").Terminal> | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -109,7 +109,8 @@ export function SandboxTerminal() {
       }
 
       const encoder = new TextEncoder();
-      term.onData((data) => {
+
+      function sendData(data: string) {
         const ws = wsRef.current;
         if (ws?.readyState === WebSocket.OPEN) {
           const encoded = encoder.encode(data);
@@ -118,6 +119,12 @@ export function SandboxTerminal() {
           frame.set(encoded, 1);
           ws.send(frame);
         }
+      }
+
+      registerPtySender(sendData);
+
+      term.onData((data) => {
+        sendData(data);
       });
 
       term.onResize(({ cols, rows }) => {
@@ -140,6 +147,7 @@ export function SandboxTerminal() {
     return () => {
       disposed = true;
       clearTimeout(reconnectTimer);
+      registerPtySender(null);
       wsRef.current?.close();
       termRef.current?.dispose();
       resizeObserver.disconnect();
