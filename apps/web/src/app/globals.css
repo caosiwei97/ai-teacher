@@ -322,6 +322,17 @@
     background: var(--color-border-strong);
   }
 
+  /* IDE dark scrollbar */
+  .ide-dark ::-webkit-scrollbar-thumb {
+    background: #313244;
+  }
+  .ide-dark ::-webkit-scrollbar-thumb:hover {
+    background: #45475a;
+  }
+  .ide-dark ::-webkit-scrollbar-track {
+    background: #1e1e2e;
+  }
+
   /* ── Focus states ── */
   :focus-visible {
     outline: none;

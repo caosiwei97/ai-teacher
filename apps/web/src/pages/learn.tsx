@@ -817,6 +817,7 @@ export function Component() {
           <ResizableDivider
             direction="horizontal"
             onResize={handleRightResize}
+            className="w-px cursor-col-resize border-0 bg-[#1a1d2b]"
           />
           <div
             className="hidden lg:block shrink-0"
@@ -828,7 +829,6 @@ export function Component() {
               onCodePanelChange={handleCodePanelChange}
               activeTab={rightTab}
               onTabChange={setRightTab}
-              llmConfigId={selectedConfigId}
             />
           </div>
         </>

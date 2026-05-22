@@ -22,7 +22,6 @@ interface RightSidebarProps {
   onCodePanelChange?: (code: string) => void;
   activeTab: "roadmap" | "code";
   onTabChange: (tab: "roadmap" | "code") => void;
-  llmConfigId?: string;
 }
 
 export function RightSidebar({
@@ -31,7 +30,6 @@ export function RightSidebar({
   onCodePanelChange,
   activeTab,
   onTabChange,
-  llmConfigId,
 }: RightSidebarProps) {
   const hasCode = !!codePanel;
 
@@ -40,38 +38,53 @@ export function RightSidebar({
   const progress = total > 0 ? Math.round((mastered / total) * 100) : 0;
 
   const isIdeMode = activeTab === "code" && hasCode;
+  const codeActive = activeTab === "code";
+  const roadmapActive = activeTab === "roadmap";
 
   return (
     <div
       className={`flex h-full w-full flex-col${isIdeMode ? "" : " bg-sidebar"}`}
-      style={isIdeMode ? { background: "#181825" } : undefined}
+      style={isIdeMode ? { background: "#1e1e2e" } : undefined}
     >
       {/* Tab bar — only show when both roadmap and code exist */}
       {hasCode && (
         <div
-          className={`flex shrink-0 px-4 py-0${isIdeMode ? "" : " border-b border-border"}`}
-          style={isIdeMode ? { borderBottom: "1px solid #313244" } : undefined}
+          className="flex shrink-0 px-2 py-0"
+          style={isIdeMode
+            ? { background: "#181825", borderBottom: "1px solid #313244" }
+            : { borderBottom: "1px solid var(--color-border)" }
+          }
         >
           <button
             onClick={() => onTabChange("code")}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors ${
-              activeTab === "code"
-                ? "border-b-2 border-primary text-foreground"
-                : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-            style={isIdeMode && activeTab === "code" ? { color: "#cdd6f4", borderBottomColor: "#89b4fa" } : undefined}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+            style={isIdeMode
+              ? {
+                  color: codeActive ? "#cdd6f4" : "#6c7086",
+                  borderBottom: codeActive ? "2px solid #89b4fa" : "2px solid transparent",
+                }
+              : {
+                  color: codeActive ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                  borderBottom: codeActive ? "2px solid var(--color-primary)" : "2px solid transparent",
+                }
+            }
           >
             <Code2 className="h-3.5 w-3.5" />
             代码
           </button>
           <button
             onClick={() => onTabChange("roadmap")}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors ${
-              activeTab === "roadmap"
-                ? "border-b-2 border-primary text-foreground"
-                : "border-b-2 border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-            style={isIdeMode ? { color: "#6c7086" } : undefined}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+            style={isIdeMode
+              ? {
+                  color: roadmapActive ? "#cdd6f4" : "#6c7086",
+                  borderBottom: roadmapActive ? "2px solid #89b4fa" : "2px solid transparent",
+                }
+              : {
+                  color: roadmapActive ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+                  borderBottom: roadmapActive ? "2px solid var(--color-primary)" : "2px solid transparent",
+                }
+            }
           >
             <MapPin className="h-3.5 w-3.5" />
             学习路线
@@ -147,7 +160,6 @@ export function RightSidebar({
             language={codePanel!.language}
             instruction={codePanel!.instruction}
             onCodeChange={onCodePanelChange ?? (() => {})}
-            llmConfigId={llmConfigId}
           />
         )}
       </div>
