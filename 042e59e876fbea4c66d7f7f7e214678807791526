@@ -1,0 +1,38 @@
+docs/开发/开发日志.md
+  5c4f32b4f2a912fb 137
+.agents/references/开发日志规范.md
+  5c4f32b4f2a912fb 10,31,47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.16",
+  "base_commit_sha": "042e59e876fbea4c66d7f7f7e214678807791526",
+  "prompts": {
+    "5c4f32b4f2a912fb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4cb8f5c1-180d-43d8-ba39-b4e499e04c13",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 383,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    },
+    "f9da476db7cea264": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1b2442e87ffe1bT7xFs8PEpIJR-77e909cb-1134-4aa2-be49-d5d6f260881e",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 295,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
