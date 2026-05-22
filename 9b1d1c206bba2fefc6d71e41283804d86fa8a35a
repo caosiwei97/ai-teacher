@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.16",
+  "base_commit_sha": "9b1d1c206bba2fefc6d71e41283804d86fa8a35a",
+  "prompts": {
+    "db15c1e25911bd22": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_1b2442e87ffe1bT7xFs8PEpIJR-6ef76c98-c19c-4abf-8161-7e22a7bb848c",
+        "model": "unknown"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 295,
+      "total_deletions": 0,
+      "accepted_lines": 295,
+      "overriden_lines": 0
+    }
+  }
+}
