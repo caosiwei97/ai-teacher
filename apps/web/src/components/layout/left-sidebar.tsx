@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, BookOpen, GraduationCap, Plus, Archive, Settings, MessageSquare } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, Plus, Archive, Settings, MessageSquare } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Link } from "react-router";
 
@@ -36,8 +37,8 @@ export function LeftSidebar({
   if (collapsed) {
     return (
       <div className="flex h-full w-14 shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar py-4 transition-all duration-300">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-accent" title="AI Teacher">
-          <GraduationCap className="h-4 w-4 text-sidebar-accent-foreground" />
+        <div className="flex h-8 w-8 items-center justify-center" title="AI Teacher">
+          <Logo size={28} />
         </div>
 
         {onNewSession && (
@@ -87,8 +88,8 @@ export function LeftSidebar({
     <div className="flex h-full w-[280px] shrink-0 flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-accent">
-            <GraduationCap className="h-4 w-4 text-sidebar-accent-foreground" />
+          <div className="flex h-7 w-7 items-center justify-center">
+            <Logo size={28} />
           </div>
           <h1 className="text-sm font-semibold tracking-tight">AI Teacher</h1>
         </div>
