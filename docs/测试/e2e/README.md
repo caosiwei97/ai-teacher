@@ -1,7 +1,7 @@
 # AI Teacher — E2E 测试用例
 
-> 版本：v0.3
-> 日期：2026-05-13
+> 版本：v0.4
+> 日期：2026-05-23
 > 框架：Playwright + Chromium
 > 运行时机：发版前必须全量通过（日常开发只需 `pnpm build` 通过）
 
@@ -23,6 +23,10 @@
 | J | 流式响应与性能 | `chat.spec.ts` | 2 | 2 | 0 | 0 |
 | K | 学习资料 | 待创建 | 2 | 2 | 0 | 0 |
 | L | 消息操作 | 待创建 | 2 | 0 | 2 | 0 |
+| M | 沙箱与 IDE | `sandbox-ide.spec.ts` | — | — | — | — |
+| N | 推荐话题 | `suggested-topics.spec.ts` | — | — | — | — |
+| O | 会话详情 | `session-detail.spec.ts` | — | — | — | — |
+| P | LLM 配置 | `llm-config.spec.ts` | — | — | — | — |
 | **合计** | | | **50** | **25** | **19** | **7** |
 
 ### A. 新会话与诊断 (New Session & Diagnostic)

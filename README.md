@@ -55,6 +55,7 @@ data/         — 本地数据存储（已加入 .gitignore）
 data/
 ├── postgres/    # PostgreSQL 数据文件
 ├── redis/       # Redis 持久化文件
+├── redis-judge0/  # Judge0 Redis（历史遗留，已迁移至 OpenSandbox）
 └── minio/       # MinIO 对象存储文件
 ```
 
@@ -78,7 +79,6 @@ data/
 | 文档 | 说明 |
 |------|------|
 | [产品定位](docs/产品/产品定位.md) | 项目总纲、核心场景、约束边界 |
-| [需求规格](docs/产品/需求规格.md) | 用户故事、功能规格、MVP 范围 |
 | [技术架构](docs/设计/技术架构.md) | 技术栈、系统架构、数据模型 |
 | [API 接口](docs/设计/API接口.md) | 已实现的接口文档 |
 | [Prompt 设计](docs/设计/Prompt设计.md) | 苏格拉底式教学 Prompt |
@@ -93,7 +93,7 @@ data/
 |---|------|
 | Web | Vite 8, React 19, shadcn/ui, Tailwind CSS 4, Monaco Editor |
 | Agent | AI SDK v6 (streamText + tool calling) |
-| LLM | DeepSeek（@ai-sdk/deepseek 原生 provider），默认 `deepseek-v4-flash` |
+| LLM | 多 Provider（@ai-sdk/deepseek + @ai-sdk/openai + @ai-sdk/anthropic），默认 `deepseek-v4-flash` |
 | DB | PostgreSQL 16 + pgvector + Prisma ORM |
 | Cache | Redis 7 |
 | Storage | MinIO (S3 兼容) |

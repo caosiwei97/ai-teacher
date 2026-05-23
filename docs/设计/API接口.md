@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v1.1
-> 更新日期：2026-05-16
-> 状态：已对齐实际实现（含迭代 038 沙箱文件系统 + PTY 终端代理 + Vite 迁移后）
+> 版本：v1.2
+> 更新日期：2026-05-23
+> 状态：已对齐实际实现（含多 Provider、自动创建会话、env-status 端点）
 
 ---
 
@@ -38,6 +38,7 @@
 | POST | `/api/llm/:id/test` | 测试 LLM 配置连通性 | ✅ |
 | GET | `/api/llm/models` | 获取 Provider 预设模型列表 | ✅ |
 | GET | `/api/chat/:sessionId/stream` | SSE 流式重连（断线恢复） | ✅ |
+| GET | `/api/llm/env-status` | 检查环境默认 LLM 配置状态 | ✅ |
 
 > **架构说明**：API 路由全部在独立 Hono Server（apps/server，端口 38422）中实现。前端通过 Vite dev server proxy（开发环境）或 `VITE_API_URL` 直接请求 Hono Server。
 
@@ -57,7 +58,9 @@ POST /api/sessions
 {
   "userId": "string (必填)",
   "topic": "string (必填)",
-  "sourceId": "string (可选，关联学习资料)"
+  "sourceId": "string (可选，关联学习资料)",
+  "teachingMode": "warm | strict | interviewer (可选，默认 warm)",
+  "llmConfigId": "string (可选，指定使用的用户 LLM 配置)"
 }
 ```
 
@@ -70,7 +73,7 @@ POST /api/sessions
     "userId": "seed-user-ai-teacher",
     "topic": "React Hooks 原理",
     "sourceId": null,
-    "status": "diagnosing",
+    "status": "active",
     "createdAt": "2026-05-08T...",
     "updatedAt": "2026-05-08T...",
     "roadmap": {
@@ -96,6 +99,7 @@ POST /api/sessions
 
 - `GET /api/sessions` 自动排除 `archived` 状态的会话
 - 按会话 `updatedAt` 降序排列
+- 响应包含 `source`（关联资料）、`llmConfigId`、`progress`（`{ totalNodes, masteredNodes, currentNodeId, currentNodeTitle }`）字段
 
 ---
 
@@ -234,6 +238,15 @@ data: {"type":"<event-type>","content":...,"data":...}
 2. 如果有 `assessMastery` 结果 → 更新节点掌握度和状态
 3. 如果掌握度 ≥ 80% → 自动将下一个 `not-started` 节点设为 `in-progress`
 4. 如果有 `generateAssessment` → 保存评估卡片到消息 metadata
+
+### 自动创建会话
+
+如果请求中的 `sessionId` 对应的会话不存在，系统会自动创建新会话：
+- `topic` = 用户消息内容
+- `teachingMode` = 请求参数或 `"warm"`
+- 同时创建空的 Roadmap
+
+这一行为允许前端跳过显式的 `POST /api/sessions` 调用，直接发送消息即可开始学习。
 
 ---
 
@@ -403,12 +416,12 @@ GET /api/suggested-topics
 ```json
 {
   "topics": [
-    { "id": "topic-1", "icon": "Brain", "title": "深入理解 JavaScript 闭包" },
-    { "id": "topic-2", "icon": "Heart", "title": "认知行为疗法入门与实践" },
-    { "id": "topic-3", "icon": "Utensils", "title": "营养学基础：科学搭配三餐" },
-    { "id": "topic-4", "icon": "Landmark", "title": "文艺复兴：艺术与科学交汇" },
-    { "id": "topic-5", "icon": "MessageSquare", "title": "高效沟通：用逻辑说服他人" },
-    { "id": "topic-6", "icon": "TrendingUp", "title": "概率思维：做出更明智的决策" }
+    { "id": "topic-1", "icon": "Brain", "title": "AI 提示词工程" },
+    { "id": "topic-2", "icon": "Heart", "title": "用 LangGraph 搭建 AI Agent" },
+    { "id": "topic-3", "icon": "TrendingUp", "title": "科学减脂与身材管理" },
+    { "id": "topic-4", "icon": "MessageSquare", "title": "情绪管理与压力释放" },
+    { "id": "topic-5", "icon": "Brain", "title": "个人投资理财入门" },
+    { "id": "topic-6", "icon": "Heart", "title": "自媒体运营与个人品牌" }
   ]
 }
 ```
@@ -435,7 +448,8 @@ POST /api/sandbox/execute
   "source_code": "string (必填，要执行的代码)",
   "language_id": 71,
   "stdin": "string (可选，标准输入)",
-  "expected_output": "string (可选，期望输出，用于自动判定)"
+  "expected_output": "string (可选，期望输出，用于自动判定)",
+  "llmConfigId": "string (可选，指定使用的 LLM 配置)"
 }
 ```
 
@@ -636,12 +650,35 @@ GET /api/llm/models?provider=...
 
 ```json
 {
+  "provider": "deepseek",
+  "name": "DeepSeek",
   "models": [
     { "id": "deepseek-chat", "name": "DeepSeek Chat" },
     { "id": "deepseek-v4-flash", "name": "DeepSeek V4 Flash" }
   ]
 }
 ```
+
+### 14.7 检查环境 LLM 配置状态
+
+```
+GET /api/llm/env-status
+```
+
+### 响应 `200`
+
+```json
+{
+  "hasEnvConfig": true,
+  "baseUrl": "https://api.deepseek.com"
+}
+```
+
+### 说明
+
+- 检查环境变量 `OPENAI_API_KEY` 是否已配置
+- 前端用于判断是否跳过 LLM 配置步骤（如果系统已有默认配置）
+- `hasEnvConfig` 为 `false` 时，引导用户到设置页配置 API Key
 
 ---
 
