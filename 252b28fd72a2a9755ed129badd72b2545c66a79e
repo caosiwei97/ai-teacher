@@ -1,0 +1,25 @@
+apps/web/src/components/chat/chat-message.tsx
+  13984165ed49e2f3 55,58,60-61
+apps/web/src/components/chat/chat-area.tsx
+  13984165ed49e2f3 180,183,239,245,252,258,265,267,269
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.16",
+  "base_commit_sha": "252b28fd72a2a9755ed129badd72b2545c66a79e",
+  "prompts": {
+    "13984165ed49e2f3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "982bdc0d-4efb-42fb-8680-19b8c179c63d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 15,
+      "overriden_lines": 0
+    }
+  }
+}
