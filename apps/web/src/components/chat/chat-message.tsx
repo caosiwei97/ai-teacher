@@ -52,13 +52,13 @@ export function ChatMessage({
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
-      <div className={`max-w-[80%] min-w-0 space-y-3 ${isUser ? "order-1" : ""}`}>
+      <div className={`${isUser ? "max-w-[80%]" : "w-full"} min-w-0 space-y-3`}>
         {(hasContent || hasBlocks) && (
           <div
-            className={`rounded-xl px-4 py-3 text-base leading-relaxed ${
+            className={`text-base leading-relaxed ${
               isUser
-                ? "rounded-br-[4px] bg-chat-user-bubble text-chat-user-text"
-                : "rounded-bl-[4px] bg-chat-ai-bubble text-chat-ai-text"
+                ? "rounded-xl rounded-br-[4px] bg-chat-user-bubble px-4 py-3 text-chat-user-text"
+                : "text-chat-ai-text"
             }`}
             style={{ animation: 'message-in 300ms cubic-bezier(0.33, 1, 0.68, 1) both' }}
           >

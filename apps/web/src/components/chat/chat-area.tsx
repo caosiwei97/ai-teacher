@@ -177,9 +177,10 @@ export function ChatArea({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-6 py-6"
+        className="flex-1 overflow-y-auto py-6"
         style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%)' }}
       >
+        <div className="mx-auto w-full max-w-3xl px-5">
         {messages.length === 0 && welcomeContent}
         {messages.length === 0 && !welcomeContent && (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -235,36 +236,37 @@ export function ChatArea({
 
           return (
             <div className="flex justify-start mb-4">
-              <div className="rounded-xl rounded-bl-[4px] bg-chat-ai-bubble px-5 py-4 flex items-center gap-2">
+              <div className="flex items-center gap-2 py-2">
                 <div className="flex gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0s' }} />
                   <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.2s' }} />
                   <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.4s' }} />
                 </div>
-                <span className="text-[13px] text-chat-ai-text">{label}</span>
+                <span className="text-[13px] text-muted-foreground">{label}</span>
               </div>
             </div>
           );
         })()}
         {masteryTransitionPending && (
           <div className="flex justify-start mb-4">
-            <div className="rounded-xl rounded-bl-[4px] bg-chat-ai-bubble px-5 py-4 flex items-center gap-2">
+            <div className="flex items-center gap-2 py-2">
               <div className="flex gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0s' }} />
                 <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.2s' }} />
                 <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.4s' }} />
               </div>
-              <span className="text-[13px] text-chat-ai-text">
+              <span className="text-[13px] text-muted-foreground">
                 {nextNodeTitle ? `老师在准备下一个知识点「${nextNodeTitle}」...` : "老师在准备下一个知识点..."}
               </span>
             </div>
           </div>
         )}
         <div ref={bottomRef} />
+        </div>
       </div>
-      <div className="flex flex-col">
+      <div className="mx-auto w-full max-w-3xl px-5">
         {error && (
-          <div className="px-5 py-2">
+          <div className="py-2">
             <p className="text-xs text-destructive">{error}</p>
           </div>
         )}
