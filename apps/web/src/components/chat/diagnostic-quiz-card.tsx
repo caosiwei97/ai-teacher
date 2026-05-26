@@ -215,7 +215,7 @@ export function DiagnosticQuizCard({
         {submitted ? (
           <>
             <span className="text-xs text-muted-foreground">
-              {answers.size}/{questions.length} 已回答
+              {questions.length}/{questions.length} 已回答
             </span>
             <div className="flex items-center gap-1.5 text-xs font-medium text-roadmap-mastered">
               <Check className="h-3.5 w-3.5" />

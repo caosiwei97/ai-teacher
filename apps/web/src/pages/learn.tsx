@@ -413,9 +413,14 @@ export function Component() {
           }
 
           setSessions(sessionsList);
-          setNodes(sessionData.session.roadmap?.nodes ?? []);
+          const loadedNodes = sessionData.session.roadmap?.nodes ?? [];
+          setNodes(loadedNodes);
           setIsNewSession(false);
           setSelectedConfigId((sessionData.session as Record<string, unknown>).llmConfigId as string | undefined);
+
+          if (loadedNodes.length > 0) {
+            setDiagnosticSubmitted(true);
+          }
 
           const historyMessages: UIMessage<MessageMetadata>[] = sessionData.session.messages
             .filter((m) => (m.role === "learner" || m.role === "tutor") && !m.hidden)
@@ -591,10 +596,7 @@ export function Component() {
 
       if (!postRes.ok) throw new Error(`Failed: ${postRes.status}`);
 
-      const sseRes = await fetch(`/api/chat/${sessionId}/stream`);
-      if (!sseRes.ok) throw new Error(`Stream failed: ${sseRes.status}`);
-
-      const reader = sseRes.body?.getReader();
+      const reader = postRes.body?.getReader();
       if (!reader) throw new Error("No stream body");
 
       const decoder = new TextDecoder();
@@ -817,7 +819,7 @@ export function Component() {
           <ResizableDivider
             direction="horizontal"
             onResize={handleRightResize}
-            className="w-px cursor-col-resize border-0 bg-[#1a1d2b]"
+            className="w-px cursor-col-resize border-0 bg-border/40 hover:bg-primary/30"
           />
           <div
             className="hidden lg:block shrink-0"
