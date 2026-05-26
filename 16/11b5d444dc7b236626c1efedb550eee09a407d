@@ -1,0 +1,27 @@
+.husky/commit-msg
+  3407d55077665ccb 1-4
+.husky/pre-commit
+  3407d55077665ccb 1
+package.json
+  3407d55077665ccb 33-34,50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.16",
+  "base_commit_sha": "1611b5d444dc7b236626c1efedb550eee09a407d",
+  "prompts": {
+    "3407d55077665ccb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2934845-401f-40f3-80ca-650edddc1505",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "caosiwei <caosiwei@cvte.com>",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 2,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
