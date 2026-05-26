@@ -1,6 +1,6 @@
 # 迭代 041：Agent 引擎重构 — 删壳归位
 
-> 优先级：P1 | 分类：优化 | 状态：✅ 已完成（2026-05-15）
+> 优先级：P1 | 分类：优化 | 状态：✅ 已完成
 
 ## 背景
 
@@ -124,11 +124,11 @@ apps/worker/src/agent/
 
 ## 验收标准
 
-- [x] `packages/agent/` 目录已删除
-- [x] Worker 使用 `runAgentLoop()` 正常处理 chat-turn 任务
-- [x] 自己控制 maxSteps / maxRetries / timeout
-- [x] 所有现有 E2E 测试通过（全量回归）
-- [x] 无性能退化（首 token 延迟不增加）
+- [ ] `packages/agent/` 目录已删除
+- [ ] Worker 使用 `runAgentLoop()` 正常处理 chat-turn 任务
+- [ ] 自己控制 maxSteps / maxRetries / timeout
+- [ ] 所有现有 E2E 测试通过（全量回归）
+- [ ] 无性能退化（首 token 延迟不增加）
 
 ## 风险
 

@@ -4,8 +4,7 @@
     "outDir": "./dist",
     "paths": {
       "@ai-teacher/shared": ["../../packages/shared/src"],
-      "@ai-teacher/db": ["../../packages/db/src"],
-      "@ai-teacher/agent": ["../../packages/agent/src"]
+      "@ai-teacher/db": ["../../packages/db/src"]
     }
   },
   "include": ["src/**/*.ts"],
