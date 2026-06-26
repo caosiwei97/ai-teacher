@@ -1,6 +1,6 @@
 # 迭代 046：Prisma Schema 索引策略 + 类型优化
 
-> 优先级：P2 | 分类：优化 | 状态：🔧 进行中（Phase 2 Enum 已由迭代 042 完成，Phase 1 索引待开始）
+> 优先级：P2 | 分类：优化 | 状态：✅ 已完成（2026-06-26）
 > E2E：无新增
 
 > **📝 修订记录（2026-06-26，迭代 042 执行时核查）**：
@@ -169,12 +169,19 @@ export const TeachingMode = z.enum(["warm", "strict", "interviewer"]);
 
 ## 验收标准
 
-- [ ] 5 个新索引已添加到 `schema.prisma`（**Phase 1，待开始**）
+- [x] 6 个新索引已添加到 `schema.prisma`（**Phase 1，2026-06-26 完成**：Source(userId)、Session(userId,status)+(userId,updatedAt)、Node(roadmapId,index)+(roadmapId,status)、Message(sessionId,createdAt)）
 - [x] 至少 `SessionStatus`、`TeachingMode`、`NodeStatus` 三个 Enum 已迁移（**Phase 2，由迭代 042 完成**，实际迁移全部 7 个，见 ADR-025）
 - [x] Zod Schema 使用 `z.enum()` 替代 `z.string()`（5 个已存在，042 补 `TeachingMode`/`SourceType`）
-- [x] `pnpm db:migrate` 成功，无数据损失（042 手写迁移 SQL，50 行 Node 数据成功转换）
+- [x] `pnpm db:migrate` 成功，无数据损失（042 Enum 迁移 + 046 索引迁移均成功）
 - [x] `pnpm build` 通过；E2E 全量回归未跑（日常不强制，Node.status 值已在 E2E 测试同步改名）
-- [x] `docs/设计/技术架构.md` 数据模型章节已同步
+- [x] `docs/设计/技术架构.md` 数据模型章节已同步（含索引）
+
+## 完成记录（2026-06-26）
+
+- **Phase 1（索引）**：为 4 个 model 添加 6 个 `@@index` 覆盖高频查询路径（会话列表按状态/更新时间、历史消息按时间、节点按顺序/状态、用户资料列表）。`migrate dev --create-only` 自动生成迁移 SQL（纯加索引无破坏性， unlike 042 的 String→Enum），`migrate deploy` 应用。迁移后 `migrate status` up to date（9 迁移无 drift），DB 实际 6 个新索引就位。
+- **Phase 2（Enum）**：由迭代 042 完成（见 ADR-025）。
+- **验证**：typecheck 0 错误、test:unit 53/53、check:docs 通过、check:deps 通过、web build 成功、文档索引数=schema 索引数=8 一致。
+- **验收数量说明**：原验收写"5 个新索引"，实际按高频查询路径覆盖为 6 个（Session 2 + Node 2 + Message 1 + Source 1），已全部添加。
 
 ## 风险
 

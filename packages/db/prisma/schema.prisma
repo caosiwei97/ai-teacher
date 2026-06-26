@@ -64,35 +64,40 @@ model User {
 }
 
 model Source {
-  id        String    @id @default(cuid()) @db.Text
-  userId    String    @db.Text
-  user      User      @relation(fields: [userId], references: [id])
-  title     String    @db.Text
+  id        String     @id @default(cuid()) @db.Text
+  userId    String     @db.Text
+  user      User       @relation(fields: [userId], references: [id])
+  title     String     @db.Text
   type      SourceType
-  content   String?   @db.Text
-  fileUrl   String?   @db.Text
-  checksum  String?   @db.Text
+  content   String?    @db.Text
+  fileUrl   String?    @db.Text
+  checksum  String?    @db.Text
   sessions  Session[]
-  createdAt DateTime  @default(now())
+  createdAt DateTime   @default(now())
+
+  @@index([userId])
 }
 
 model Session {
-  id          String    @id @default(cuid()) @db.Text
-  userId      String    @db.Text
-  user        User      @relation(fields: [userId], references: [id])
-  topic       String    @db.Text
-  sourceId    String?   @db.Text
-  source      Source?   @relation(fields: [sourceId], references: [id])
-  status      SessionStatus @default(active)
-  summary     Json?
+  id           String        @id @default(cuid()) @db.Text
+  userId       String        @db.Text
+  user         User          @relation(fields: [userId], references: [id])
+  topic        String        @db.Text
+  sourceId     String?       @db.Text
+  source       Source?       @relation(fields: [sourceId], references: [id])
+  status       SessionStatus @default(active)
+  summary      Json?
   teachingMode TeachingMode  @default(warm)
-  llmConfigId String?   @db.Text
-  llmConfig   LlmConfig? @relation(fields: [llmConfigId], references: [id])
-  roadmap     Roadmap?
-  messages    Message[]
-  checkpoints Checkpoint[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  llmConfigId  String?       @db.Text
+  llmConfig    LlmConfig?    @relation(fields: [llmConfigId], references: [id])
+  roadmap      Roadmap?
+  messages     Message[]
+  checkpoints  Checkpoint[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, updatedAt])
 }
 
 model Roadmap {
@@ -104,29 +109,34 @@ model Roadmap {
 }
 
 model Node {
-  id           String   @id @default(cuid()) @db.Text
-  roadmapId    String   @db.Text
-  roadmap      Roadmap  @relation(fields: [roadmapId], references: [id])
+  id           String     @id @default(cuid()) @db.Text
+  roadmapId    String     @db.Text
+  roadmap      Roadmap    @relation(fields: [roadmapId], references: [id])
   index        Int
-  title        String   @db.Text
-  description  String   @db.Text
+  title        String     @db.Text
+  description  String     @db.Text
   status       NodeStatus @default(not_started)
-  masteryScore Int      @default(0)
+  masteryScore Int        @default(0)
   reviewLog    Json?
   masteredAt   DateTime?
+
+  @@index([roadmapId, index])
+  @@index([roadmapId, status])
 }
 
 model Message {
-  id        String   @id @default(cuid()) @db.Text
-  sessionId String   @db.Text
-  session   Session  @relation(fields: [sessionId], references: [id])
+  id        String        @id @default(cuid()) @db.Text
+  sessionId String        @db.Text
+  session   Session       @relation(fields: [sessionId], references: [id])
   role      MessageRole
   type      MessageType
-  content   String   @db.Text
+  content   String        @db.Text
   status    MessageStatus @default(completed)
   metadata  Json?
-  hidden    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  hidden    Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  @@index([sessionId, createdAt])
 }
 
 model Checkpoint {
@@ -141,29 +151,29 @@ model Checkpoint {
 }
 
 model LearnerProfile {
-  id                   String   @id @default(cuid()) @db.Text
-  userId               String   @unique @db.Text
-  user                 User     @relation(fields: [userId], references: [id])
-  learningStyle        Json?
-  strengths            Json?
-  weaknesses           Json?
+  id                    String   @id @default(cuid()) @db.Text
+  userId                String   @unique @db.Text
+  user                  User     @relation(fields: [userId], references: [id])
+  learningStyle         Json?
+  strengths             Json?
+  weaknesses            Json?
   misconceptionPatterns Json?
-  sessionsSummary      Json?
-  updatedAt            DateTime @updatedAt
+  sessionsSummary       Json?
+  updatedAt             DateTime @updatedAt
 }
 
 model LlmConfig {
-  id           String   @id @default(cuid()) @db.Text
-  userId       String   @db.Text
-  user         User     @relation(fields: [userId], references: [id])
-  provider     String   @db.Text
-  encryptedKey String   @db.Text
-  baseUrl      String?  @db.Text
-  defaultModel String   @db.Text
-  label        String?  @db.Text
-  isDefault    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id           String    @id @default(cuid()) @db.Text
+  userId       String    @db.Text
+  user         User      @relation(fields: [userId], references: [id])
+  provider     String    @db.Text
+  encryptedKey String    @db.Text
+  baseUrl      String?   @db.Text
+  defaultModel String    @db.Text
+  label        String?   @db.Text
+  isDefault    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   sessions     Session[]
 
   @@index([userId])
