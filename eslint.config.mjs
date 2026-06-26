@@ -15,6 +15,7 @@ export default tseslint.config(
     ignores: [
       "**/node_modules/**",
       "**/dist/**",
+      "**/.next/**",
       "**/coverage/**",
       "**/*.config.{js,mjs,cjs,ts}",
       "packages/db/prisma/migrations/**",

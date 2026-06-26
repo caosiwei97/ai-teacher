@@ -14,7 +14,9 @@ import { quickQuestionRoute } from "./routes/quick-question";
 import { chatRoute } from "./routes/chat";
 import { sandboxRoute } from "./routes/sandbox";
 import { llmConfigRoute } from "./routes/llm-config";
+import { sourcesRoute } from "./routes/sources";
 import { cleanupOrphanSandboxes, ensureSandbox, registerShutdownHook } from "./services/sandbox";
+import { ensureBucket } from "@ai-teacher/shared/services/storage";
 
 const app = new Hono();
 
@@ -32,6 +34,7 @@ app.route("/api/quick-question", quickQuestionRoute);
 app.route("/api/chat", chatRoute);
 app.route("/api/sandbox", sandboxRoute);
 app.route("/api/llm", llmConfigRoute);
+app.route("/api/sources", sourcesRoute);
 
 const port = Number(process.env.SERVER_PORT) || 38422;
 
@@ -91,5 +94,7 @@ server.listen(port, async () => {
   registerShutdownHook();
   const cleaned = await cleanupOrphanSandboxes();
   if (cleaned > 0) console.log(`[server] Cleaned up ${cleaned} orphan sandbox(es)`);
+  // MinIO bucket 幂等创建（fire-and-forget：失败仅日志，不阻断 server 启动）
+  ensureBucket().catch((err) => console.error(`[storage] ensureBucket failed: ${err.message}`));
   console.log(`[server] Hono API server running on http://localhost:${port}`);
 });

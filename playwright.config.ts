@@ -10,6 +10,9 @@ const TEST_DATABASE_URL =
 const TEST_WEB_PORT = 48421;
 const TEST_SERVER_PORT = 48422;
 const TEST_WORKER_PORT = 48423;
+// 独立 Redis DB（DB 1），隔离 E2E 队列与开发环境（DB 0）——
+// 否则开发 worker（tsx watch）会在共享 redis 上抢走 E2E 的 BullMQ job 并在 dev 库查不到数据而失败
+const TEST_REDIS_URL = "redis://localhost:26379/1";
 const TEST_ENCRYPTION_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 const pnpmLocations = [
@@ -55,13 +58,13 @@ export default defineConfig({
   globalTeardown: require.resolve("./e2e/global-teardown"),
   webServer: [
     {
-      command: `${PATH_INJECT}MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} SERVER_PORT=${TEST_SERVER_PORT} LLM_ENCRYPTION_KEY=${TEST_ENCRYPTION_KEY} pnpm --filter @ai-teacher/server dev`,
+      command: `${PATH_INJECT}MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} REDIS_URL=${TEST_REDIS_URL} SERVER_PORT=${TEST_SERVER_PORT} LLM_ENCRYPTION_KEY=${TEST_ENCRYPTION_KEY} pnpm --filter @ai-teacher/server dev`,
       port: TEST_SERVER_PORT,
       reuseExistingServer: false,
       timeout: 60000,
     },
     {
-      command: `${PATH_INJECT}MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} WORKER_PORT=${TEST_WORKER_PORT} SERVER_PORT=${TEST_SERVER_PORT} pnpm --filter @ai-teacher/worker dev`,
+      command: `${PATH_INJECT}MOCK_LLM=true DATABASE_URL=${TEST_DATABASE_URL} REDIS_URL=${TEST_REDIS_URL} WORKER_PORT=${TEST_WORKER_PORT} SERVER_PORT=${TEST_SERVER_PORT} pnpm --filter @ai-teacher/worker dev`,
       port: TEST_WORKER_PORT,
       reuseExistingServer: false,
       timeout: 60000,

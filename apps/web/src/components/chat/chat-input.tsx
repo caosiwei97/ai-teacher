@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { ArrowUp, Lightbulb, Square, ChevronDown } from "lucide-react";
 import { ModeSelector, type TeachingMode } from "./mode-selector";
+import { SourceUploadPanel } from "./source-upload-panel";
 
 interface LlmConfigOption {
   id: string;
@@ -91,6 +92,7 @@ export function ChatInput({
             />
           </div>
           <div className="absolute bottom-2 right-2 flex items-center gap-1">
+            <SourceUploadPanel />
             {currentModel && (
               <div className="relative">
                 <button

@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
 // 迭代 042/046：状态字段从 String 迁移为原生 Enum，获得编译时类型安全
@@ -53,6 +55,14 @@ enum SourceType {
   markdown
 }
 
+// 迭代 009：资料处理状态机，驱动 RAG 异步流水线的 UI 反馈
+enum SourceStatus {
+  pending
+  processing
+  ready
+  failed
+}
+
 model User {
   id         String          @id @default(cuid()) @db.Text
   name       String          @db.Text
@@ -71,11 +81,27 @@ model Source {
   type      SourceType
   content   String?    @db.Text
   fileUrl   String?    @db.Text
-  checksum  String?    @db.Text
+  checksum  String?      @db.Text
+  status    SourceStatus @default(pending)
   sessions  Session[]
-  createdAt DateTime   @default(now())
+  chunks    DocumentChunk[]
+  createdAt DateTime     @default(now())
 
   @@index([userId])
+}
+
+// 迭代 009：文档分块 + 向量存储（pgvector）。embedding 字段 Prisma 不原生支持，用 Unsupported 声明，retrieval service 经 raw SQL 检索
+model DocumentChunk {
+  id         String   @id @default(cuid()) @db.Text
+  sourceId   String   @db.Text
+  source     Source   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  chunkIndex Int
+  content    String   @db.Text
+  tokenCount Int
+  embedding  Unsupported("vector(1024)")
+  createdAt  DateTime @default(now())
+
+  @@index([sourceId])
 }
 
 model Session {

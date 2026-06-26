@@ -4,6 +4,7 @@ import { Queue } from "bullmq";
 import { createServer } from "http";
 import { prisma } from "@ai-teacher/db";
 import { createChatTurnWorker } from "./processors/chat-turn";
+import { createSourceProcessingWorker } from "./processors/source-processing";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
 const QUEUE_NAME = "chat-turn";
@@ -42,6 +43,7 @@ async function main() {
   await recoverOrphanedJobs();
 
   const chatWorker = createChatTurnWorker(connection);
+  const sourceWorker = createSourceProcessingWorker(connection);
 
   const counts = await queue.getJobCounts(
     "waiting",
@@ -64,6 +66,7 @@ async function main() {
   const shutdown = async (signal: string) => {
     console.log(`[worker] received ${signal}, shutting down...`);
     await chatWorker.close();
+    await sourceWorker.close();
     await queue.close();
     connection.quit();
     await prisma.$disconnect();

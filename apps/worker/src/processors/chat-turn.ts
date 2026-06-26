@@ -266,6 +266,16 @@ export function createChatTurnWorker(
           ? `${systemPrompt}\n\n# 工具使用说明\n\n${toolPromptSection}`
           : systemPrompt;
 
+        // 迭代 009：若用户有已就绪的学习资料，提示 Agent 可用 retrieveContext 检索
+        const readySourceCount = await prisma.source.count({
+          where: { userId, status: "ready" },
+        });
+        const ragHint =
+          readySourceCount > 0
+            ? `\n\n# 学习资料\n\n学习者已上传 ${readySourceCount} 份学习资料（已就绪可检索）。当问题涉及资料内容时，使用 retrieveContext 工具检索相关片段，基于资料内容教学。`
+            : "";
+        const finalSystemPrompt = `${fullSystemPrompt}${ragHint}`;
+
         const tools = buildToolsRecord(allToolDefs, toolCtx);
 
         // Prepare context (compaction check)
@@ -279,7 +289,7 @@ export function createChatTurnWorker(
 
         const loopResult = await runAgentLoop({
           model,
-          system: fullSystemPrompt,
+          system: finalSystemPrompt,
           messages: prepared.messages,
           tools,
           publisher,

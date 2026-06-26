@@ -99,9 +99,10 @@ data/
 | Web             | Vite 8, React 19, shadcn/ui, Tailwind CSS 4, Monaco Editor                                     |
 | Agent           | AI SDK v6 (streamText + tool calling)                                                          |
 | LLM             | 多 Provider（@ai-sdk/deepseek + @ai-sdk/openai + @ai-sdk/anthropic），默认 `deepseek-v4-flash` |
+| Embedding       | 智谱 GLM embedding-3（OpenAI 兼容端点，1024 维，迭代 009 RAG）                                 |
 | DB              | PostgreSQL 16 + pgvector + Prisma ORM                                                          |
 | Cache           | Redis 7                                                                                        |
-| Storage         | MinIO (S3 兼容)                                                                                |
+| Storage         | MinIO (S3 兼容) + @aws-sdk/client-s3（迭代 009）                                               |
 | Runtime         | Node.js 20 LTS, TypeScript strict                                                              |
 | Testing         | Vitest 4（单元测试）+ Playwright（E2E）                                                        |
 | Linting         | ESLint 10 + typescript-eslint（自定义 no-default-export 规则 + 自定义依赖方向检查）            |

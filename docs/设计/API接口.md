@@ -8,37 +8,37 @@
 
 ## 接口概览
 
-| 方法 | 路径 | 说明 | 状态 |
-|------|------|------|------|
-| POST | `/api/sessions` | 创建学习会话 | ✅ |
-| GET | `/api/sessions` | 获取会话列表（排除已归档） | ✅ |
-| GET | `/api/sessions/:id` | 获取会话详情 | ✅ |
-| PATCH | `/api/sessions/:id` | 更新会话状态 | ✅ |
-| DELETE | `/api/sessions/:id` | 归档会话 | ✅ |
-| POST | `/api/chat` | 流式对话（SSE，经 Hono Server） | ✅ |
-| POST | `/api/sessions/:id/diagnostic` | 生成诊断题 | ✅ |
-| POST | `/api/sessions/:id/diagnostic/evaluate` | 评估诊断答案 | ✅ |
-| POST | `/api/quick-question` | 快问（选中文字提问） | ✅ |
-| POST | `/api/suggest-reply` | AI 建议回复 | ✅ |
-| GET | `/api/suggested-topics` | 获取推荐学习话题 | ✅ |
-| POST | `/api/sandbox/execute` | 代码执行（OpenSandbox） | ✅ |
-| GET | `/api/sandbox/files/search` | 沙箱文件搜索 | ✅ |
-| GET | `/api/sandbox/files/content` | 获取文件内容 | ✅ |
-| GET | `/api/sandbox/files/download` | 下载文件（原始内容） | ✅ |
-| POST | `/api/sandbox/files/upload` | 上传/保存文件 | ✅ |
-| DELETE | `/api/sandbox/files` | 删除文件 | ✅ |
-| POST | `/api/sandbox/directories` | 创建目录 | ✅ |
-| DELETE | `/api/sandbox/directories` | 删除目录 | ✅ |
-| POST | `/api/sandbox/pty` | 创建 PTY 终端会话 | ✅ |
-| GET | `/api/sandbox/pty/:sessionId/ws` | PTY WebSocket 代理 | ✅ |
-| POST | `/api/llm` | 创建 LLM 配置 | ✅ |
-| GET | `/api/llm` | 获取用户 LLM 配置列表 | ✅ |
-| PATCH | `/api/llm/:id` | 更新 LLM 配置 | ✅ |
-| DELETE | `/api/llm/:id` | 删除 LLM 配置 | ✅ |
-| POST | `/api/llm/:id/test` | 测试 LLM 配置连通性 | ✅ |
-| GET | `/api/llm/models` | 获取 Provider 预设模型列表 | ✅ |
-| GET | `/api/chat/:sessionId/stream` | SSE 流式重连（断线恢复） | ✅ |
-| GET | `/api/llm/env-status` | 检查环境默认 LLM 配置状态 | ✅ |
+| 方法   | 路径                                    | 说明                            | 状态 |
+| ------ | --------------------------------------- | ------------------------------- | ---- |
+| POST   | `/api/sessions`                         | 创建学习会话                    | ✅   |
+| GET    | `/api/sessions`                         | 获取会话列表（排除已归档）      | ✅   |
+| GET    | `/api/sessions/:id`                     | 获取会话详情                    | ✅   |
+| PATCH  | `/api/sessions/:id`                     | 更新会话状态                    | ✅   |
+| DELETE | `/api/sessions/:id`                     | 归档会话                        | ✅   |
+| POST   | `/api/chat`                             | 流式对话（SSE，经 Hono Server） | ✅   |
+| POST   | `/api/sessions/:id/diagnostic`          | 生成诊断题                      | ✅   |
+| POST   | `/api/sessions/:id/diagnostic/evaluate` | 评估诊断答案                    | ✅   |
+| POST   | `/api/quick-question`                   | 快问（选中文字提问）            | ✅   |
+| POST   | `/api/suggest-reply`                    | AI 建议回复                     | ✅   |
+| GET    | `/api/suggested-topics`                 | 获取推荐学习话题                | ✅   |
+| POST   | `/api/sandbox/execute`                  | 代码执行（OpenSandbox）         | ✅   |
+| GET    | `/api/sandbox/files/search`             | 沙箱文件搜索                    | ✅   |
+| GET    | `/api/sandbox/files/content`            | 获取文件内容                    | ✅   |
+| GET    | `/api/sandbox/files/download`           | 下载文件（原始内容）            | ✅   |
+| POST   | `/api/sandbox/files/upload`             | 上传/保存文件                   | ✅   |
+| DELETE | `/api/sandbox/files`                    | 删除文件                        | ✅   |
+| POST   | `/api/sandbox/directories`              | 创建目录                        | ✅   |
+| DELETE | `/api/sandbox/directories`              | 删除目录                        | ✅   |
+| POST   | `/api/sandbox/pty`                      | 创建 PTY 终端会话               | ✅   |
+| GET    | `/api/sandbox/pty/:sessionId/ws`        | PTY WebSocket 代理              | ✅   |
+| POST   | `/api/llm`                              | 创建 LLM 配置                   | ✅   |
+| GET    | `/api/llm`                              | 获取用户 LLM 配置列表           | ✅   |
+| PATCH  | `/api/llm/:id`                          | 更新 LLM 配置                   | ✅   |
+| DELETE | `/api/llm/:id`                          | 删除 LLM 配置                   | ✅   |
+| POST   | `/api/llm/:id/test`                     | 测试 LLM 配置连通性             | ✅   |
+| GET    | `/api/llm/models`                       | 获取 Provider 预设模型列表      | ✅   |
+| GET    | `/api/chat/:sessionId/stream`           | SSE 流式重连（断线恢复）        | ✅   |
+| GET    | `/api/llm/env-status`                   | 检查环境默认 LLM 配置状态       | ✅   |
 
 > **架构说明**：API 路由全部在独立 Hono Server（apps/server，端口 38422）中实现。前端通过 Vite dev server proxy（开发环境）或 `VITE_API_URL` 直接请求 Hono Server。
 
@@ -218,17 +218,17 @@ data: {"type":"<event-type>","content":...,"data":...}
 
 #### SSE 事件类型
 
-| 事件类型 | 说明 | 数据格式 |
-|---------|------|---------|
-| `text-delta` | 流式文本片段 | `{ content: string }` |
-| `tool-call` | 工具调用开始 | `{ data: { toolName, input } }` |
-| `tool-result` | 工具调用结果 | `{ data: { toolName, result } }` |
-| `ui-blocks` | 结构化教学组件 | `{ data: { uiBlocks: UIBlock[] } }` |
-| `code-push` | 代码推送到编辑器 | `{ data: { code, language, instruction? } }` |
-| `ask-question` | 聊天内诊断题 | `{ data: { questions, question, nodeId } }` |
-| `roadmap-updated` | 路线图节点状态变更 | `{ data: { nodes: RoadmapNode[] } }` |
-| `session-updated` | 会话状态变更 | `{ data: { masteredNodes?, totalNodes?, title?, learningStatus? } }` |
-| `error` | 错误 | `{ data: { message } }` |
+| 事件类型          | 说明               | 数据格式                                                             |
+| ----------------- | ------------------ | -------------------------------------------------------------------- |
+| `text-delta`      | 流式文本片段       | `{ content: string }`                                                |
+| `tool-call`       | 工具调用开始       | `{ data: { toolName, input } }`                                      |
+| `tool-result`     | 工具调用结果       | `{ data: { toolName, result } }`                                     |
+| `ui-blocks`       | 结构化教学组件     | `{ data: { uiBlocks: UIBlock[] } }`                                  |
+| `code-push`       | 代码推送到编辑器   | `{ data: { code, language, instruction? } }`                         |
+| `ask-question`    | 聊天内诊断题       | `{ data: { questions, question, nodeId } }`                          |
+| `roadmap-updated` | 路线图节点状态变更 | `{ data: { nodes: RoadmapNode[] } }`                                 |
+| `session-updated` | 会话状态变更       | `{ data: { masteredNodes?, totalNodes?, title?, learningStatus? } }` |
+| `error`           | 错误               | `{ data: { message } }`                                              |
 
 ### 后端副作用（异步持久化）
 
@@ -242,6 +242,7 @@ data: {"type":"<event-type>","content":...,"data":...}
 ### 自动创建会话
 
 如果请求中的 `sessionId` 对应的会话不存在，系统会自动创建新会话：
+
 - `topic` = 用户消息内容
 - `teachingMode` = 请求参数或 `"warm"`
 - 同时创建空的 Roadmap
@@ -567,6 +568,7 @@ WS /api/sandbox/pty/:sessionId/ws
 ```
 
 二进制帧协议：
+
 - 发送：`0x00` + UTF-8 编码的 stdin 数据
 - 接收：`0x01` + stdout 数据
 - 控制帧（JSON）：`{"type":"resize","cols":120,"rows":40}` 或 `{"type":"signal","signal":"SIGINT"}`
@@ -607,6 +609,7 @@ POST /api/llm?userId=...
 ```
 
 请求体：
+
 ```json
 {
   "provider": "openai | anthropic | deepseek | qianwen | kimi | minimax | xiaomi | zhipu | custom",
@@ -682,6 +685,77 @@ GET /api/llm/env-status
 
 ---
 
+## 15. 学习资料管理（迭代 009 RAG）
+
+用户上传学习资料（PDF/Markdown）或导入 URL，系统异步解析→分块→embedding→入库（pgvector），Agent 经 retrieve-context 工具检索。资料为用户级全局库，按 userId 隔离。
+
+### 15.1 上传文件
+
+```
+POST /api/sources
+```
+
+multipart/form-data：
+
+- `userId` — string（必填）
+- `file` — 文件（必填，仅 `.pdf` / `.md`，≤50MB）
+
+PDF 原始文件存 MinIO（`Source.fileUrl` = 对象 key，`checksum` = sha256）；Markdown 文本存 `Source.content`。创建后入 `source-processing` 队列异步处理。
+
+响应 `201`：
+
+```json
+{
+  "source": {
+    "id": "...",
+    "userId": "...",
+    "title": "...",
+    "type": "pdf|markdown",
+    "content": null,
+    "fileUrl": "sources/{id}/{file}",
+    "checksum": "sha256...",
+    "status": "pending",
+    "createdAt": "ISO"
+  }
+}
+```
+
+### 15.2 导入 URL
+
+```
+POST /api/sources/url
+```
+
+请求体：
+
+```json
+{ "userId": "string (必填)", "url": "string (必填，合法 URL)" }
+```
+
+经 Jina Reader 抓取解析为 Markdown（`Source.type=markdown`，`fileUrl`=原始 URL），入队异步处理。响应 `201`：同 15.1。
+
+### 15.3 列出资料
+
+```
+GET /api/sources?userId=...
+```
+
+响应 `200`：`{ "sources": SourceRecord[] }`（按 `createdAt` 倒序）。
+
+### 15.4 删除资料
+
+```
+DELETE /api/sources/:sourceId?userId=...
+```
+
+级联删除 `DocumentChunk`；若 `fileUrl` 为 MinIO 对象（非 http）则清理存储。响应 `200`：`{ "ok": true }`。
+
+### 状态机
+
+`Source.status`：`pending`（已入队）→ `processing`（解析/embedding 中）→ `ready`（可检索）/ `failed`（处理失败）。
+
+---
+
 ## 错误响应格式
 
 所有接口统一错误格式：
@@ -693,9 +767,9 @@ GET /api/llm/env-status
 }
 ```
 
-| HTTP 状态码 | 含义 |
-|-------------|------|
-| 400 | 请求参数验证失败 |
-| 404 | 资源不存在 |
-| 409 | 会话状态冲突（如无 roadmap） |
-| 500 | LLM 调用失败 |
+| HTTP 状态码 | 含义                         |
+| ----------- | ---------------------------- |
+| 400         | 请求参数验证失败             |
+| 404         | 资源不存在                   |
+| 409         | 会话状态冲突（如无 roadmap） |
+| 500         | LLM 调用失败                 |

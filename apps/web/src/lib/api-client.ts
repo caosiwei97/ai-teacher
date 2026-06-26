@@ -1,3 +1,5 @@
+import type { SourceRecord } from "@ai-teacher/shared";
+
 export async function fetchSessions(userId: string) {
   const res = await fetch(`/api/sessions?userId=${encodeURIComponent(userId)}`);
   if (!res.ok) throw new Error("Failed to fetch sessions");
@@ -205,4 +207,47 @@ export async function getEnvStatus() {
   const res = await fetch(`${LLM_BASE}/env-status`);
   if (!res.ok) return { hasEnvConfig: false, baseUrl: "" };
   return res.json() as Promise<{ hasEnvConfig: boolean; baseUrl: string }>;
+}
+
+// ===== 学习资料（迭代 009 RAG）=====
+
+const SOURCES_BASE = "/api/sources";
+
+export async function listSources(userId: string) {
+  const res = await fetch(`${SOURCES_BASE}?userId=${encodeURIComponent(userId)}`);
+  if (!res.ok) throw new Error("Failed to fetch sources");
+  return res.json() as Promise<{ sources: SourceRecord[] }>;
+}
+
+export async function uploadSource(userId: string, file: File) {
+  const formData = new FormData();
+  formData.append("userId", userId);
+  formData.append("file", file);
+  const res = await fetch(SOURCES_BASE, { method: "POST", body: formData });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`上传失败: ${msg || res.status}`);
+  }
+  return res.json() as Promise<{ source: SourceRecord }>;
+}
+
+export async function addSourceUrl(userId: string, url: string) {
+  const res = await fetch(`${SOURCES_BASE}/url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, url }),
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`导入失败: ${msg || res.status}`);
+  }
+  return res.json() as Promise<{ source: SourceRecord }>;
+}
+
+export async function deleteSource(sourceId: string, userId: string) {
+  const res = await fetch(`${SOURCES_BASE}/${encodeURIComponent(sourceId)}?userId=${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete source");
+  return res.json() as Promise<{ ok: boolean }>;
 }

@@ -20,13 +20,13 @@
 
 ### 1.2 追问策略
 
-| 用户回答 | AI 策略 |
-|----------|---------|
-| 正确且深入 | 简短肯定，问更难的追问 |
+| 用户回答         | AI 策略                          |
+| ---------------- | -------------------------------- |
+| 正确且深入       | 简短肯定，问更难的追问           |
 | 方向对但不够精准 | 指出偏移点，构造对比场景重新引导 |
-| 部分正确 | 直指盲区，不绕弯 |
-| 完全错误 | 不批评，给一个更简单的子问题 |
-| 坦诚不清楚 | 直接讲完整内容，讲完要求复述 |
+| 部分正确         | 直指盲区，不绕弯                 |
+| 完全错误         | 不批评，给一个更简单的子问题     |
+| 坦诚不清楚       | 直接讲完整内容，讲完要求复述     |
 
 ### 1.3 提示升级阶梯（从最少到最多帮助）
 
@@ -40,13 +40,13 @@
 
 系统支持两种教学模式，影响 Agent 的追问深度、通过门槛和提示频率：
 
-| 维度 | 温暖私教（warm） | 严格教练（strict） |
-|------|---------|---------|
-| 回答"对了" | 肯定推进 | 追问底层逻辑"为什么" |
-| 表面正确 | 接受继续 | 拒绝，要求深层解释 |
-| 追问策略 | 1-2 轮就总结 | 3-4 轮反复验证 |
-| 掌握门槛 | ~80% | ~85% + 理解"为什么" |
-| 出错时 | 充分提示和引导 | 让学生自己发现 |
+| 维度       | 温暖私教（warm） | 严格教练（strict）   |
+| ---------- | ---------------- | -------------------- |
+| 回答"对了" | 肯定推进         | 追问底层逻辑"为什么" |
+| 表面正确   | 接受继续         | 拒绝，要求深层解释   |
+| 追问策略   | 1-2 轮就总结     | 3-4 轮反复验证       |
+| 掌握门槛   | ~80%             | ~85% + 理解"为什么"  |
+| 出错时     | 充分提示和引导   | 让学生自己发现       |
 
 ---
 
@@ -58,22 +58,24 @@ Tutor prompt 在运行时注入以下上下文：
 
 ```typescript
 interface TutorPromptContext {
-  topic: string;            // 学习主题
-  currentNode: {            // 当前知识点
+  topic: string; // 学习主题
+  currentNode: {
+    // 当前知识点
     id: string;
     title: string;
     description: string;
   };
-  allNodes: Array<{         // 完整节点列表（LLM 需要 ID 调用工具）
+  allNodes: Array<{
+    // 完整节点列表（LLM 需要 ID 调用工具）
     id: string;
     index: number;
     title: string;
     status: string;
   }>;
-  masteredNodes: string[];  // 已掌握的节点标题
-  learnerProfile: string;   // 学习者画像（文本描述）
-  teachingMode: "warm" | "strict";  // 教学模式（迭代 026 新增）
-  ragContext?: string;      // RAG 检索的参考资料（预留）
+  masteredNodes: string[]; // 已掌握的节点标题
+  learnerProfile: string; // 学习者画像（文本描述）
+  teachingMode: "warm" | "strict"; // 教学模式（迭代 026 新增）
+  ragContext?: string; // RAG 检索的参考资料（预留）
 }
 ```
 
@@ -230,6 +232,7 @@ interface TutorPromptContext {
 ```
 
 **使用指引**：
+
 - 当学生写了代码时，主动运行验证结果
 - 运行前先肉眼检查是否安全，避免不必要的 API 调用
 - 如果执行失败，分析 stderr 并给出具体修改建议
@@ -253,10 +256,10 @@ interface TutorPromptContext {
 
 **可选子 Agent**：
 
-| 名称 | 能力 | 工具 | 步数限制 |
-|------|------|------|---------|
-| `assessment` | 出练习题、评估答案、学习报告 | assessMastery, generateAssessment | 3 |
-| `research` | 搜索教学资料、补充参考 | assessMastery | 5 |
+| 名称         | 能力                         | 工具                              | 步数限制 |
+| ------------ | ---------------------------- | --------------------------------- | -------- |
+| `assessment` | 出练习题、评估答案、学习报告 | assessMastery, generateAssessment | 3        |
+| `research`   | 搜索教学资料、补充参考       | assessMastery                     | 5        |
 
 **Prompt 片段**（自动注入 system prompt）：
 
@@ -268,6 +271,7 @@ interface TutorPromptContext {
 ```
 
 **使用指引**：
+
 - 当需要出练习题或评估学生时，委派给 assessment Agent
 - 当需要补充教学资料时，委派给 research Agent
 - 委派的 task 参数要清晰具体
@@ -298,14 +302,14 @@ interface TutorPromptContext {
 
 **Block 类型说明**：
 
-| 类型 | 用途 | 关键字段 |
-|------|------|---------|
-| `table` | 表格，适合对比属性、罗列要点 | `headers`, `rows` |
-| `callout` | 提示卡，强调核心概念或陷阱 | `variant`: tip/warning/key, `content` |
-| `comparison` | 对比卡，两种方案横向比较 | `items`: [{label, left, right}] |
-| `heading` | 标题，分隔内容段落 | `level`: 2/3, `text` |
-| `badge` | 徽章标签，展示关键要点 | `items`: [{text, variant}] |
-| `mastery-report` | 掌握总结报告（迭代 029） | `nodeId`, `nodeName`, `score`, `summary`, `table`, `badges` |
+| 类型             | 用途                         | 关键字段                                                    |
+| ---------------- | ---------------------------- | ----------------------------------------------------------- |
+| `table`          | 表格，适合对比属性、罗列要点 | `headers`, `rows`                                           |
+| `callout`        | 提示卡，强调核心概念或陷阱   | `variant`: tip/warning/key, `content`                       |
+| `comparison`     | 对比卡，两种方案横向比较     | `items`: [{label, left, right}]                             |
+| `heading`        | 标题，分隔内容段落           | `level`: 2/3, `text`                                        |
+| `badge`          | 徽章标签，展示关键要点       | `items`: [{text, variant}]                                  |
+| `mastery-report` | 掌握总结报告（迭代 029）     | `nodeId`, `nodeName`, `score`, `summary`, `table`, `badges` |
 
 **Prompt 片段**（注入 system prompt）：
 
@@ -321,6 +325,7 @@ interface TutorPromptContext {
 ```
 
 **使用指引**：
+
 - 讲对比类知识时（如浅拷贝vs深拷贝、同步vs异步），用 comparison 类型
 - 总结多个要点时，用 table 类型
 - 强调核心概念或常见陷阱时，用 callout 类型（variant=key 核心要点，variant=warning 常见陷阱）
@@ -355,6 +360,7 @@ interface TutorPromptContext {
 ```
 
 **使用指引**：
+
 - 讲完概念后给出可动手的代码示例时使用 pushCode
 - instruction 应引导学生修改代码的关键部分，而不是照抄
 - 不要每次都推送代码——只在需要学生动手实践时才使用
@@ -393,6 +399,7 @@ interface TutorPromptContext {
 ```
 
 **使用指引**：
+
 - 新会话的第一条用户消息是学习主题，此时应立即调用 askQuestion
 - 根据主题复杂度生成 5-10 个问题
 - 题目维度要多样：核心定义、前置知识、应用场景、常见误区、进阶概念
@@ -425,9 +432,38 @@ interface TutorPromptContext {
 ```
 
 **使用指引**：
+
 - 必须在诊断摸底完成、分析完学习者水平后才能调用
 - learnerLevel 要根据诊断答案的实际质量判断
 - 生成完成后，立即从第一个知识点开始苏格拉底式教学
+
+### 3.11 retrieveContext
+
+检索学习者上传的学习资料中与当前问题相关的片段（迭代 009 RAG，基于 pgvector 语义相似度）。
+
+```typescript
+{
+  name: "retrieveContext",
+  description: "检索用户上传的学习资料中与当前问题相关的片段（基于语义相似度）",
+  parameters: {
+    query: string,   // 检索查询：学习者的问题或当前讨论的知识点
+  },
+  // 返回: { success, count, chunks: [{ content, source, score }], instruction }
+  // chunks 按相关性降序；count=0 时 instruction 提示无资料
+}
+```
+
+**Prompt 片段**（自动注入 system prompt；仅当用户有已就绪资料时额外注入"# 学习资料"提示）：
+
+```
+**retrieveContext 工具**：检索学习者上传的学习资料。当问题、上传资料、或当前知识点需要查阅具体资料内容时调用，传入 query。返回相关片段（按语义相似度降序），用于基于资料内容教学。
+```
+
+**使用指引**：
+
+- 学习者上传资料后，首次涉及资料内容的问题时主动检索一次
+- 不要每轮都调用——仅在需要查阅资料具体内容时使用
+- 检索结果为空时，不要编造资料内容，基于已有知识回答
 
 ---
 
@@ -459,9 +495,9 @@ User: B在自己的文件里面，A杂糅在一起了
 AI: 你说到点子上了。
     方案 A 里判断逻辑散落在中心文件各处，
     方案 B 里判断逻辑和 prompt 内容内聚在同一个函数里——这就是关键差别。
-    
+
     → [已记录擅长项]
-    
+
     本质上这是单一职责原则在 prompt 工程上的应用。
     过了。你抓住了 Pipe 模式的核心。
 ```

@@ -9,6 +9,7 @@ import { renderUITool } from "./render-ui";
 import { pushCodeTool } from "./push-code";
 import { askQuestionTool } from "./ask-question";
 import { generateRoadmapTool } from "./generate-roadmap";
+import { retrieveContextTool } from "./retrieve-context";
 
 export const tutorToolDefinitions: ToolDefinition[] = [
   assessMasteryTool,
@@ -21,4 +22,5 @@ export const tutorToolDefinitions: ToolDefinition[] = [
   pushCodeTool,
   askQuestionTool,
   generateRoadmapTool,
+  retrieveContextTool,
 ];
