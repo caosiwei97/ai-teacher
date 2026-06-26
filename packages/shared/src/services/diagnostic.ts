@@ -1,3 +1,7 @@
+// 诊断摸底逻辑（迭代 048 从 worker agent/diagnostic.ts 解耦迁移）
+// 原 extends BaseAgent，现改为纯函数：shared retry 工具 + generateObject + shared schema + provider-registry
+// server/worker 共享，消除 server→worker 路径逃逸违规
+
 import { generateObject } from "ai";
 import {
   DiagnosticOutput,
@@ -8,7 +12,8 @@ import type {
   DiagnosticEvaluation as DiagnosticEvaluationType,
   DiagnosticAnswer,
 } from "@ai-teacher/shared";
-import { BaseAgent } from "./base-agent.js";
+import { getFallbackProvider } from "./provider-registry";
+import { executeWithRetry } from "./retry";
 
 const DIAGNOSTIC_QUESTION_PROMPT = `你是一个教学诊断专家。根据学习主题和知识图谱，生成诊断摸底题目。
 
@@ -47,55 +52,24 @@ interface DiagnosticEvaluateInput {
   answers: DiagnosticAnswer[];
 }
 
-export class DiagnosticQuestionAgent extends BaseAgent {
-  async run(input: DiagnosticQuestionInput): Promise<DiagnosticOutputType> {
-    const nodesSummary = input.nodes
-      .map((n) => `[${n.index}] ${n.title}: ${n.description}`)
-      .join("\n");
-
-    return this.executeWithRetry(async () => {
-      const result = await generateObject({
-              model: this.getModel(),
-              schema: DiagnosticOutput,
-              system: DIAGNOSTIC_QUESTION_PROMPT,
-              prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}`,
-            });
-      return result.object;
-    });
-  }
-}
-
-export class DiagnosticEvaluateAgent extends BaseAgent {
-  async run(input: DiagnosticEvaluateInput): Promise<DiagnosticEvaluationType> {
-    const nodesSummary = input.nodes
-      .map((n) => `[${n.index}] ${n.title}: ${n.description}`)
-      .join("\n");
-
-    const qaList = input.questions
-      .map((q) => {
-        const answer = input.answers.find((a) => a.questionId === q.id);
-        return `题目 ${q.id}（对应节点 ${q.nodeIndex}）: ${q.question}\n正确答案: ${q.correctAnswer}\n学生回答: ${answer?.answer ?? "未回答"}`;
-      })
-      .join("\n\n");
-
-    return this.executeWithRetry(async () => {
-      const result = await generateObject({
-              model: this.getModel(),
-              schema: DiagnosticEvaluation,
-              system: DIAGNOSTIC_EVALUATE_PROMPT,
-              prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}\n\n答题情况：\n${qaList}`,
-            });
-      return result.object;
-    });
-  }
-}
-
 export async function generateDiagnosticQuestions(
   topic: string,
   nodes: Array<{ index: number; title: string; description: string }>,
 ): Promise<DiagnosticOutputType> {
-  const agent = new DiagnosticQuestionAgent();
-  return agent.run({ topic, nodes });
+  const input: DiagnosticQuestionInput = { topic, nodes };
+  const nodesSummary = input.nodes
+    .map((n) => `[${n.index}] ${n.title}: ${n.description}`)
+    .join("\n");
+
+  return executeWithRetry(async () => {
+    const result = await generateObject({
+      model: getFallbackProvider()("deepseek-v4-flash"),
+      schema: DiagnosticOutput,
+      system: DIAGNOSTIC_QUESTION_PROMPT,
+      prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}`,
+    });
+    return result.object;
+  });
 }
 
 export async function evaluateDiagnosticAnswers(
@@ -110,6 +84,25 @@ export async function evaluateDiagnosticAnswers(
   }>,
   answers: DiagnosticAnswer[],
 ): Promise<DiagnosticEvaluationType> {
-  const agent = new DiagnosticEvaluateAgent();
-  return agent.run({ topic, nodes, questions, answers });
+  const input: DiagnosticEvaluateInput = { topic, nodes, questions, answers };
+  const nodesSummary = input.nodes
+    .map((n) => `[${n.index}] ${n.title}: ${n.description}`)
+    .join("\n");
+
+  const qaList = input.questions
+    .map((q) => {
+      const answer = input.answers.find((a) => a.questionId === q.id);
+      return `题目 ${q.id}（对应节点 ${q.nodeIndex}）: ${q.question}\n正确答案: ${q.correctAnswer}\n学生回答: ${answer?.answer ?? "未回答"}`;
+    })
+    .join("\n\n");
+
+  return executeWithRetry(async () => {
+    const result = await generateObject({
+      model: getFallbackProvider()("deepseek-v4-flash"),
+      schema: DiagnosticEvaluation,
+      system: DIAGNOSTIC_EVALUATE_PROMPT,
+      prompt: `学习主题：${input.topic}\n\n知识图谱节点：\n${nodesSummary}\n\n答题情况：\n${qaList}`,
+    });
+    return result.object;
+  });
 }

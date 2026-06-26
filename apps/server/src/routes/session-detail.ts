@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from 'zod';
 import { zValidator } from "@hono/zod-validator";
 import { prisma } from "@ai-teacher/db";
-import { ProfileService } from "../../../worker/src/agent/services/profile-service";
+import { ProfileService } from "@ai-teacher/shared/services/profile-service";
 
 const updateSessionSchema = z.object({
   status: z.enum(["active", "completed", "archived"]),

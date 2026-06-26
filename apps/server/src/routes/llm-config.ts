@@ -8,7 +8,7 @@ import {
 } from "@ai-teacher/shared";
 import { encrypt, decrypt, maskApiKey } from "@ai-teacher/shared/services/crypto";
 import { generateText } from "ai";
-import { createProviderForConfig } from "../../../worker/src/agent/provider-registry.js";
+import { createProviderForConfig } from "@ai-teacher/shared/services/provider-registry";
 
 const listQuerySchema = z.object({
   userId: z.string().min(1),

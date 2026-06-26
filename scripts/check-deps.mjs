@@ -7,7 +7,7 @@
 //   apps/web    → packages/shared
 //   apps/server → packages/shared, packages/db
 //   apps/worker → packages/shared, packages/db
-//   packages/shared → 叶子包（不依赖任何内部包）
+//   packages/shared → packages/db（迭代 048：shared 承载跨进程共享服务如 profile-service，可依赖 db）
 //   packages/db     → 叶子包（不依赖任何内部包）
 //
 // 采用自定义脚本而非 dependency-cruiser：后者要求 Node ^22||^24||>=26，
@@ -23,42 +23,17 @@ const ALLOWED = {
   "apps/web": ["packages/shared"],
   "apps/server": ["packages/shared", "packages/db"],
   "apps/worker": ["packages/shared", "packages/db"],
-  "packages/shared": [],
+  "packages/shared": ["packages/db"],
   "packages/db": [],
 };
 
 const PKG_ROOTS = Object.keys(ALLOWED);
 
 // 已知技术债白名单（迭代 042 传感器发现的 server↔worker 共享代码逃逸）
-// 这些违规已记录在 决策记录.md ADR，待后续迭代「依赖方向治理」归位到共享包后逐项移除
+// 迭代 048 全部归位：provider-registry（3 处）、profile-service（1 处）、diagnostic（1 处，解耦重构）
+// 迁移到 packages/shared/services/。白名单保留为空数组，供未来临时豁免使用。
 // 匹配规则：fromFile 完全相等 且 spec 包含 specMatch 子串
-const KNOWN_VIOLATIONS = [
-  {
-    from: "apps/server/src/routes/llm-config.ts",
-    specMatch: "provider-registry",
-    reason: "server/worker 共享 LLM provider 构造，待依赖方向治理迭代归位共享包",
-  },
-  {
-    from: "apps/server/src/routes/quick-question.ts",
-    specMatch: "provider-registry",
-    reason: "server/worker 共享 LLM provider 构造，待依赖方向治理迭代归位共享包",
-  },
-  {
-    from: "apps/server/src/routes/suggest-reply.ts",
-    specMatch: "provider-registry",
-    reason: "server/worker 共享 LLM provider 构造，待依赖方向治理迭代归位共享包",
-  },
-  {
-    from: "apps/server/src/routes/diagnostic.ts",
-    specMatch: "agent/diagnostic",
-    reason: "诊断流程 server 同步调用 worker agent，待依赖方向治理迭代解耦归位",
-  },
-  {
-    from: "apps/server/src/routes/session-detail.ts",
-    specMatch: "profile-service",
-    reason: "server/worker 共享 profile 读写，待依赖方向治理迭代归位共享包",
-  },
-];
+const KNOWN_VIOLATIONS = [];
 
 function matchKnown(fromRel, spec) {
   return KNOWN_VIOLATIONS.find(

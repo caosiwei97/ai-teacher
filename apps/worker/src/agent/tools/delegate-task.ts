@@ -2,7 +2,7 @@ import { streamText, stepCountIs, tool as aiTool, type LanguageModel } from "ai"
 import type { Tool } from "ai";
 import { z } from "zod";
 import type { ToolDefinition, SubagentDefinition, AgentResult } from "../types";
-import { getProvider } from "../provider";
+import { getFallbackProvider } from "@ai-teacher/shared/services/provider-registry";
 
 export function createDelegateTaskTool(
   subagents: SubagentDefinition[],
@@ -55,7 +55,7 @@ export function createDelegateTaskTool(
       }
 
       try {
-        const model = (providerFn ?? getProvider())(
+        const model = (providerFn ?? getFallbackProvider())(
           agentDef.model ?? "deepseek-v4-flash",
         );
         const result = streamText({

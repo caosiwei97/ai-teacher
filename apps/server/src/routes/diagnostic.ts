@@ -5,7 +5,7 @@ import { prisma } from "@ai-teacher/db";
 import {
   generateDiagnosticQuestions,
   evaluateDiagnosticAnswers,
-} from "../../../worker/src/agent/diagnostic";
+} from "@ai-teacher/shared/services/diagnostic";
 
 const evaluateSchema = z.object({
   questions: z.array(

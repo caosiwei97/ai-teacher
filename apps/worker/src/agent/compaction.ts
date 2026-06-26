@@ -1,6 +1,6 @@
 import { generateObject, type LanguageModel } from "ai";
 import { StructuredSummarySchema, type StructuredSummary } from "@ai-teacher/shared";
-import { getProvider } from "./provider";
+import { getFallbackProvider } from "@ai-teacher/shared/services/provider-registry";
 import type { AgentMessage } from "./agent-message";
 import { isLlmMessage } from "./agent-message";
 
@@ -37,7 +37,7 @@ export async function generateCompactSummary(
   messages: AgentMessage[],
   model?: LanguageModel,
 ): Promise<StructuredSummary> {
-  const resolvedModel = model ?? getProvider()("deepseek-v4-flash");
+  const resolvedModel = model ?? getFallbackProvider()("deepseek-v4-flash");
   const conversation = formatMessagesForPrompt(messages);
 
   const { object } = await generateObject({
@@ -55,7 +55,7 @@ export async function updateCompactSummary(
   newMessages: AgentMessage[],
   model?: LanguageModel,
 ): Promise<StructuredSummary> {
-  const resolvedModel = model ?? getProvider()("deepseek-v4-flash");
+  const resolvedModel = model ?? getFallbackProvider()("deepseek-v4-flash");
   const conversation = formatMessagesForPrompt(newMessages);
 
   const { object } = await generateObject({

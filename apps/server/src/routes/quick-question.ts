@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from 'zod';
 import { zValidator } from "@hono/zod-validator";
 import { streamText } from "ai";
-import { getFallbackProvider } from "../../../worker/src/agent/provider-registry.js";
+import { getFallbackProvider } from "@ai-teacher/shared/services/provider-registry";
 
 const quickQuestionSchema = z.object({
   sessionId: z.string().min(1),

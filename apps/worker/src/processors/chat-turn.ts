@@ -14,7 +14,7 @@ import { buildTutorSystemPrompt } from "../agent/prompts/tutor";
 import {
   createProviderForConfig,
   getFallbackProvider,
-} from "../agent/provider-registry.js";
+} from "@ai-teacher/shared/services/provider-registry";
 import { decrypt } from "@ai-teacher/shared/services/crypto";
 import type { ToolDefinition, ToolExecutionContext } from "../agent/types";
 

@@ -2,7 +2,7 @@ import type { ToolDefinition } from "../types";
 import { z } from "zod";
 import { generateObject } from "ai";
 import { RoadmapOutput } from "@ai-teacher/shared";
-import { getProvider } from "../provider";
+import { getFallbackProvider } from "@ai-teacher/shared/services/provider-registry";
 
 const ROADMAP_SYSTEM_PROMPT = `你是一个教学设计专家。根据学习主题和学习者的水平，设计结构化的学习路径。
 
@@ -57,7 +57,7 @@ export const generateRoadmapTool: ToolDefinition = {
 诊断分析：${p.diagnosticSummary}
 ${p.startHint ? `起点建议：${p.startHint}` : ""}`;
 
-    const model = getProvider()("deepseek-v4-flash");
+    const model = getFallbackProvider()("deepseek-v4-flash");
     let roadmap;
     try {
       const result = await generateObject({
