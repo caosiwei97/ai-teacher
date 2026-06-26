@@ -31,6 +31,7 @@
     "prod": "run-s build start",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "check:docs": "node scripts/check-doc-consistency.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "prepare": "husky"
@@ -46,11 +47,15 @@
       "sharp"
     ]
   },
+  "lint-staged": {
+    "*.{md,css,json,yaml,yml}": "prettier --write"
+  },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^4.1.9",
     "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
     "npm-run-all2": "^8.0.4",
     "prettier": "^3.5.0",
     "typescript": "^5.7.0",
