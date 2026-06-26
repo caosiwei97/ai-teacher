@@ -7,7 +7,7 @@ export const NodeService = {
       data: {
         masteryScore: score,
         reviewLog: JSON.parse(JSON.stringify(reviewLog)),
-        status: score >= 80 ? "mastered" : "in-progress",
+        status: score >= 80 ? "mastered" : "in_progress",
         masteredAt: score >= 80 ? new Date() : null,
       },
     });
@@ -26,11 +26,11 @@ export const NodeService = {
     if (!node) return;
     const nextNode = node.roadmap.nodes
       .filter((n) => n.index > node.index)
-      .find((n) => n.status === "not-started");
+      .find((n) => n.status === "not_started");
     if (nextNode) {
       await prisma.node.update({
         where: { id: nextNode.id },
-        data: { status: "in-progress" },
+        data: { status: "in_progress" },
       });
     }
   },
@@ -47,7 +47,7 @@ export const NodeService = {
       }),
       prisma.node.update({
         where: { id: nextNodeId },
-        data: { status: "in-progress" },
+        data: { status: "in_progress" },
       }),
     ]);
   },

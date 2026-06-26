@@ -90,13 +90,13 @@ ${p.startHint ? `起点建议：${p.startHint}` : ""}`;
       return { success: false, error: "Session or roadmap not found" };
     }
 
-    const firstNodeStatus = "in-progress";
+    const firstNodeStatus = "in_progress";
     await prisma.node.createMany({
       data: roadmap.nodes.map((node, i) => ({
         index: node.index,
         title: node.title,
         description: node.description,
-        status: i === 0 ? firstNodeStatus : "not-started",
+        status: i === 0 ? firstNodeStatus : "not_started",
         roadmapId: session.roadmap!.id,
       })),
     });
@@ -130,7 +130,7 @@ ${p.startHint ? `起点建议：${p.startHint}` : ""}`;
       },
     };
   },
-  promptSnippet: `**generateRoadmap 工具**：在诊断摸底完成后、收到学习者答案并分析其水平后，立即调用此工具生成个性化学习路线图。传入学习主题、学习者水平（beginner/intermediate/advanced）、诊断分析和起点建议。系统会根据学习者水平生成合适的学习节点，并自动将第一个节点设为 in-progress。生成完成后你需要立即从第一个知识点开始教学。`,
+  promptSnippet: `**generateRoadmap 工具**：在诊断摸底完成后、收到学习者答案并分析其水平后，立即调用此工具生成个性化学习路线图。传入学习主题、学习者水平（beginner/intermediate/advanced）、诊断分析和起点建议。系统会根据学习者水平生成合适的学习节点，并自动将第一个节点设为 in_progress。生成完成后你需要立即从第一个知识点开始教学。`,
   promptGuidelines: [
     "必须在诊断摸底完成、分析完学习者水平后才能调用",
     "learnerLevel 要根据诊断答案的实际质量判断，不要默认给 beginner",

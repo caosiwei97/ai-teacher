@@ -38,7 +38,7 @@ export const assessMasteryTool: ToolDefinition = {
       data: {
         masteryScore: p.score,
         reviewLog: JSON.parse(JSON.stringify(p)),
-        status: p.score >= 80 ? "mastered" : "in-progress",
+        status: p.score >= 80 ? "mastered" : "in_progress",
         masteredAt: p.score >= 80 ? new Date() : null,
       },
     });
@@ -53,11 +53,11 @@ export const assessMasteryTool: ToolDefinition = {
       if (node) {
         const nextNode = node.roadmap.nodes
           .filter((n) => n.index > node.index)
-          .find((n) => n.status === "not-started");
+          .find((n) => n.status === "not_started");
         if (nextNode) {
           await prisma.node.update({
             where: { id: nextNode.id },
-            data: { status: "in-progress" },
+            data: { status: "in_progress" },
           });
         }
 

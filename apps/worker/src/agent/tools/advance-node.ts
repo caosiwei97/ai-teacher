@@ -28,15 +28,15 @@ export const advanceNodeTool: ToolDefinition = {
       }),
       prisma.node.update({
         where: { id: p.nextNodeId },
-        data: { status: "in-progress" },
+        data: { status: "in_progress" },
       }),
     ]);
 
     return { success: true, ...p };
   },
-  promptSnippet: `**advanceNode 工具**：当掌握度 ≥ 80% 且已生成评估卡片后调用，推进到下一个知识点。需传入当前节点 id、下一个 not-started 节点 id 和掌握度分数。`,
+  promptSnippet: `**advanceNode 工具**：当掌握度 ≥ 80% 且已生成评估卡片后调用，推进到下一个知识点。需传入当前节点 id、下一个 not_started 节点 id 和掌握度分数。`,
   promptGuidelines: [
     "必须在 assessMastery (≥80) + generateAssessment 之后才调用",
-    "nextNodeId 从知识图谱节点列表中选择下一个 not-started 或 in-progress 节点",
+    "nextNodeId 从知识图谱节点列表中选择下一个 not_started 或 in_progress 节点",
   ],
 };

@@ -29,7 +29,7 @@ describe("NodeService", () => {
   });
 
   describe("updateMastery", () => {
-    it("score<80：更新为 in-progress，不触发 autoAdvance", async () => {
+    it("score<80：更新为 in_progress，不触发 autoAdvance", async () => {
       await NodeService.updateMastery("n1", 60, { note: "weak" });
 
       expect(mockNodeUpdate).toHaveBeenCalledTimes(1);
@@ -37,7 +37,7 @@ describe("NodeService", () => {
         where: { id: "n1" },
         data: expect.objectContaining({
           masteryScore: 60,
-          status: "in-progress",
+          status: "in_progress",
           masteredAt: null,
         }),
       });
@@ -52,7 +52,7 @@ describe("NodeService", () => {
         roadmap: {
           nodes: [
             { id: "n1", index: 0, status: "mastered" },
-            { id: "n2", index: 1, status: "not-started" },
+            { id: "n2", index: 1, status: "not_started" },
           ],
         },
       });
@@ -92,15 +92,15 @@ describe("NodeService", () => {
   });
 
   describe("autoAdvance", () => {
-    it("有下一个 not-started 节点：更新为 in-progress", async () => {
+    it("有下一个 not_started 节点：更新为 in_progress", async () => {
       mockNodeFindUnique.mockResolvedValue({
         id: "n1",
         index: 0,
         roadmap: {
           nodes: [
             { id: "n1", index: 0, status: "mastered" },
-            { id: "n2", index: 1, status: "not-started" },
-            { id: "n3", index: 2, status: "not-started" },
+            { id: "n2", index: 1, status: "not_started" },
+            { id: "n3", index: 2, status: "not_started" },
           ],
         },
       });
@@ -110,18 +110,18 @@ describe("NodeService", () => {
       expect(mockNodeUpdate).toHaveBeenCalledTimes(1);
       expect(mockNodeUpdate).toHaveBeenCalledWith({
         where: { id: "n2" },
-        data: { status: "in-progress" },
+        data: { status: "in_progress" },
       });
     });
 
-    it("无下一个 not-started 节点：不 update", async () => {
+    it("无下一个 not_started 节点：不 update", async () => {
       mockNodeFindUnique.mockResolvedValue({
         id: "n1",
         index: 0,
         roadmap: {
           nodes: [
             { id: "n1", index: 0, status: "mastered" },
-            { id: "n2", index: 1, status: "in-progress" },
+            { id: "n2", index: 1, status: "in_progress" },
           ],
         },
       });
@@ -131,15 +131,15 @@ describe("NodeService", () => {
       expect(mockNodeUpdate).not.toHaveBeenCalled();
     });
 
-    it("只取 index 更大的第一个 not-started（跳过更小 index）", async () => {
+    it("只取 index 更大的第一个 not_started（跳过更小 index）", async () => {
       mockNodeFindUnique.mockResolvedValue({
         id: "n2",
         index: 1,
         roadmap: {
           nodes: [
-            { id: "n1", index: 0, status: "not-started" }, // index 更小，跳过
+            { id: "n1", index: 0, status: "not_started" }, // index 更小，跳过
             { id: "n2", index: 1, status: "mastered" },
-            { id: "n3", index: 2, status: "not-started" }, // ← 应选这个
+            { id: "n3", index: 2, status: "not_started" }, // ← 应选这个
           ],
         },
       });
@@ -148,7 +148,7 @@ describe("NodeService", () => {
 
       expect(mockNodeUpdate).toHaveBeenCalledWith({
         where: { id: "n3" },
-        data: { status: "in-progress" },
+        data: { status: "in_progress" },
       });
     });
 
@@ -162,7 +162,7 @@ describe("NodeService", () => {
   });
 
   describe("advanceNode", () => {
-    it("事务更新两个节点（当前 mastered + 下一 in-progress）", async () => {
+    it("事务更新两个节点（当前 mastered + 下一 in_progress）", async () => {
       await NodeService.advanceNode("n1", "n2", 90);
 
       // node.update 被调用 2 次（构造事务参数）
@@ -177,7 +177,7 @@ describe("NodeService", () => {
       });
       expect(mockNodeUpdate).toHaveBeenNthCalledWith(2, {
         where: { id: "n2" },
-        data: { status: "in-progress" },
+        data: { status: "in_progress" },
       });
       // $transaction 收到 2 元素数组
       expect(mockTransaction).toHaveBeenCalledTimes(1);

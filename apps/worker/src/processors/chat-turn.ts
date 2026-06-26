@@ -15,7 +15,7 @@ import {
   createProviderForConfig,
   getFallbackProvider,
 } from "../agent/provider-registry.js";
-import { decrypt } from "../../../server/src/services/crypto.js";
+import { decrypt } from "@ai-teacher/shared/services/crypto";
 import type { ToolDefinition, ToolExecutionContext } from "../agent/types";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
@@ -181,8 +181,8 @@ export function createChatTurnWorker(
         const hasNodes = roadmapNodes.length > 0;
 
         const currentNode = hasNodes
-          ? (roadmapNodes.find((node) => node.status === "in-progress") ??
-            roadmapNodes.find((node) => node.status === "not-started") ??
+          ? (roadmapNodes.find((node) => node.status === "in_progress") ??
+            roadmapNodes.find((node) => node.status === "not_started") ??
             roadmapNodes.find((node) => node.status !== "mastered") ??
             roadmapNodes.at(-1))
           : null;
@@ -219,7 +219,7 @@ export function createChatTurnWorker(
         });
 
         const isDiagnosisPhase = hasNodes
-          ? roadmapNodes.every((n) => n.status === "not-started")
+          ? roadmapNodes.every((n) => n.status === "not_started")
           : true;
 
         const systemPrompt = buildTutorSystemPrompt({

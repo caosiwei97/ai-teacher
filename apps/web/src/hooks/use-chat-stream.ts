@@ -292,7 +292,7 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                 options?.onRoadmapUpdate?.(data.nodes);
                 if (masteryDetected) {
                   const nodesArr = data.nodes as Array<{ status: string; title: string }>;
-                  const nextInProgress = nodesArr.find(n => n.status === "in-progress");
+                  const nextInProgress = nodesArr.find(n => n.status === "in_progress");
                   options?.onMasteryTransition?.(nextInProgress?.title);
                   masteryDetected = false;
                 }

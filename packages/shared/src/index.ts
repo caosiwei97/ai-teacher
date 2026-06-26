@@ -5,3 +5,4 @@ export * from "./schemas/diagnostic.js";
 export * from "./schemas/summary.js";
 export * from "./schemas/ui-block.js";
 export * from "./schemas/llm-config.js";
+export * from "./schemas/source.js";

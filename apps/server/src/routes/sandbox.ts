@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from 'zod';
 import { prisma } from "@ai-teacher/db";
 import { submitCode, ensureSandbox } from "../services/sandbox";
-import { decrypt } from "../services/crypto.js";
+import { decrypt } from "@ai-teacher/shared/services/crypto";
 
 export const sandboxRoute = new Hono();
 

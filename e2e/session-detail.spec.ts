@@ -40,8 +40,8 @@ test.describe("Session Detail API", () => {
     const nodes = session.roadmap.nodes;
 
     const mastered = nodes.filter((n: { status: string }) => n.status === "mastered");
-    const inProgress = nodes.filter((n: { status: string }) => n.status === "in-progress");
-    const notStarted = nodes.filter((n: { status: string }) => n.status === "not-started");
+    const inProgress = nodes.filter((n: { status: string }) => n.status === "in_progress");
+    const notStarted = nodes.filter((n: { status: string }) => n.status === "not_started");
 
     expect(mastered.length).toBe(1);
     expect(inProgress.length).toBe(1);

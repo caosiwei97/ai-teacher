@@ -5,8 +5,8 @@ const baseCtx: TutorPromptContext = {
   topic: "React Hooks",
   currentNode: { id: "n1", title: "useState", description: "状态钩子" },
   allNodes: [
-    { id: "n1", index: 0, title: "useState", status: "in-progress" },
-    { id: "n2", index: 1, title: "useEffect", status: "not-started" },
+    { id: "n1", index: 0, title: "useState", status: "in_progress" },
+    { id: "n2", index: 1, title: "useEffect", status: "not_started" },
   ],
   masteredNodes: "无",
   learnerProfile: "初学者",

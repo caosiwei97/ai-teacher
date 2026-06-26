@@ -6,7 +6,7 @@ import {
   CreateLlmConfigSchema,
   PROVIDER_PRESETS,
 } from "@ai-teacher/shared";
-import { encrypt, decrypt, maskApiKey } from "../services/crypto.js";
+import { encrypt, decrypt, maskApiKey } from "@ai-teacher/shared/services/crypto";
 import { generateText } from "ai";
 import { createProviderForConfig } from "../../../worker/src/agent/provider-registry.js";
 

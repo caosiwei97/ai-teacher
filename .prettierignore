@@ -6,3 +6,5 @@ data/
 !.env.example
 .turbo/
 coverage/
+pnpm-lock.yaml
+package-lock.json

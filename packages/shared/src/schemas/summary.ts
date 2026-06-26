@@ -5,7 +5,7 @@ export const StructuredSummarySchema = z.object({
   masteryState: z.record(
     z.string(),
     z.object({
-      level: z.enum(["mastered", "in-progress", "not-started"]),
+      level: z.enum(["mastered", "in_progress", "not_started"]),
       lastAssessed: z.string(),
     }),
   ).describe("各节点掌握状态"),

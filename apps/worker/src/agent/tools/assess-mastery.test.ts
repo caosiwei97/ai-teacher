@@ -29,7 +29,7 @@ describe("assessMastery tool", () => {
   });
 
   describe("execute — score<80", () => {
-    it("更新为 in-progress，返回 { success, ...p }，无 roadmapUpdate", async () => {
+    it("更新为 in_progress，返回 { success, ...p }，无 roadmapUpdate", async () => {
       const result = await assessMasteryTool.execute({ ...baseParams, score: 60 }, ctx);
 
       expect(result).toMatchObject({ success: true, conceptId: "n1", score: 60 });
@@ -38,7 +38,7 @@ describe("assessMastery tool", () => {
         where: { id: "n1" },
         data: expect.objectContaining({
           masteryScore: 60,
-          status: "in-progress",
+          status: "in_progress",
           masteredAt: null,
         }),
       });
@@ -56,13 +56,13 @@ describe("assessMastery tool", () => {
         roadmap: {
           nodes: [
             { id: "n1", index: 0, status: "mastered" },
-            { id: "n2", index: 1, status: "not-started", title: "Node2" },
+            { id: "n2", index: 1, status: "not_started", title: "Node2" },
           ],
         },
       });
       mockFindMany.mockResolvedValue([
         { id: "n1", index: 0, status: "mastered" },
-        { id: "n2", index: 1, status: "in-progress" },
+        { id: "n2", index: 1, status: "in_progress" },
       ]);
 
       const result: any = await assessMasteryTool.execute(baseParams, ctx);

@@ -7,6 +7,52 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// 迭代 042/046：状态字段从 String 迁移为原生 Enum，获得编译时类型安全
+enum SessionStatus {
+  active
+  diagnosing
+  completed
+  archived
+}
+
+enum TeachingMode {
+  warm
+  strict
+  interviewer
+}
+
+enum NodeStatus {
+  not_started
+  in_progress
+  mastered
+}
+
+enum MessageRole {
+  tutor
+  learner
+  system
+}
+
+enum MessageType {
+  text
+  quiz
+  quiz_response
+  assessment
+  system
+}
+
+enum MessageStatus {
+  sending
+  processing
+  completed
+  failed
+}
+
+enum SourceType {
+  pdf
+  markdown
+}
+
 model User {
   id         String          @id @default(cuid()) @db.Text
   name       String          @db.Text
@@ -22,7 +68,7 @@ model Source {
   userId    String    @db.Text
   user      User      @relation(fields: [userId], references: [id])
   title     String    @db.Text
-  type      String    @db.Text
+  type      SourceType
   content   String?   @db.Text
   fileUrl   String?   @db.Text
   checksum  String?   @db.Text
@@ -37,9 +83,9 @@ model Session {
   topic       String    @db.Text
   sourceId    String?   @db.Text
   source      Source?   @relation(fields: [sourceId], references: [id])
-  status      String    @default("active") @db.Text
+  status      SessionStatus @default(active)
   summary     Json?
-  teachingMode String @default("warm") @db.Text
+  teachingMode TeachingMode  @default(warm)
   llmConfigId String?   @db.Text
   llmConfig   LlmConfig? @relation(fields: [llmConfigId], references: [id])
   roadmap     Roadmap?
@@ -64,7 +110,7 @@ model Node {
   index        Int
   title        String   @db.Text
   description  String   @db.Text
-  status       String   @default("not-started") @db.Text
+  status       NodeStatus @default(not_started)
   masteryScore Int      @default(0)
   reviewLog    Json?
   masteredAt   DateTime?
@@ -74,10 +120,10 @@ model Message {
   id        String   @id @default(cuid()) @db.Text
   sessionId String   @db.Text
   session   Session  @relation(fields: [sessionId], references: [id])
-  role      String   @db.Text
-  type      String   @db.Text
+  role      MessageRole
+  type      MessageType
   content   String   @db.Text
-  status    String   @default("completed") @db.Text
+  status    MessageStatus @default(completed)
   metadata  Json?
   hidden    Boolean  @default(false)
   createdAt DateTime @default(now())

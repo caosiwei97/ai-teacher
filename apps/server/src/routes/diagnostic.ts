@@ -130,7 +130,7 @@ export const diagnosticRoute = new Hono()
           } else if (node.index === startingNodeIndex) {
             await tx.node.update({
               where: { id: node.id },
-              data: { status: "in-progress" },
+              data: { status: "in_progress" },
             });
           }
         }

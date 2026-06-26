@@ -17,19 +17,22 @@ pnpm dev
 
 ### 常用命令
 
-| 命令 | 说明 |
-|------|------|
-| `pnpm bootstrap` | 一键初始化：配置环境变量 → 启动中间件 → 生成 Prisma Client → 迁移数据库 |
-| `pnpm dev` | 并行启动 Web（:38421）+ Server（:38422）+ Worker（:38423） |
-| `pnpm docker:up` | 启动所有中间件（PostgreSQL、Redis、MinIO） |
-| `pnpm docker:down` | 停止所有中间件 |
-| `pnpm build` | 构建所有包 |
-| `pnpm db:generate` | 生成 Prisma Client |
-| `pnpm db:migrate` | 执行数据库迁移 |
-| `pnpm db:seed` | 执行种子数据 |
-| `pnpm test:unit` | 运行单元测试（Vitest） |
-| `pnpm test:coverage` | 单元测试覆盖率报告 |
-| `pnpm test:e2e` | 运行 E2E 测试 |
+| 命令                 | 说明                                                                    |
+| -------------------- | ----------------------------------------------------------------------- |
+| `pnpm bootstrap`     | 一键初始化：配置环境变量 → 启动中间件 → 生成 Prisma Client → 迁移数据库 |
+| `pnpm dev`           | 并行启动 Web（:38421）+ Server（:38422）+ Worker（:38423）              |
+| `pnpm docker:up`     | 启动所有中间件（PostgreSQL、Redis、MinIO）                              |
+| `pnpm docker:down`   | 停止所有中间件                                                          |
+| `pnpm build`         | 构建所有包                                                              |
+| `pnpm db:generate`   | 生成 Prisma Client                                                      |
+| `pnpm db:migrate`    | 执行数据库迁移                                                          |
+| `pnpm db:seed`       | 执行种子数据                                                            |
+| `pnpm test:unit`     | 运行单元测试（Vitest）                                                  |
+| `pnpm test:coverage` | 单元测试覆盖率报告                                                      |
+| `pnpm test:e2e`      | 运行 E2E 测试                                                           |
+| `pnpm lint`          | ESLint 检查（含自定义 no-default-export 规则）                          |
+| `pnpm check:deps`    | 模块依赖方向检查                                                        |
+| `pnpm check:docs`    | 文档-代码一致性检查                                                     |
 
 ### Docker 镜像加速（国内用户）
 
@@ -65,40 +68,41 @@ data/
 
 ## 服务端口
 
-| 服务 | 端口 | 说明 |
-|------|------|------|
-| Web | 38421 | Vite 开发服务器（纯前端） |
-| API Server | 38422 | Hono API Server |
-| Worker | 38423 | BullMQ Worker（Agent 执行） |
-| PostgreSQL | 25432 | 数据库（非标准端口避免冲突） |
-| Redis | 26379 | 缓存（非标准端口） |
-| MinIO API | 29000 | 对象存储 |
-| MinIO Console | 29001 | 对象存储管理界面 |
-| OpenSandbox | 2358 | 代码执行沙箱（Docker 镜像内运行） |
+| 服务          | 端口  | 说明                              |
+| ------------- | ----- | --------------------------------- |
+| Web           | 38421 | Vite 开发服务器（纯前端）         |
+| API Server    | 38422 | Hono API Server                   |
+| Worker        | 38423 | BullMQ Worker（Agent 执行）       |
+| PostgreSQL    | 25432 | 数据库（非标准端口避免冲突）      |
+| Redis         | 26379 | 缓存（非标准端口）                |
+| MinIO API     | 29000 | 对象存储                          |
+| MinIO Console | 29001 | 对象存储管理界面                  |
+| OpenSandbox   | 2358  | 代码执行沙箱（Docker 镜像内运行） |
 
 ## 文档
 
-| 文档 | 说明 |
-|------|------|
-| [产品定位](docs/产品/产品定位.md) | 项目总纲、核心场景、约束边界 |
-| [技术架构](docs/设计/技术架构.md) | 技术栈、系统架构、数据模型 |
-| [API 接口](docs/设计/API接口.md) | 已实现的接口文档 |
-| [Prompt 设计](docs/设计/Prompt设计.md) | 苏格拉底式教学 Prompt |
-| [决策记录](docs/设计/决策记录.md) | 关键技术决策及原因 |
-| [迭代计划](docs/开发/迭代计划.md) | 41 个迭代、状态、进度 |
-| [开发日志](docs/开发/开发日志.md) | 开发时间线记录 |
-| [E2E 测试](docs/测试/e2e/README.md) | 测试用例矩阵 |
+| 文档                                   | 说明                         |
+| -------------------------------------- | ---------------------------- |
+| [产品定位](docs/产品/产品定位.md)      | 项目总纲、核心场景、约束边界 |
+| [技术架构](docs/设计/技术架构.md)      | 技术栈、系统架构、数据模型   |
+| [API 接口](docs/设计/API接口.md)       | 已实现的接口文档             |
+| [Prompt 设计](docs/设计/Prompt设计.md) | 苏格拉底式教学 Prompt        |
+| [决策记录](docs/设计/决策记录.md)      | 关键技术决策及原因           |
+| [迭代计划](docs/开发/迭代计划.md)      | 41 个迭代、状态、进度        |
+| [开发日志](docs/开发/开发日志.md)      | 开发时间线记录               |
+| [E2E 测试](docs/测试/e2e/README.md)    | 测试用例矩阵                 |
 
 ## 技术栈
 
-| 层 | 技术 |
-|---|------|
-| Web | Vite 8, React 19, shadcn/ui, Tailwind CSS 4, Monaco Editor |
-| Agent | AI SDK v6 (streamText + tool calling) |
-| LLM | 多 Provider（@ai-sdk/deepseek + @ai-sdk/openai + @ai-sdk/anthropic），默认 `deepseek-v4-flash` |
-| DB | PostgreSQL 16 + pgvector + Prisma ORM |
-| Cache | Redis 7 |
-| Storage | MinIO (S3 兼容) |
-| Runtime | Node.js 20 LTS, TypeScript strict |
-| Testing | Vitest 4（单元测试）+ Playwright（E2E） |
-| Package Manager | pnpm workspaces |
+| 层              | 技术                                                                                           |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| Web             | Vite 8, React 19, shadcn/ui, Tailwind CSS 4, Monaco Editor                                     |
+| Agent           | AI SDK v6 (streamText + tool calling)                                                          |
+| LLM             | 多 Provider（@ai-sdk/deepseek + @ai-sdk/openai + @ai-sdk/anthropic），默认 `deepseek-v4-flash` |
+| DB              | PostgreSQL 16 + pgvector + Prisma ORM                                                          |
+| Cache           | Redis 7                                                                                        |
+| Storage         | MinIO (S3 兼容)                                                                                |
+| Runtime         | Node.js 20 LTS, TypeScript strict                                                              |
+| Testing         | Vitest 4（单元测试）+ Playwright（E2E）                                                        |
+| Linting         | ESLint 10 + typescript-eslint（自定义 no-default-export 规则 + 自定义依赖方向检查）            |
+| Package Manager | pnpm workspaces                                                                                |

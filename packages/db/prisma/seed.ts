@@ -29,7 +29,7 @@ const roadmapNodes = [
     title: "理解 useEffect：副作用、依赖与清理",
     description:
       "学习 useEffect 的执行时机、依赖数组的含义、闭包陷阱，以及如何编写正确的清理逻辑。",
-    status: "in-progress",
+    status: "in_progress",
     masteryScore: 52,
     reviewLog: {
       currentFocus: "区分首次执行、依赖变更执行和卸载时清理。",
@@ -42,7 +42,7 @@ const roadmapNodes = [
     title: "理解 useContext：跨层级共享状态",
     description:
       "理解 Context Provider 与 Consumer 的关系，掌握 useContext 读取共享数据的方式，并了解何时不适合用 Context。",
-    status: "not-started",
+    status: "not_started",
     masteryScore: 0,
     reviewLog: null,
     masteredAt: null,
@@ -52,7 +52,7 @@ const roadmapNodes = [
     title: "理解 useMemo / useCallback：性能优化不是越多越好",
     description:
       "学习 useMemo 与 useCallback 的适用场景，理解引用稳定性、记忆化成本，以及如何避免过度优化。",
-    status: "not-started",
+    status: "not_started",
     masteryScore: 0,
     reviewLog: null,
     masteredAt: null,
@@ -62,7 +62,7 @@ const roadmapNodes = [
     title: "编写自定义 Hooks：抽离可复用的状态逻辑",
     description:
       "将 useState、useEffect、useContext 等组合成自定义 Hooks，形成更清晰、可复用、可测试的业务抽象。",
-    status: "not-started",
+    status: "not_started",
     masteryScore: 0,
     reviewLog: null,
     masteredAt: null,

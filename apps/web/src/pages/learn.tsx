@@ -378,7 +378,7 @@ export function Component() {
                 progress: {
                   totalNodes: fetchedNodes.length,
                   masteredNodes: fetchedNodes.filter((n: NodeInfo) => n.status === "mastered").length,
-                  currentNodeId: fetchedNodes.find((n: NodeInfo) => n.status === "in-progress")?.id ?? null,
+                  currentNodeId: fetchedNodes.find((n: NodeInfo) => n.status === "in_progress")?.id ?? null,
                 },
               };
               setSessions([virtualSession, ...sessionsList]);

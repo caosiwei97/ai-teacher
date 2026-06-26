@@ -17,9 +17,9 @@ test.describe("Mastery — Node State Transitions", () => {
     expect(nodes.length).toBe(5);
     expect(nodes[0].status).toBe("mastered");
     expect(nodes[0].masteryScore).toBe(88);
-    expect(nodes[1].status).toBe("in-progress");
+    expect(nodes[1].status).toBe("in_progress");
     expect(nodes[1].masteryScore).toBe(52);
-    expect(nodes.slice(2).every((n: { status: string }) => n.status === "not-started")).toBeTruthy();
+    expect(nodes.slice(2).every((n: { status: string }) => n.status === "not_started")).toBeTruthy();
   });
 
   test("learn page should render roadmap with node mastery states", async ({

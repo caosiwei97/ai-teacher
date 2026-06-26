@@ -143,8 +143,8 @@ export function RightSidebar({
                   status={
                     node.status as
                       | "mastered"
-                      | "in-progress"
-                      | "not-started"
+                      | "in_progress"
+                      | "not_started"
                   }
                   masteryScore={node.masteryScore}
                   isLast={i === nodes.length - 1}
