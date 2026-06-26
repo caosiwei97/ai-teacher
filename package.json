@@ -29,6 +29,8 @@
     "start:server": "pnpm --filter @ai-teacher/server start",
     "start:worker": "pnpm --filter @ai-teacher/worker start",
     "prod": "run-s build start",
+    "test:unit": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "prepare": "husky"
@@ -47,10 +49,12 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "husky": "^9.1.7",
     "npm-run-all2": "^8.0.4",
     "prettier": "^3.5.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.63",

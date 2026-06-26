@@ -1,6 +1,6 @@
 # 迭代 045：Agent 核心逻辑单元测试
 
-> 优先级：P0 | 分类：优化 | 状态：⬜ 待开始
+> 优先级：P0 | 分类：优化 | 状态：✅ 已完成（2026-06-26）
 > E2E：无新增（单元测试覆盖）
 
 ## 不足点
@@ -85,12 +85,12 @@
 
 ## 验收标准
 
-- [ ] Vitest 已安装配置，`pnpm test:unit` 可运行
-- [ ] `crypto.ts`、`node-service.ts`、`assess-mastery.ts` 有完整单元测试
-- [ ] `block-parser.ts`、`tutor.ts`、`context-manager.ts` 有基本单元测试
-- [ ] 关键路径覆盖率 ≥ 80%
-- [ ] `质量门控.md` 已更新，新增 `pnpm test:unit` 检查项
-- [ ] CI 流水线包含单元测试 job
+- [x] Vitest 已安装配置，`pnpm test:unit` 可运行
+- [x] `crypto.ts`、`node-service.ts`、`assess-mastery.ts` 有完整单元测试
+- [x] `block-parser.ts`、`tutor.ts`、`context-manager.ts` 有基本单元测试
+- [x] 关键路径覆盖率 ≥ 80%（6 模块 statements 均 ≥ 90%，53 测试，见 ADR-023）
+- [x] `质量门控.md` 已更新，新增 `pnpm test:unit` 检查项
+- [ ] CI 流水线包含单元测试 job — 推迟到迭代 043 统一做（见 ADR-023）
 
 ## 风险
 

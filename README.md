@@ -27,6 +27,8 @@ pnpm dev
 | `pnpm db:generate` | 生成 Prisma Client |
 | `pnpm db:migrate` | 执行数据库迁移 |
 | `pnpm db:seed` | 执行种子数据 |
+| `pnpm test:unit` | 运行单元测试（Vitest） |
+| `pnpm test:coverage` | 单元测试覆盖率报告 |
 | `pnpm test:e2e` | 运行 E2E 测试 |
 
 ### Docker 镜像加速（国内用户）
@@ -98,4 +100,5 @@ data/
 | Cache | Redis 7 |
 | Storage | MinIO (S3 兼容) |
 | Runtime | Node.js 20 LTS, TypeScript strict |
+| Testing | Vitest 4（单元测试）+ Playwright（E2E） |
 | Package Manager | pnpm workspaces |
