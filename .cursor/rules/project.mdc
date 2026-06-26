@@ -1,0 +1,8 @@
+---
+description: AI Teacher 项目开发协议入口
+alwaysApply: true
+---
+
+本项目的开发协议统一维护在项目根的 `AGENTS.md`。开始任何任务前，**必须先读取 `AGENTS.md`** 并完整遵循其中的协议，包括按其 §3.1 索引表按需加载 `.agents/references/` 下的详细规则（文档同步规则、质量门控、实施纪律等）。
+
+如发现 `AGENTS.md` 与实际代码不一致，按 `AGENTS.md` §3.3 修正。

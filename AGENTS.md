@@ -81,6 +81,8 @@
 
 > ⚠️ 如果 todo 中没有文档同步和 E2E 检查步骤（且变更触发了映射规则），该 todo 规划视为不合格，必须补充后再开始实现。
 
+> ⚠️ todo 每项必须含「动作 + 涉及文件 + 验证方式」三要素；执行时逐项验证，不跳步、不批量改完再验证。详见 `.agents/references/实施纪律.md`。
+
 ### 3.0.1 子 Agent 任务完成后的回收检查
 
 子 Agent（task 委托）只负责代码实现，不修改文档。主 Agent 在子 Agent 完成后，**必须**：
@@ -93,6 +95,7 @@
 
 | 当你要做... | 先读 |
 |------------|------|
+| 写代码实现迭代任务 | `.agents/references/实施纪律.md` |
 | 写代码并需要同步文档 | `.agents/references/文档同步规则.md` |
 | 提交代码或跑测试 | `.agents/references/质量门控.md` |
 | 涉及 CSS/env/config/prisma 变更 | `.agents/references/缓存与重启.md` |
