@@ -1,6 +1,6 @@
 # 迭代 044：漂移治理 — Harness References 自检 + 过时内容清理
 
-> 优先级：P1 | 分类：优化 | 状态：⬜ 待开始
+> 优先级：P1 | 分类：优化 | 状态：✅ 已完成（2026-06-26）
 > E2E：无新增
 
 ## 不足点
@@ -12,6 +12,7 @@
 - 没有"谁在什么时候检查过 references/ 的准确性"的机制
 
 **参考资料来源：**
+
 - OpenAI Codex 团队实践：recurring "doc-gardening" agent 定期扫描过时文档，自动开 fix-up PR。"Technical debt is like a high-interest loan: it's almost always better to pay it down continuously in small increments."
 - Martin Fowler《Harness engineering for coding agent users》（2026.04）："Continuous drift and health sensors"——漂移是渐进积累的，需要持续监控而非一次性修复
 - Martin Fowler 引用 Thoughtworks 团队实践："janitor army"——多 agent 并行扫描不同维度的代码质量问题
@@ -28,25 +29,25 @@
 
 **当前过时内容：**
 
-| 行 | 过时内容 | 应更新为 |
-|----|---------|---------|
-| 标题 + 触发表 | `rm -rf apps/web/.next` | `rm -rf apps/web/node_modules/.vite`（Vite 缓存目录） |
-| 触发表 | 修改 `postcss.config.mjs` 或 `tailwind.config.*` | Vite 项目无 `tailwind.config.*`，用 `@config` 指令或 `vite.config.ts` |
-| 触发表 | 修改 `.env` 或环境变量——"Next.js 在启动时读取环境变量" | Vite 通过 `import.meta.env` 注入，需重启 dev server |
-| 触发表 | 修改 `next.config.*` | 不适用，删除此行 |
-| 触发表 | "Next.js App Router 缓存了路由映射" | Vite 不缓存路由，可删除或改为 Vite 相关 |
-| 重启表 | "添加新的 API route 文件（首次）— 部分情况下 Next.js 不会自动检测新文件" | Hono 路由在 `apps/server/src/routes/` 下注册，新增文件需重启 Worker |
+| 行            | 过时内容                                                                 | 应更新为                                                              |
+| ------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| 标题 + 触发表 | `rm -rf apps/web/.next`                                                  | `rm -rf apps/web/node_modules/.vite`（Vite 缓存目录）                 |
+| 触发表        | 修改 `postcss.config.mjs` 或 `tailwind.config.*`                         | Vite 项目无 `tailwind.config.*`，用 `@config` 指令或 `vite.config.ts` |
+| 触发表        | 修改 `.env` 或环境变量——"Next.js 在启动时读取环境变量"                   | Vite 通过 `import.meta.env` 注入，需重启 dev server                   |
+| 触发表        | 修改 `next.config.*`                                                     | 不适用，删除此行                                                      |
+| 触发表        | "Next.js App Router 缓存了路由映射"                                      | Vite 不缓存路由，可删除或改为 Vite 相关                               |
+| 重启表        | "添加新的 API route 文件（首次）— 部分情况下 Next.js 不会自动检测新文件" | Hono 路由在 `apps/server/src/routes/` 下注册，新增文件需重启 Worker   |
 
 ### 2. 扩展文档同步映射表
 
 在 `文档同步规则.md` 的触发映射表中新增：
 
-| 代码变更 | 必须更新的 references/ 文件 |
-|---------|--------------------------|
-| 修改构建工具或打包配置 | `缓存与重启.md` |
-| 修改项目骨架结构 | `质量门控.md`（检查路径引用） |
-| 修改技术栈 | `缓存与重启.md` + `质量门控.md` |
-| 修改 ports/env 配置 | `缓存与重启.md` |
+| 代码变更               | 必须更新的 references/ 文件     |
+| ---------------------- | ------------------------------- |
+| 修改构建工具或打包配置 | `缓存与重启.md`                 |
+| 修改项目骨架结构       | `质量门控.md`（检查路径引用）   |
+| 修改技术栈             | `缓存与重启.md` + `质量门控.md` |
+| 修改 ports/env 配置    | `缓存与重启.md`                 |
 
 ### 3. Session 启动时漂移自检
 
@@ -72,10 +73,10 @@
 
 ## 验收标准
 
-- [ ] `缓存与重启.md` 已完全对齐 Vite + Hono 技术栈，无 Next.js 残留引用
-- [ ] 其余 4 个 references/ 文件已检查，无过时内容
-- [ ] `文档同步规则.md` 已新增 references/ 相关触发条目
-- [ ] AGENTS.md 或 `pnpm check:docs` 中包含 references/ 漂移检查机制
+- [x] `缓存与重启.md` 已完全对齐 Vite + Hono 技术栈，无 Next.js 残留引用
+- [x] 其余 references/ 文件已检查，无过时内容（grep 确认无 Next.js 残留）
+- [x] `文档同步规则.md` 已新增 references/ 相关触发条目（构建工具/技术栈/端口配置）
+- [x] `pnpm check:docs` 新增第 6 项 references 文件存在性检查（漂移机制）
 
 ## 风险
 

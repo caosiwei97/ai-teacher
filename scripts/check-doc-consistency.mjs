@@ -3,7 +3,7 @@
 // 用法: pnpm check:docs
 // 退出码: 0 全部通过, 1 有不一致
 
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
@@ -126,11 +126,31 @@ function checkPorts() {
   };
 }
 
+// 检查 6: AGENTS.md §3.1 索引的 references 文件存在性
+function checkReferencesExist() {
+  const agentsMd = read("AGENTS.md");
+  const refs = [
+    ...agentsMd.matchAll(/`\.agents\/references\/([^`]+\.md)`/g),
+  ].map((m) => m[1]);
+  const missing = refs.filter(
+    (r) => !existsSync(join(ROOT, ".agents/references", r)),
+  );
+  return {
+    name: "AGENTS.md 索引的 references 文件存在性",
+    passed: missing.length === 0,
+    message:
+      missing.length === 0
+        ? `${refs.length} 个 references 文件均存在`
+        : `缺失: [${missing.join(", ")}]`,
+  };
+}
+
 results.push(checkPrisma());
 results.push(checkEnv());
 results.push(checkRoutes());
 results.push(checkTools());
 results.push(checkPorts());
+results.push(checkReferencesExist());
 
 console.log("\n📄 文档-代码一致性检查\n");
 for (const r of results) {
