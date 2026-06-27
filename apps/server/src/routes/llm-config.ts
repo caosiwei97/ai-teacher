@@ -59,6 +59,7 @@ export const llmConfigRoute = new Hono()
         defaultModel: cfg.defaultModel,
         label: cfg.label,
         isDefault: cfg.isDefault,
+        source: cfg.source,
         createdAt: cfg.createdAt.toISOString(),
         updatedAt: cfg.updatedAt.toISOString(),
       })),
@@ -114,6 +115,7 @@ export const llmConfigRoute = new Hono()
         defaultModel: config.defaultModel,
         label: config.label,
         isDefault: config.isDefault,
+        source: config.source,
         createdAt: config.createdAt.toISOString(),
         updatedAt: config.updatedAt.toISOString(),
       },
@@ -168,6 +170,7 @@ export const llmConfigRoute = new Hono()
         defaultModel: config.defaultModel,
         label: config.label,
         isDefault: config.isDefault,
+        source: config.source,
         createdAt: config.createdAt.toISOString(),
         updatedAt: config.updatedAt.toISOString(),
       },
@@ -254,8 +257,20 @@ export const llmConfigRoute = new Hono()
     });
   })
 
-  .get("/env-status", (c) => {
-    const hasKey = !!process.env.OPENAI_API_KEY;
-    const baseUrl = process.env.OPENAI_BASE_URL ?? "";
-    return c.json({ hasEnvConfig: hasKey, baseUrl });
+  .get("/env-status", async (c) => {
+    const userId = c.req.query("userId") ?? "seed-user-ai-teacher";
+    const hasEnvKey = !!process.env.OPENAI_API_KEY;
+    const envBaseUrl = process.env.OPENAI_BASE_URL ?? "";
+
+    const dbConfigs = await prisma.llmConfig.findMany({
+      where: { userId },
+      select: { id: true, isDefault: true, source: true },
+    });
+
+    return c.json({
+      hasEnvConfig: hasEnvKey,
+      baseUrl: envBaseUrl,
+      hasDefaultDbConfig: dbConfigs.some((cfg) => cfg.isDefault),
+      dbConfigCount: dbConfigs.length,
+    });
   });
