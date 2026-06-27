@@ -16,6 +16,7 @@ import {
   getFallbackProvider,
 } from "@ai-teacher/shared/services/provider-registry";
 import { decrypt } from "@ai-teacher/shared/services/crypto";
+import { resolveProviderConfig } from "@ai-teacher/shared/services/provider-select";
 import type { ToolDefinition, ToolExecutionContext } from "../agent/types";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
@@ -54,22 +55,24 @@ interface LlmJobConfig {
 }
 
 async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
-  if (llmConfigId) {
-    const config = await prisma.llmConfig.findUnique({
-      where: { id: llmConfigId },
-    });
-    if (!config) throw new Error(`LlmConfig ${llmConfigId} not found`);
-    const apiKey = decrypt(config.encryptedKey);
+  const resolved = await resolveProviderConfig(prisma, {
+    userId: "seed-user-ai-teacher",
+    llmConfigId,
+  });
+
+  if (resolved.config) {
+    const apiKey = decrypt(resolved.config.encryptedKey);
     return {
       providerFn: createProviderForConfig({
-        provider: config.provider,
+        provider: resolved.config.provider,
         apiKey,
-        baseUrl: config.baseUrl ?? undefined,
+        baseUrl: resolved.config.baseUrl ?? undefined,
       }),
-      sandboxModel: config.defaultModel,
-      sandboxBaseUrl: config.baseUrl ?? undefined,
+      sandboxModel: resolved.config.defaultModel,
+      sandboxBaseUrl: resolved.config.baseUrl ?? undefined,
     };
   }
+
   return { providerFn: getFallbackProvider() };
 }
 
