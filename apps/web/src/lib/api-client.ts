@@ -121,6 +121,7 @@ export interface LlmConfig {
   defaultModel: string;
   label: string | null;
   isDefault: boolean;
+  source: "user" | "env";
   createdAt: string;
   updatedAt: string;
 }
@@ -205,8 +206,13 @@ export async function getProviderModels(provider: string) {
 
 export async function getEnvStatus() {
   const res = await fetch(`${LLM_BASE}/env-status`);
-  if (!res.ok) return { hasEnvConfig: false, baseUrl: "" };
-  return res.json() as Promise<{ hasEnvConfig: boolean; baseUrl: string }>;
+  if (!res.ok) return { hasEnvConfig: false, baseUrl: "", hasDefaultDbConfig: false, dbConfigCount: 0 };
+  return res.json() as Promise<{
+    hasEnvConfig: boolean;
+    baseUrl: string;
+    hasDefaultDbConfig: boolean;
+    dbConfigCount: number;
+  }>;
 }
 
 // ===== 学习资料（迭代 009 RAG）=====

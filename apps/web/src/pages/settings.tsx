@@ -120,45 +120,53 @@ export function Component() {
             <p className="mt-1 text-xs text-muted-foreground">点击「添加新配置」开始设置</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {configs.map((cfg) => {
-              const display = getProviderDisplay(cfg.provider);
-              const colors = display ? getColorClasses(display.color) : null;
-              const testResult = testResults[cfg.id];
+          <div className="space-y-6">
+            <div>
+              <h2 className="mb-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">对话模型（LLM）</h2>
+              <div className="space-y-3">
+                {configs.map((cfg) => {
+                  const display = getProviderDisplay(cfg.provider);
+                  const colors = display ? getColorClasses(display.color) : null;
+                  const testResult = testResults[cfg.id];
 
-              return (
-                <div
-                  key={cfg.id}
-                  className={cn(
-                    "rounded-xl border bg-card p-4 transition-colors",
-                    cfg.isDefault ? "border-primary/40" : "border-border",
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      {colors && <span className={cn("mt-1.5 h-3 w-3 shrink-0 rounded-full", colors.dot)} />}
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-foreground">
-                            {display?.name ?? cfg.provider}
-                          </p>
-                          {cfg.isDefault && (
-                            <span className="flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                              <Star className="h-3 w-3" />
-                              默认
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {cfg.apiKey}
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          模型：{cfg.defaultModel}
-                        </p>
-                        {cfg.label && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            备注：{cfg.label}
-                          </p>
+                  return (
+                    <div
+                      key={cfg.id}
+                      className={cn(
+                        "rounded-xl border bg-card p-4 transition-colors",
+                        cfg.isDefault ? "border-primary/40" : "border-border",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          {colors && <span className={cn("mt-1.5 h-3 w-3 shrink-0 rounded-full", colors.dot)} />}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-foreground">
+                                {display?.name ?? cfg.provider}
+                              </p>
+                              {cfg.isDefault && (
+                                <span className="flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                                  <Star className="h-3 w-3" />
+                                  默认
+                                </span>
+                              )}
+                              {cfg.source === "env" && (
+                                <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                  来自 .env
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {cfg.apiKey}
+                            </p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              模型：{cfg.defaultModel}
+                            </p>
+                            {cfg.label && (
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                备注：{cfg.label}
+                              </p>
                         )}
                       </div>
                     </div>
@@ -220,6 +228,22 @@ export function Component() {
                 </div>
               );
             })}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="mb-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">增强能力</h2>
+              <div className="space-y-3">
+                <div className="rounded-xl border border-dashed border-border p-4">
+                  <p className="text-sm text-muted-foreground">🎬 视频理解 + 🎤 面试语音（DashScope）</p>
+                  <p className="mt-1 text-xs text-muted-foreground">将在后续迭代支持在 UI 配置</p>
+                </div>
+                <div className="rounded-xl border border-dashed border-border p-4">
+                  <p className="text-sm text-muted-foreground">📚 资料 RAG 检索（智谱 Embedding）</p>
+                  <p className="mt-1 text-xs text-muted-foreground">将在后续迭代支持在 UI 配置</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
