@@ -19,6 +19,7 @@
     "@aws-sdk/client-s3": "^3.1075.0",
     "ai": "^6.0.177",
     "pdf-parse": "^2.4.5",
+    "youtube-dl-exec": "^3.0.23",
     "zod": "^4.0.0"
   },
   "devDependencies": {

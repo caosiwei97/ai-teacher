@@ -53,6 +53,7 @@ enum MessageStatus {
 enum SourceType {
   pdf
   markdown
+  video
 }
 
 // 迭代 009：资料处理状态机，驱动 RAG 异步流水线的 UI 反馈
@@ -82,6 +83,7 @@ model Source {
   content   String?    @db.Text
   fileUrl   String?    @db.Text
   checksum  String?      @db.Text
+  externalUrl String?    @db.Text
   status    SourceStatus @default(pending)
   sessions  Session[]
   chunks    DocumentChunk[]

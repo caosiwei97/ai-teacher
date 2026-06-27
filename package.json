@@ -45,7 +45,8 @@
       "esbuild",
       "msgpackr-extract",
       "prisma",
-      "sharp"
+      "sharp",
+      "youtube-dl-exec"
     ]
   },
   "lint-staged": {

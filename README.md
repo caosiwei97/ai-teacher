@@ -100,6 +100,7 @@ data/
 | Agent           | AI SDK v6 (streamText + tool calling)                                                          |
 | LLM             | 多 Provider（@ai-sdk/deepseek + @ai-sdk/openai + @ai-sdk/anthropic），默认 `deepseek-v4-flash` |
 | Embedding       | 智谱 GLM embedding-3（OpenAI 兼容端点，1024 维，迭代 009 RAG）                                 |
+| Video           | DashScope Qwen3.5-Omni 视频理解 + youtube-dl-exec/yt-dlp（迭代 009 Phase 2）                   |
 | DB              | PostgreSQL 16 + pgvector + Prisma ORM                                                          |
 | Cache           | Redis 7                                                                                        |
 | Storage         | MinIO (S3 兼容) + @aws-sdk/client-s3（迭代 009）                                               |
