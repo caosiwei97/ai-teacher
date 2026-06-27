@@ -5,6 +5,8 @@ export const ProviderEnum = z.enum([
   "minimax", "xiaomi", "zhipu", "custom",
 ]);
 
+export const ConfigSource = z.enum(["user", "env"]);
+
 export const CreateLlmConfigSchema = z.object({
   provider: ProviderEnum,
   apiKey: z.string().min(1),
@@ -12,6 +14,7 @@ export const CreateLlmConfigSchema = z.object({
   defaultModel: z.string().min(1),
   label: z.string().optional(),
   isDefault: z.boolean().optional(),
+  source: ConfigSource.optional(),
 });
 
 export type LlmConfigResponse = {
@@ -23,6 +26,7 @@ export type LlmConfigResponse = {
   defaultModel: string;
   label: string | null;
   isDefault: boolean;
+  source: "user" | "env";
   createdAt: string;
   updatedAt: string;
 };
