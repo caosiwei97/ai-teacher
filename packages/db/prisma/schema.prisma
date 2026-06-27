@@ -200,6 +200,7 @@ model LlmConfig {
   defaultModel String    @db.Text
   label        String?   @db.Text
   isDefault    Boolean   @default(false)
+  source       String    @default("user") @db.Text
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   sessions     Session[]
