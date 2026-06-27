@@ -107,7 +107,7 @@ test.describe("LLM Config API — CRUD", () => {
   });
 
   test("should return preset models for a provider", async ({ request }) => {
-    const response = await request.get("/api/llm/models?provider=deepseek");
+    const response = await request.get(`/api/llm/models?provider=deepseek`);
     expect(response.ok()).toBeTruthy();
 
     const { models } = await response.json();
@@ -115,5 +115,45 @@ test.describe("LLM Config API — CRUD", () => {
     expect(models[0]).toHaveProperty("id");
     expect(models[0]).toHaveProperty("label");
     expect(models[0]).toHaveProperty("tier");
+  });
+});
+
+test.describe("LLM Config — backfill & source", () => {
+  test("GET / 返回的配置含 source 字段（user/env）", async ({ request }) => {
+    const response = await request.get(`/api/llm?userId=${USER_ID}`);
+    expect(response.ok()).toBeTruthy();
+
+    const { configs } = await response.json();
+    for (const cfg of configs) {
+      expect(["user", "env"]).toContain(cfg.source);
+    }
+  });
+
+  test("GET /env-status 返回回填状态扩展字段", async ({ request }) => {
+    const response = await request.get(`/api/llm/env-status`);
+    expect(response.ok()).toBeTruthy();
+
+    const body = await response.json();
+    expect(body).toHaveProperty("hasEnvConfig");
+    expect(body).toHaveProperty("hasDefaultDbConfig");
+    expect(body).toHaveProperty("dbConfigCount");
+    expect(typeof body.dbConfigCount).toBe("number");
+  });
+
+  test("POST 创建的配置 source 默认 user", async ({ request }) => {
+    const response = await request.post(`/api/llm?userId=${USER_ID}`, {
+      data: {
+        provider: "deepseek",
+        apiKey: "sk-e2e-source-test",
+        baseUrl: "https://api.deepseek.com",
+        defaultModel: "deepseek-v4-flash",
+      },
+    });
+    expect(response.status()).toBe(201);
+
+    const { config } = await response.json();
+    expect(config.source).toBe("user");
+
+    await request.delete(`/api/llm/${config.id}?userId=${USER_ID}`);
   });
 });
