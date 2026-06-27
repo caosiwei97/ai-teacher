@@ -17,6 +17,8 @@ import { llmConfigRoute } from "./routes/llm-config";
 import { sourcesRoute } from "./routes/sources";
 import { cleanupOrphanSandboxes, ensureSandbox, registerShutdownHook } from "./services/sandbox";
 import { ensureBucket } from "@ai-teacher/shared/services/storage";
+import { backfillLlmConfigsFromEnv } from "@ai-teacher/shared/services/llm-backfill";
+import { prisma } from "@ai-teacher/db";
 
 const app = new Hono();
 
@@ -96,5 +98,11 @@ server.listen(port, async () => {
   if (cleaned > 0) console.log(`[server] Cleaned up ${cleaned} orphan sandbox(es)`);
   // MinIO bucket 幂等创建（fire-and-forget：失败仅日志，不阻断 server 启动）
   ensureBucket().catch((err) => console.error(`[storage] ensureBucket failed: ${err.message}`));
+  // 启动时回填 .env 的 LLM KEY 到 DB（幂等，失败不阻塞启动）
+  backfillLlmConfigsFromEnv(prisma, "seed-user-ai-teacher")
+    .then((r) => {
+      if (r.inserted > 0) console.log(`[backfill] 从 .env 回填了 ${r.inserted} 条 LLM 配置`);
+    })
+    .catch((err) => console.error("[backfill] 回填失败（不阻塞）:", err));
   console.log(`[server] Hono API server running on http://localhost:${port}`);
 });
