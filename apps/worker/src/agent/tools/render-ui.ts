@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const renderUITool: ToolDefinition = {
   name: "renderUI",
-  description: "生成结构化教学组件（表格、对比卡、提示卡），让教学内容更直观清晰",
+  description: "生成结构化教学组件（表格、对比卡、提示卡、互动产物），让教学内容更直观清晰",
   inputSchema: z.object({
     blocks: z
       .array(
@@ -57,6 +57,10 @@ export const renderUITool: ToolDefinition = {
             }),
             badges: z.array(z.string()),
           }),
+          z.object({
+            type: z.literal("interactive"),
+            html: z.string(),
+          }),
         ]),
       )
       .describe("要渲染的结构化内容块列表"),
@@ -72,6 +76,7 @@ export const renderUITool: ToolDefinition = {
 - heading: 标题（level 2 或 3，用于分隔内容段落）
 - badge: 徽章标签（success=已掌握, warning=需注意, info=信息，适合展示关键要点）
 - mastery-report: 掌握总结报告（节点掌握后展示总结表格和核心徽章）
+- interactive: 互动教学产物（自包含 HTML，iframe 沙箱渲染，用户可交互操作；用于让概念可看可练）
 每次调用可以生成多个 block，它们会按顺序显示在你的回复中。`,
   promptGuidelines: [
     "讲对比类知识时（如浅拷贝vs深拷贝、同步vs异步），用 comparison 类型",

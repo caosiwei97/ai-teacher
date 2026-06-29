@@ -55,6 +55,13 @@ interface LlmJobConfig {
 }
 
 async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
+  // MOCK_LLM 模式（E2E）直接用 mock provider，不解密 seed key
+  // （seed LlmConfig 用 dev LLM_ENCRYPTION_KEY 加密，与 E2E TEST_ENCRYPTION_KEY 不一致，
+  //  解密会抛 "Unsupported state or unable to authenticate data" 导致 chat-turn job 失败）
+  if (process.env.MOCK_LLM === "true") {
+    return { providerFn: getFallbackProvider() };
+  }
+
   const resolved = await resolveProviderConfig(prisma, {
     userId: "seed-user-ai-teacher",
     llmConfigId,

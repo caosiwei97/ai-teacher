@@ -306,17 +306,19 @@ interface TutorPromptContext {
 | `heading`        | 标题，分隔内容段落           | `level`: 2/3, `text`                                        |
 | `badge`          | 徽章标签，展示关键要点       | `items`: [{text, variant}]                                  |
 | `mastery-report` | 掌握总结报告（迭代 029）     | `nodeId`, `nodeName`, `score`, `summary`, `table`, `badges` |
+| `interactive`    | 互动教学产物（迭代 050②）    | `html`（自包含 HTML，iframe 沙箱渲染）                      |
 
 **Prompt 片段**（注入 system prompt）：
 
 ```
-**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持六种类型：
+**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持七种类型：
 - table: 表格（适合对比多个属性、罗列要点）
 - callout: 提示卡（tip=提示, warning=注意事项, key=核心要点）
 - comparison: 对比卡（适合两种方案的横向比较）
 - heading: 标题（h2/h3，分隔内容段落）
 - badge: 徽章标签（success/warning/info，展示关键要点）
 - mastery-report: 掌握总结报告（节点掌握后自动生成）
+- interactive: 互动教学产物（自包含 HTML，iframe 沙箱渲染，用户可交互；让概念可看可练）
 每次调用可以生成多个 block，它们会按顺序显示在你的回复中。
 ```
 
@@ -327,6 +329,21 @@ interface TutorPromptContext {
 - 强调核心概念或常见陷阱时，用 callout 类型（variant=key 核心要点，variant=warning 常见陷阱）
 - 不要在 renderUI 中重复文字内容，而是补充视觉化呈现
 - 每个知识点最多 1-2 次 renderUI 调用
+
+**⚠️ 既有债：UIBlock type 产出路径梳理（迭代 050②）**
+
+`ui-block.ts` 定义 13 种 UIBlock type，但产出路径不一，部分脱节：
+
+| UIBlock type                                                      | 产出路径                                        | 说明                                   |
+| ----------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------- |
+| table/callout/comparison/heading/badge/mastery-report/interactive | `renderUI` tool（`render-ui.ts` union，7 种）   | 经 renderUI tool 产出，SSE `ui-blocks` |
+| text                                                              | `message-service` 流式增量                      | agent 文本回复                         |
+| assessment                                                        | `message-service`（掌握报告 `hasAssessment`）   | 非 renderUI 路径                       |
+| quiz                                                              | `askQuestion` 工具产出 questions，前端构造      | 非 renderUI 路径                       |
+| code-result                                                       | `execute-code` 工具产出 stdout/stderr，前端构造 | 非 renderUI 路径                       |
+| formula/diagram                                                   | **无产出路径命中**（疑似 schema 定义未接入）    | registry 有 renderer 但无产出，待治理  |
+
+> `render-ui.ts` union 只放开 7 种（经 renderUI tool），其余 6 种由流式/其他工具/前端构造。`formula`/`diagram` 定义了 schema 与 renderer 但无产出路径，属未完成功能，后续迭代治理。
 
 ### 3.8 pushCode
 

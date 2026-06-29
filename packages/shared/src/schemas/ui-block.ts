@@ -106,6 +106,12 @@ export const MasteryReportBlockSchema = z.object({
   badges: z.array(z.string()),
 });
 
+// 迭代 050②：互动教学产物（自包含 HTML，前端 iframe 沙箱渲染）
+export const InteractiveBlockSchema = z.object({
+  type: z.literal("interactive"),
+  html: z.string(),
+});
+
 export const UIBlockSchema = z.discriminatedUnion("type", [
   TextBlockSchema,
   AssessmentBlockSchema,
@@ -119,6 +125,7 @@ export const UIBlockSchema = z.discriminatedUnion("type", [
   HeadingBlockSchema,
   BadgeBlockSchema,
   MasteryReportBlockSchema,
+  InteractiveBlockSchema,
 ]);
 
 export type UIBlock = z.infer<typeof UIBlockSchema>;
@@ -134,6 +141,7 @@ export type ComparisonCardBlock = z.infer<typeof ComparisonCardSchema>;
 export type HeadingBlock = z.infer<typeof HeadingBlockSchema>;
 export type BadgeBlock = z.infer<typeof BadgeBlockSchema>;
 export type MasteryReportBlock = z.infer<typeof MasteryReportBlockSchema>;
+export type InteractiveBlock = z.infer<typeof InteractiveBlockSchema>;
 
 export interface UIStreamStartEvent {
   type: "ui-stream-start";

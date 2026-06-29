@@ -34,24 +34,63 @@ function getMockProvider(): (modelId: string) => LanguageModel {
           },
           warnings: [],
         }),
-        doStream: async () => ({
-          stream: simulateReadableStream({
-            chunks: [
-              { type: "text-start", id: "text-0" },
-              { type: "text-delta", id: "text-0", delta: "这是一个模拟回复。" },
-              { type: "text-end", id: "text-0" },
-              {
-                type: "finish",
-                finishReason: { unified: "stop", raw: undefined },
-                logprobs: undefined,
-                usage: {
-                  inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
-                  outputTokens: { total: 20, text: 20, reasoning: undefined },
+        doStream: async ({ prompt }) => {
+          // E2E 标记：user 消息含 [render-interactive] → 返回 renderUI(interactive) tool call，
+          // 触发 iframe 沙箱渲染链路（mock 默认只返回文本，不调 tool）
+          const lastUser = [...(prompt ?? [])]
+            .reverse()
+            .find((m) => m.role === "user");
+          // content 可能是 string 或 parts 数组（如 [{type:'text',text:'...'}]），统一 stringify 检测标记
+          const userText = JSON.stringify(lastUser?.content ?? "");
+
+          if (userText.includes("[render-interactive]")) {
+            const html =
+              '<button id="btn">点我</button><p id="out">未点击</p>' +
+              '<script>document.getElementById("btn").addEventListener("click",function(){document.getElementById("out").textContent="已点击"})</script>';
+            return {
+              stream: simulateReadableStream({
+                chunks: [
+                  {
+                    type: "tool-call",
+                    toolCallId: "call-interactive",
+                    toolName: "renderUI",
+                    input: JSON.stringify({
+                      blocks: [{ type: "interactive", html }],
+                    }),
+                  },
+                  {
+                    type: "finish",
+                    finishReason: { unified: "stop", raw: undefined },
+                    logprobs: undefined,
+                    usage: {
+                      inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+                      outputTokens: { total: 20, text: 20, reasoning: undefined },
+                    },
+                  },
+                ],
+              }),
+            };
+          }
+
+          return {
+            stream: simulateReadableStream({
+              chunks: [
+                { type: "text-start", id: "text-0" },
+                { type: "text-delta", id: "text-0", delta: "这是一个模拟回复。" },
+                { type: "text-end", id: "text-0" },
+                {
+                  type: "finish",
+                  finishReason: { unified: "stop", raw: undefined },
+                  logprobs: undefined,
+                  usage: {
+                    inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+                    outputTokens: { total: 20, text: 20, reasoning: undefined },
+                  },
                 },
-              },
-            ],
-          }),
-        }),
+              ],
+            }),
+          };
+        },
       });
   }
   return _mockProvider;
