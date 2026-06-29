@@ -67,6 +67,14 @@ export const renderUITool: ToolDefinition = {
             front: z.string(),
             back: z.string(),
           }),
+          z.object({
+            type: z.literal("interviewScore"),
+            totalScore: z.number(),
+            difficulty: z.enum(["easy", "medium", "hard"]),
+            weakPoints: z.array(z.string()),
+            improvement: z.string(),
+            questionCount: z.number(),
+          }),
         ]),
       )
       .describe("要渲染的结构化内容块列表"),
@@ -75,7 +83,7 @@ export const renderUITool: ToolDefinition = {
     const p = params as { blocks: unknown[] };
     return { success: true, uiBlocks: p.blocks };
   },
-  promptSnippet: `**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持七种类型：
+  promptSnippet: `**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持九种类型：
 - table: 表格（适合对比多个属性、罗列要点）
 - callout: 提示卡（tip=提示, warning=注意事项, key=核心要点）
 - comparison: 对比卡（适合两种方案的横向比较）
@@ -84,6 +92,7 @@ export const renderUITool: ToolDefinition = {
 - mastery-report: 掌握总结报告（节点掌握后展示总结表格和核心徽章）
 - interactive: 互动教学产物（自包含 HTML，iframe 沙箱渲染，用户可交互操作；用于让概念可看可练）
 - flashcard: 复习抽认卡（正面问题 front → 翻面答案 back，需带 nodeId；复习模式提取练习用）
+- interviewScore: 面试评分卡（totalScore/difficulty/weakPoints/improvement/questionCount；面试复盘用）
 每次调用可以生成多个 block，它们会按顺序显示在你的回复中。`,
   promptGuidelines: [
     "讲对比类知识时（如浅拷贝vs深拷贝、同步vs异步），用 comparison 类型",

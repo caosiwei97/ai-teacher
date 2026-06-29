@@ -11,6 +11,8 @@ import { askQuestionTool } from "./ask-question";
 import { generateRoadmapTool } from "./generate-roadmap";
 import { retrieveContextTool } from "./retrieve-context";
 import { recordReviewResultTool } from "./record-review-result";
+import { scoreAnswerTool } from "./score-answer";
+import { finalizeInterviewTool } from "./finalize-interview";
 
 // 学习模式工具集（tutor agent）
 export const tutorToolDefinitions: ToolDefinition[] = [
@@ -31,4 +33,11 @@ export const tutorToolDefinitions: ToolDefinition[] = [
 export const reviewToolDefinitions: ToolDefinition[] = [
   renderUITool,
   recordReviewResultTool,
+];
+
+// 面试模式工具集（interview agent，spec §4）：renderUI 产评分卡 + scoreAnswer 每题评分 + finalizeInterview 复盘
+export const interviewToolDefinitions: ToolDefinition[] = [
+  renderUITool,
+  scoreAnswerTool,
+  finalizeInterviewTool,
 ];

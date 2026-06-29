@@ -120,6 +120,16 @@ export const FlashcardBlockSchema = z.object({
   back: z.string(),
 });
 
+// 迭代 052：面试评分卡（复盘产物，spec §4.1 复盘）
+export const InterviewScoreBlockSchema = z.object({
+  type: z.literal("interviewScore"),
+  totalScore: z.number(),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  weakPoints: z.array(z.string()),
+  improvement: z.string(),
+  questionCount: z.number(),
+});
+
 export const UIBlockSchema = z.discriminatedUnion("type", [
   TextBlockSchema,
   AssessmentBlockSchema,
@@ -135,6 +145,7 @@ export const UIBlockSchema = z.discriminatedUnion("type", [
   MasteryReportBlockSchema,
   InteractiveBlockSchema,
   FlashcardBlockSchema,
+  InterviewScoreBlockSchema,
 ]);
 
 export type UIBlock = z.infer<typeof UIBlockSchema>;
@@ -152,6 +163,7 @@ export type BadgeBlock = z.infer<typeof BadgeBlockSchema>;
 export type MasteryReportBlock = z.infer<typeof MasteryReportBlockSchema>;
 export type InteractiveBlock = z.infer<typeof InteractiveBlockSchema>;
 export type FlashcardBlock = z.infer<typeof FlashcardBlockSchema>;
+export type InterviewScoreBlock = z.infer<typeof InterviewScoreBlockSchema>;
 
 export interface UIStreamStartEvent {
   type: "ui-stream-start";

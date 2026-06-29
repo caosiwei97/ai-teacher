@@ -8,6 +8,7 @@ import { errorHandler } from "./middleware/error-handler";
 import { sessionsRoute } from "./routes/sessions";
 import { sessionDetailRoute } from "./routes/session-detail";
 import { reviewRoute } from "./routes/review";
+import { interviewRoute } from "./routes/interview";
 import { diagnosticRoute } from "./routes/diagnostic";
 import { suggestedTopicsRoute } from "./routes/suggested-topics";
 import { suggestReplyRoute } from "./routes/suggest-reply";
@@ -30,6 +31,7 @@ app.onError(errorHandler);
 // Mount more specific routes before less specific ones
 app.route("/api/sessions/:sessionId/diagnostic", diagnosticRoute);
 app.route("/api/sessions/:sessionId/review", reviewRoute);
+app.route("/api/sessions/:sessionId/interview", interviewRoute);
 app.route("/api/sessions/:sessionId", sessionDetailRoute);
 app.route("/api/sessions", sessionsRoute);
 app.route("/api/suggested-topics", suggestedTopicsRoute);

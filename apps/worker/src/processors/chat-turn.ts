@@ -4,7 +4,7 @@ import { prisma } from "@ai-teacher/db";
 import { StructuredSummarySchema } from "@ai-teacher/shared";
 import { tool as aiTool, type Tool } from "ai";
 import { runAgentLoop } from "../agent/run-agent-loop";
-import { tutorToolDefinitions, reviewToolDefinitions } from "../agent/tools/create-tools";
+import { tutorToolDefinitions, reviewToolDefinitions, interviewToolDefinitions } from "../agent/tools/create-tools";
 import { createDelegateTaskTool } from "../agent/tools/delegate-task";
 import { subagentConfigs } from "../agent/subagents";
 import { MessageService } from "../agent/services/message-service";
@@ -12,7 +12,9 @@ import { buildLearnerProfile } from "../lib/learner-profile";
 import { ContextManager } from "../agent/context-manager";
 import { buildTutorSystemPrompt } from "../agent/prompts/tutor";
 import { buildReviewSystemPrompt } from "../agent/prompts/review";
+import { buildInterviewSystemPrompt } from "../agent/prompts/interview";
 import { selectDueReviewNodes } from "@ai-teacher/shared/services/spaced-repetition";
+import { InterviewService } from "@ai-teacher/shared/services/interview-service";
 import {
   createProviderForConfig,
   getFallbackProvider,
@@ -246,13 +248,27 @@ export function createChatTurnWorker(
           ? roadmapNodes.every((n) => n.status === "not_started")
           : true;
 
-        // 迭代 051：按 session.activeMode 分流——review → 考官 prompt + 复习 tools；learning → 既有 tutor
+        // 迭代 051/052：按 session.activeMode 分流——review → 考官；interview → 面试官；learning → 既有 tutor
         const isReviewMode = activeMode === "review";
+        const isInterviewMode = activeMode === "interview";
 
         let systemPrompt: string;
         let allToolDefs: ToolDefinition[];
 
-        if (isReviewMode) {
+        if (isInterviewMode) {
+          // 迭代 052：取/建 in_progress 面试记录，注入当前难度/streak/题数
+          const interview = await InterviewService.startOrGet(sessionId);
+          const questionLog =
+            (interview.questionLog as Array<{ score: number }> | null) ?? [];
+          systemPrompt = buildInterviewSystemPrompt({
+            topic,
+            difficulty: interview.difficulty as "easy" | "medium" | "hard",
+            streak: interview.streak,
+            questionCount: questionLog.length,
+            masteredNodes: masteredNodes,
+          });
+          allToolDefs = [...interviewToolDefinitions];
+        } else if (isReviewMode) {
           const dueNodes = selectDueReviewNodes(roadmapNodes);
           systemPrompt = buildReviewSystemPrompt({
             topic,
@@ -314,7 +330,7 @@ export function createChatTurnWorker(
 
         // 迭代 009：学习模式下若用户有已就绪的学习资料，提示 Agent 可用 retrieveContext 检索
         let ragHint = "";
-        if (!isReviewMode) {
+        if (!isReviewMode && !isInterviewMode) {
           const readySourceCount = await prisma.source.count({
             where: { userId, status: "ready" },
           });

@@ -172,6 +172,51 @@ Prompt 核心片段：
 - 全部复习完用一句话总结：记忆强度 + 下次复习时间 + 薄弱点
 ```
 
+### 2.4 Interview Agent System Prompt（迭代 052②）
+
+面试模式（`session.activeMode === "interview"`）下，chat-turn 改用面试官 prompt + 面试工具集（`renderUI` + `scoreAnswer` + `finalizeInterview`）。核心理念：**全程不讲解只追问**，高压基调，答错深挖"为什么"（spec §4.3，区别于复习的"答错才提示"）。
+
+```typescript
+interface InterviewPromptContext {
+  topic: string;
+  difficulty: "easy" | "medium" | "hard"; // 当前难度（InterviewResult 持久化）
+  streak: number; // 连续答对(+)/答错(-)
+  questionCount: number; // 已答题数
+  masteredNodes: string[]; // 面试范围=已掌握知识点
+}
+```
+
+Prompt 核心片段：
+
+```markdown
+# 角色
+
+你是一名严肃的技术面试官，正在对候选人进行真实面试。你拷问已学知识，不教新东西，不讲解，只出题、追问、评分。
+
+# 核心规则
+
+1. **全程不讲解，只追问**。禁止任何讲解性陈述（"让我解释/这是因为/举个例子说明"等）。答完只评判+追问；答得好追问更深，答不好追问"为什么"。
+2. **绝不给提示**。卡住或答错不提示，只追问或出下一题。讲解/建议只在复盘。
+3. **一次一题**。每题即时调 scoreAnswer 评分（内部），再出下一题。
+4. **高压基调**。简洁直接，不寒暄不鼓励。
+5. **难度动态**。按当前难度出题，连续答对升档/答错降档（系统自动），据 scoreAnswer 返回新难度调整。
+
+# 难度档位
+
+- 🟢 初级：概念辨析/定义解释，追问1层
+- 🟡 中级：代码预测/调试改错，追问2-3层要求权衡
+- 🔴 高级：系统设计/开放问题，持续追问挑战假设
+
+# 当前面试状态
+
+- 主题：{topic}，范围：{masteredNodes}，当前难度：{difficulty}，已答：{questionCount}题
+
+# 工具调用规则
+
+- scoreAnswer：每题答完必调，传 question/answer/score/isCorrect/difficulty/feedback。系统调难度，返回新 difficulty。不要告诉候选人单题分
+- finalizeInterview：结束（候选人说结束或≥5题）时调，传 improvement+weakPoints。系统算总评。调后用 renderUI 产 interviewScore 评分卡，一句话总结结束
+```
+
 ---
 
 ## 3. Agent 工具定义
@@ -332,7 +377,7 @@ Prompt 核心片段：
 
 ### 3.7 renderUI
 
-生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告、互动产物、抽认卡），让教学内容更直观（迭代 024 新增，迭代 029 扩展，050② 加 interactive，051② 加 flashcard）。
+生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告、互动产物、抽认卡、面试评分卡），让教学内容更直观（迭代 024 新增，迭代 029 扩展，050② 加 interactive，051② 加 flashcard，052② 加 interviewScore）。
 
 ```typescript
 {
@@ -340,7 +385,7 @@ Prompt 核心片段：
   description: "生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告、互动产物、抽认卡）",
   parameters: {
     blocks: [{
-      type: "table" | "callout" | "comparison" | "heading" | "badge" | "mastery-report" | "interactive" | "flashcard",
+      type: "table" | "callout" | "comparison" | "heading" | "badge" | "mastery-report" | "interactive" | "flashcard" | "interviewScore",
       // table: { title?, headers: string[], rows: string[][] }
       // callout: { variant: "tip"|"warning"|"key", title?, content: string }
       // comparison: { title?, items: { label, left, right }[] }
@@ -349,6 +394,7 @@ Prompt 核心片段：
       // mastery-report: { nodeId, nodeName, score, summary, table: { columns, rows }, badges: string[] }
       // interactive: { html: string } — 自包含 HTML，iframe 沙箱渲染（迭代 050②）
       // flashcard: { nodeId, front, back } — 复习抽认卡，正面问题→翻面答案（迭代 051②）
+      // interviewScore: { totalScore, difficulty, weakPoints, improvement, questionCount } — 面试评分卡（迭代 052②）
     }]
   },
   // 返回: { success: true, uiBlocks: Block[] } — 前端自动渲染对应组件
@@ -357,21 +403,22 @@ Prompt 核心片段：
 
 **Block 类型说明**：
 
-| 类型             | 用途                         | 关键字段                                                    |
-| ---------------- | ---------------------------- | ----------------------------------------------------------- |
-| `table`          | 表格，适合对比属性、罗列要点 | `headers`, `rows`                                           |
-| `callout`        | 提示卡，强调核心概念或陷阱   | `variant`: tip/warning/key, `content`                       |
-| `comparison`     | 对比卡，两种方案横向比较     | `items`: [{label, left, right}]                             |
-| `heading`        | 标题，分隔内容段落           | `level`: 2/3, `text`                                        |
-| `badge`          | 徽章标签，展示关键要点       | `items`: [{text, variant}]                                  |
-| `mastery-report` | 掌握总结报告（迭代 029）     | `nodeId`, `nodeName`, `score`, `summary`, `table`, `badges` |
-| `interactive`    | 互动教学产物（迭代 050②）    | `html`（自包含 HTML，iframe 沙箱渲染）                      |
-| `flashcard`      | 复习抽认卡（迭代 051②）      | `nodeId`, `front`, `back`（正面问题→翻面答案）              |
+| 类型             | 用途                         | 关键字段                                                                 |
+| ---------------- | ---------------------------- | ------------------------------------------------------------------------ |
+| `table`          | 表格，适合对比属性、罗列要点 | `headers`, `rows`                                                        |
+| `callout`        | 提示卡，强调核心概念或陷阱   | `variant`: tip/warning/key, `content`                                    |
+| `comparison`     | 对比卡，两种方案横向比较     | `items`: [{label, left, right}]                                          |
+| `heading`        | 标题，分隔内容段落           | `level`: 2/3, `text`                                                     |
+| `badge`          | 徽章标签，展示关键要点       | `items`: [{text, variant}]                                               |
+| `mastery-report` | 掌握总结报告（迭代 029）     | `nodeId`, `nodeName`, `score`, `summary`, `table`, `badges`              |
+| `interactive`    | 互动教学产物（迭代 050②）    | `html`（自包含 HTML，iframe 沙箱渲染）                                   |
+| `flashcard`      | 复习抽认卡（迭代 051②）      | `nodeId`, `front`, `back`（正面问题→翻面答案）                           |
+| `interviewScore` | 面试评分卡（迭代 052②）      | `totalScore`, `difficulty`, `weakPoints`, `improvement`, `questionCount` |
 
 **Prompt 片段**（注入 system prompt）：
 
 ```
-**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持八种类型：
+**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持九种类型：
 - table: 表格（适合对比多个属性、罗列要点）
 - callout: 提示卡（tip=提示, warning=注意事项, key=核心要点）
 - comparison: 对比卡（适合两种方案的横向比较）
@@ -380,6 +427,7 @@ Prompt 核心片段：
 - mastery-report: 掌握总结报告（节点掌握后自动生成）
 - interactive: 互动教学产物（自包含 HTML，iframe 沙箱渲染，用户可交互；让概念可看可练）
 - flashcard: 复习抽认卡（正面问题 front → 翻面答案 back，需带 nodeId；复习模式提取练习用）
+- interviewScore: 面试评分卡（totalScore/difficulty/weakPoints/improvement/questionCount；面试复盘用）
 每次调用可以生成多个 block，它们会按顺序显示在你的回复中。
 ```
 
@@ -393,18 +441,18 @@ Prompt 核心片段：
 
 **⚠️ 既有债：UIBlock type 产出路径梳理（迭代 050②）**
 
-`ui-block.ts` 定义 14 种 UIBlock type，但产出路径不一，部分脱节：
+`ui-block.ts` 定义 15 种 UIBlock type，但产出路径不一，部分脱节：
 
-| UIBlock type                                                                | 产出路径                                        | 说明                                   |
-| --------------------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------- |
-| table/callout/comparison/heading/badge/mastery-report/interactive/flashcard | `renderUI` tool（`render-ui.ts` union，8 种）   | 经 renderUI tool 产出，SSE `ui-blocks` |
-| text                                                                        | `message-service` 流式增量                      | agent 文本回复                         |
-| assessment                                                                  | `message-service`（掌握报告 `hasAssessment`）   | 非 renderUI 路径                       |
-| quiz                                                                        | `askQuestion` 工具产出 questions，前端构造      | 非 renderUI 路径                       |
-| code-result                                                                 | `execute-code` 工具产出 stdout/stderr，前端构造 | 非 renderUI 路径                       |
-| formula/diagram                                                             | **无产出路径命中**（疑似 schema 定义未接入）    | registry 有 renderer 但无产出，待治理  |
+| UIBlock type                                                                               | 产出路径                                        | 说明                                   |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------- | -------------------------------------- |
+| table/callout/comparison/heading/badge/mastery-report/interactive/flashcard/interviewScore | `renderUI` tool（`render-ui.ts` union，9 种）   | 经 renderUI tool 产出，SSE `ui-blocks` |
+| text                                                                                       | `message-service` 流式增量                      | agent 文本回复                         |
+| assessment                                                                                 | `message-service`（掌握报告 `hasAssessment`）   | 非 renderUI 路径                       |
+| quiz                                                                                       | `askQuestion` 工具产出 questions，前端构造      | 非 renderUI 路径                       |
+| code-result                                                                                | `execute-code` 工具产出 stdout/stderr，前端构造 | 非 renderUI 路径                       |
+| formula/diagram                                                                            | **无产出路径命中**（疑似 schema 定义未接入）    | registry 有 renderer 但无产出，待治理  |
 
-> `render-ui.ts` union 只放开 8 种（经 renderUI tool），其余 6 种由流式/其他工具/前端构造。`formula`/`diagram` 定义了 schema 与 renderer 但无产出路径，属未完成功能，后续迭代治理。
+> `render-ui.ts` union 只放开 9 种（经 renderUI tool），其余 6 种由流式/其他工具/前端构造。`formula`/`diagram` 定义了 schema 与 renderer 但无产出路径，属未完成功能，后续迭代治理。
 
 ### 3.8 pushCode
 
@@ -569,6 +617,46 @@ Prompt 核心片段：
 - 抽认卡**不要**调用本工具——UI 会自动记录答对/答错结果（POST /review/result），你只需推进下一题
 - 答错时先给 1-2 句关键提示（不重讲概念），再调用本工具
 - 一个知识点只记录一次，记录后即推进下一题
+
+### 3.13 scoreAnswer
+
+面试每题即时评分，按答题表现动态调整难度（迭代 052② 面试模式）。调 `InterviewService.scoreAnswer`（封装 `adjustDifficulty` + prisma 更新 InterviewResult）。
+
+```typescript
+{
+  name: "scoreAnswer",
+  description: "面试每题即时评分，动态调整难度（连续2答对升档/连续2答错降档）",
+  parameters: {
+    question: string,   // 本题题目
+    answer: string,     // 候选人回答摘要
+    score: number,      // 0-100
+    isCorrect: boolean, // 是否答对核心
+    difficulty: "easy" | "medium" | "hard", // 本题难度
+    feedback: string,   // 薄弱点/评语
+  },
+  // 返回: { success, ...params, difficulty(新), streak, questionCount }
+}
+```
+
+**Prompt 片段**（注入 interview system prompt）：候选人每答完一题必须调用。系统按连续表现动态调整难度（连续2答对升档/连续2答错降档），返回新 difficulty + streak + questionCount。不要告诉候选人单题分数。
+
+### 3.14 finalizeInterview
+
+结束面试并生成复盘（迭代 052②）。调 `InterviewService.finalize`（`computeTotalScore` 各题平均 + 置 completed）。
+
+```typescript
+{
+  name: "finalizeInterview",
+  description: "结束面试并生成复盘：总评分 + 薄弱点 + 改进建议",
+  parameters: {
+    improvement: string,    // 改进建议 2-3 句（面试全程唯一讲解）
+    weakPoints: string[],   // 薄弱点清单
+  },
+  // 返回: { success, totalScore, weakPoints, improvement, questionCount }
+}
+```
+
+**使用指引**：候选人说"结束/复盘"或已问 ≥5 题时调用。这是面试全程唯一的讲解时机；调用后必须用 renderUI 产 interviewScore 评分卡呈现复盘。
 
 ---
 

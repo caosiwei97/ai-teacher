@@ -21,6 +21,7 @@
 | GET    | `/api/sessions/:id/review/due`          | 今日到期复习清单（迭代 051②）   | ✅   |
 | POST   | `/api/sessions/:id/review/result`       | 提交复习结果（更新记忆强度）    | ✅   |
 | GET    | `/api/sessions/:id/review/summary`      | 薄弱点汇总（错题本）            | ✅   |
+| GET    | `/api/sessions/:id/interview/result`    | 面试结果（评分卡/复盘，052②）   | ✅   |
 | POST   | `/api/quick-question`                   | 快问（选中文字提问）            | ✅   |
 | POST   | `/api/suggest-reply`                    | AI 建议回复                     | ✅   |
 | GET    | `/api/suggested-topics`                 | 获取推荐学习话题                | ✅   |
@@ -863,6 +864,52 @@ GET /api/sessions/:sessionId/review/summary
 #### 说明
 
 - 薄弱点 = mastered 且 `memoryStrength < 0.6`，按强度升序（spec §3.3 错题本，可一键转回学习模式重学）
+
+---
+
+## 17. 面试模式（迭代 052②）
+
+面试模式 API，挂载于 `/api/sessions/:sessionId/interview`。评分算法（`adjustDifficulty`/`computeTotalScore`）+ 数据服务（`InterviewService`）位于 `packages/shared/src/services/`。面试流程由面试官 agent（chat-turn `activeMode=interview` 分流）驱动，本 API 仅查询结果。
+
+### 17.1 查询面试结果
+
+```
+GET /api/sessions/:sessionId/interview/result
+```
+
+#### 响应 `200`
+
+```json
+{
+  "result": {
+    "id": "clx...",
+    "sessionId": "clx...",
+    "status": "completed",
+    "difficulty": "medium",
+    "streak": 0,
+    "totalScore": 75,
+    "questionLog": [
+      {
+        "question": "...",
+        "answer": "...",
+        "score": 80,
+        "isCorrect": true,
+        "difficulty": "medium",
+        "feedback": "..."
+      }
+    ],
+    "weakPoints": ["闭包", "this 绑定"],
+    "improvement": "多练基础概念...",
+    "createdAt": "2026-06-29T..."
+  }
+}
+```
+
+#### 说明
+
+- 返回最新面试记录（in_progress 或 completed）；无记录 → `result: null`
+- 评分卡/复盘由 agent 调 `finalizeInterview` 后产 `interviewScore` block 呈现；本接口供 UI 持久展示
+- `totalScore` = 各题 score 平均（`computeTotalScore`）；`difficulty`/`streak` 由 `scoreAnswer` 动态调整
 
 ---
 
