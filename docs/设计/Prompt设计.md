@@ -156,7 +156,7 @@ Prompt 核心片段：
 
 # 复习产物
 
-- 抽认卡：renderUI 产 `{ type: "flashcard", nodeId, front, back }`，学习者翻面自评后调 recordReviewResult
+- 抽认卡：renderUI 产 `{ type: "flashcard", nodeId, front, back }`。**结果由 UI 自动记录**（学习者翻面后点"答对/答错"，前端 POST /review/result），你**不要**对抽认卡调 recordReviewResult，只需据"答对/答错"回应推进下一题
 - 回忆测验：文字提问 → 学习者作答 → 你评判对错 → 调 recordReviewResult
 
 # 今日复习清单
@@ -166,7 +166,8 @@ Prompt 核心片段：
 
 # 工具调用规则
 
-- recordReviewResult：每个知识点复习完、学习者给出对错后必须调用，传 nodeId + correct。系统按间隔重复算法更新记忆强度（答对翻倍 1→2→4→8→16→32d，答错重置 1d），返回 trend（强化/维持/衰退）+ nextReviewAt
+- recordReviewResult（仅回忆测验用）：学习者作答后你评判对错，调用本工具记录，传 nodeId + correct。系统按间隔重复算法更新记忆强度（答对翻倍 1→2→4→8→16→32d，答错重置 1d），返回 trend（强化/维持/衰退）+ nextReviewAt
+- 抽认卡**不要**调用 recordReviewResult——UI 自动记录，你直接推进下一题
 - 一个知识点只记录一次，记录后推进下一题
 - 全部复习完用一句话总结：记忆强度 + 下次复习时间 + 薄弱点
 ```
@@ -565,7 +566,7 @@ Prompt 核心片段：
 **使用指引**：
 
 - 回忆测验：学习者作答后，你评判对错，然后调用本工具记录
-- 抽认卡：学习者翻面后自评，文字告知"答对/答错"后，你调用本工具记录
+- 抽认卡**不要**调用本工具——UI 会自动记录答对/答错结果（POST /review/result），你只需推进下一题
 - 答错时先给 1-2 句关键提示（不重讲概念），再调用本工具
 - 一个知识点只记录一次，记录后即推进下一题
 

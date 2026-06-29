@@ -72,6 +72,41 @@ function getMockProvider(): (modelId: string) => LanguageModel {
             };
           }
 
+          // E2E 标记：[render-flashcard] → 返回 renderUI(flashcard) tool call，
+          // 触发复习抽认卡渲染链路（迭代 051③）。nodeId 用 seed mastered 节点，便于 E2E 验证 POST /review/result
+          if (userText.includes("[render-flashcard]")) {
+            return {
+              stream: simulateReadableStream({
+                chunks: [
+                  {
+                    type: "tool-call",
+                    toolCallId: "call-flashcard",
+                    toolName: "renderUI",
+                    input: JSON.stringify({
+                      blocks: [
+                        {
+                          type: "flashcard",
+                          nodeId: "seed-node-use-state",
+                          front: "useState 的初始值支持哪两种形式？分别何时使用？",
+                          back: "1. 直接值：`useState(0)` 用于静态初始值。2. 函数：`useState(() => computeHeavy())` 用于惰性初始化，避免每次渲染都重复计算。",
+                        },
+                      ],
+                    }),
+                  },
+                  {
+                    type: "finish",
+                    finishReason: { unified: "stop", raw: undefined },
+                    logprobs: undefined,
+                    usage: {
+                      inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+                      outputTokens: { total: 20, text: 20, reasoning: undefined },
+                    },
+                  },
+                ],
+              }),
+            };
+          }
+
           return {
             stream: simulateReadableStream({
               chunks: [

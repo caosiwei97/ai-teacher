@@ -48,13 +48,20 @@ export interface ReviewOutcome {
 /**
  * 到期判断（spec §7.1）：nextReviewAt 为 null（未复习/老数据，按"逾期"优先呈现）
  * 或 ≤ now 即到期。
+ *
+ * 注：nextReviewAt 经 BullMQ JSON 序列化后可能为 ISO 字符串（Date → string），
+ * 兼容 Date | string | null。
  */
 export function isReviewDue(
-  state: { nextReviewAt: Date | null },
+  state: { nextReviewAt: Date | string | null },
   now: Date = new Date(),
 ): boolean {
   if (state.nextReviewAt === null) return true;
-  return state.nextReviewAt.getTime() <= now.getTime();
+  const t =
+    typeof state.nextReviewAt === "string"
+      ? Date.parse(state.nextReviewAt)
+      : state.nextReviewAt.getTime();
+  return t <= now.getTime();
 }
 
 /**

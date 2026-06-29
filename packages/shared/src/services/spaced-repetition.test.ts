@@ -34,6 +34,17 @@ describe("spaced-repetition（间隔重复算法）", () => {
     it("不传 now 默认用当前时间：未来时间未到期", () => {
       expect(isReviewDue({ nextReviewAt: addDays(new Date(), 5) })).toBe(false);
     });
+
+    it("nextReviewAt 为 ISO 字符串（BullMQ 序列化后）：正确判断到期", () => {
+      // 过去时间字符串 → 到期
+      expect(
+        isReviewDue({ nextReviewAt: addDays(NOW, -1).toISOString() }, NOW),
+      ).toBe(true);
+      // 未来时间字符串 → 未到期
+      expect(
+        isReviewDue({ nextReviewAt: addDays(NOW, 3).toISOString() }, NOW),
+      ).toBe(false);
+    });
   });
 
   describe("computeNextInterval", () => {

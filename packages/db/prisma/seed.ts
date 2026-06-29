@@ -302,6 +302,56 @@ async function main() {
     })),
   });
 
+  // 迭代 051③：复习多节点 seed 会话（2 个 mastered 节点，均到期，用于 E2E ≥2 交错场景）
+  const REVIEW_MULTI_SESSION_ID = "seed-session-review-multi";
+  const REVIEW_MULTI_ROADMAP_ID = "seed-roadmap-review-multi";
+  const reviewMultiNodes = [
+    {
+      id: "seed-node-review-a",
+      title: "变量提升与暂时性死区",
+      description: "let/const 的 TDZ 与 var 提升的区别",
+      status: "mastered",
+      masteryScore: 85,
+    },
+    {
+      id: "seed-node-review-b",
+      title: "this 绑定规则",
+      description: "默认/隐式/显式/new 绑定与优先级",
+      status: "mastered",
+      masteryScore: 82,
+    },
+  ];
+  const reviewMultiSession = await prisma.session.upsert({
+    where: { id: REVIEW_MULTI_SESSION_ID },
+    update: { userId: user.id, topic: "JS 基础复习", status: "active" },
+    create: {
+      id: REVIEW_MULTI_SESSION_ID,
+      userId: user.id,
+      topic: "JS 基础复习",
+      status: "active",
+    },
+  });
+  const reviewMultiRoadmap = await prisma.roadmap.upsert({
+    where: { sessionId: reviewMultiSession.id },
+    update: { version: 1 },
+    create: { id: REVIEW_MULTI_ROADMAP_ID, sessionId: reviewMultiSession.id, version: 1 },
+  });
+  await prisma.node.deleteMany({ where: { roadmapId: reviewMultiRoadmap.id } });
+  await prisma.node.createMany({
+    data: reviewMultiNodes.map((node, index) => ({
+      id: node.id,
+      roadmapId: reviewMultiRoadmap.id,
+      index,
+      title: node.title,
+      description: node.description,
+      status: node.status,
+      masteryScore: node.masteryScore,
+      reviewLog: Prisma.DbNull,
+      masteredAt: BASE_TIME,
+    })),
+  });
+  await prisma.message.deleteMany({ where: { sessionId: reviewMultiSession.id } });
+
   console.log("Seed completed successfully.");
   console.log(`User: ${user.id}`);
   console.log(`Sources: ${PDF_SOURCE_ID}, ${MARKDOWN_SOURCE_ID}`);

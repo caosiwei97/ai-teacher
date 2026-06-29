@@ -193,8 +193,16 @@ export function Component() {
   } | null>(null);
 
   const [rightCollapsed, setRightCollapsed] = useState(false);
-  const [rightTab, setRightTab] = useState<"roadmap" | "code" | "interactive">("roadmap");
+  const [rightTab, setRightTab] = useState<"roadmap" | "code" | "interactive" | "review">("roadmap");
   const [interactivePanel, setInteractivePanel] = useState<{ html: string } | null>(null);
+  const [activeMode, setActiveMode] = useState<"learning" | "review" | "interview">("learning");
+  const [reviewDueNodes, setReviewDueNodes] = useState<Array<{
+    id: string;
+    index: number;
+    title: string;
+    memoryStrength: number;
+    isOverdue: boolean;
+  }>>([]);
   const initialLoadDoneRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [rightWidth, setRightWidth] = useState<number>(320);
@@ -376,8 +384,14 @@ export function Component() {
       setNextNodeTitle(undefined);
       streamErrorRef.current = false;
       setSuggestion(undefined);
+      setActiveMode("learning");
+      setReviewDueNodes([]);
+      setRightTab("roadmap");
     }
     prevSessionRef.current = sessionId;
+
+    // 拉取今日复习到期清单（有 mastered 节点时）
+    fetchReviewDue();
 
     getLlmConfigs(USER_ID)
       .then((data) => setLlmConfigs(data.configs))
@@ -512,6 +526,57 @@ export function Component() {
       chat.handleSubmit(e);
     }
   }
+
+  // 复习模式：拉取今日到期清单（spec §3.1）
+  const fetchReviewDue = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/review/due`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setReviewDueNodes(data.dueNodes ?? []);
+    } catch {
+      /* ignore */
+    }
+  }, [sessionId]);
+
+  // 开始复习：切 activeMode=review + 发消息触发考官 agent
+  async function handleStartReview() {
+    if (!sessionId) return;
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activeMode: "review" }),
+      });
+      setActiveMode("review");
+      chat.submitMessage("开始复习吧");
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // 抽认卡自评事件：POST /review/result 更新记忆强度 + 发消息推进对话（spec §3.2/§3.3）
+  useEffect(() => {
+    if (!sessionId) return;
+    const handler = async (e: Event) => {
+      const { nodeId, correct } = (e as CustomEvent<{ nodeId: string; correct: boolean }>).detail;
+      try {
+        await fetch(`/api/sessions/${sessionId}/review/result`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nodeId, correct }),
+        });
+      } catch {
+        /* ignore */
+      }
+      chat.submitMessage(correct ? "答对" : "答错");
+      // 刷新到期清单（已答项移出）
+      fetchReviewDue();
+    };
+    window.addEventListener("review-flashcard-answer", handler);
+    return () => window.removeEventListener("review-flashcard-answer", handler);
+  }, [sessionId, chat, fetchReviewDue]);
 
   function handleTopicClick(topic: string) {
     optimisticUpdateTopic(topic);
@@ -858,6 +923,9 @@ export function Component() {
               interactivePanel={interactivePanel}
               activeTab={rightTab}
               onTabChange={setRightTab}
+              reviewDueNodes={reviewDueNodes}
+              onStartReview={handleStartReview}
+              reviewActive={activeMode === "review"}
             />
           </div>
         </>
