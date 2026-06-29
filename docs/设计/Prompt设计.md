@@ -2,7 +2,7 @@
 
 > 版本：v0.8
 > 更新日期：2026-05-10
-> 状态：已对齐实际实现（含迭代 029 掌握报告与自动过渡）
+> 状态：已对齐实际实现（含迭代 029 掌握报告、迭代 050 删掌握仪式）
 > 参考：Sigma Skill + 同类竞品实际交互分析
 
 ---
@@ -92,7 +92,7 @@ interface TutorPromptContext {
 2. **顺着用户的回答追问**。用户答偏了不批评，构造对比场景重新引导。
 3. **每轮最多问 1-2 个问题**。不要一次输出太多内容。
 4. **用户坦诚不清楚时，直接讲**。完整讲清楚，然后要求用户用自己的话复述。
-5. **追问 2-3 轮后总结**。确认用户理解正确才放行到下一个知识点。
+5. **确认理解即推进**。用户回答正确且理解到位就推进到下一个知识点，不要每轮总结复述。
 6. **语气自然**。用口语化的表达，不要机械式模板回复。
 
 # 当前教学上下文
@@ -109,12 +109,8 @@ interface TutorPromptContext {
 
 # 工具调用规则
 
-- 每 2-3 轮充分互动后调用 assessMastery 工具，conceptId 传当前节点的 ID
-- 当 assessMastery 返回 `instruction` 字段时（掌握通过），执行自动过渡：
-  1. 用 renderUI 生成总结报告（heading + table + badge）
-  2. 写 1 句庆祝 + 1 句桥接
-  3. 立即开始下一个知识点的苏格拉底式教学
-  4. 不要等待用户操作
+- 用户理解到位即调用 assessMastery 工具，conceptId 传当前节点的 ID
+- 当 assessMastery 返回 `instruction` 字段时（掌握通过），按 instruction 用一句话确认并预告下一节，然后停止——不要生成掌握总结报告、不要庆祝长文、不要复述概念。系统会自动开始下一节教学
 - 当 assessMastery 没有返回 instruction（分数 < 80），继续当前节点的追问教学
 - 不要编造节点 ID，使用上面列表中提供的真实 ID
 ```
@@ -127,7 +123,7 @@ interface TutorPromptContext {
 
 ### 3.1 assessMastery
 
-每 2-3 轮充分互动后调用，评估当前节点的掌握度。
+用户理解到位即调用，评估当前节点的掌握度。
 
 ```typescript
 {
@@ -146,8 +142,8 @@ interface TutorPromptContext {
   },
   // 返回值（迭代 029 新增）：
   // score ≥ 80 + 有下一节点 → { instruction, activatedNextNode, roadmapUpdate, sessionUpdate }
-  //   instruction 指导 Agent 自动过渡（庆祝 → renderUI → 桥接 → 开始教学）
-  // score ≥ 80 + 全部掌握 → { instruction: "总结整体学习旅程" }
+  //   instruction 指导 Agent 一句确认 + 预告下一节后停止（不生成报告 / 不庆祝 / 不复述）
+  // score ≥ 80 + 全部掌握 → { instruction: "一句简短祝贺学习成果" }
   // score < 80 → { success: true } （继续追问教学）
 }
 ```

@@ -78,11 +78,7 @@ export const assessMasteryTool: ToolDefinition = {
               masteredNodes: masteredCount,
               totalNodes: refreshedNodes.length,
             },
-            instruction: `Node "${nextNode.title}" is now active. You MUST do the following in order, then STOP:
-1. Render a mastery summary report using renderUI (with heading "${node.title}·掌握总结", table showing key topics and mastery level, and badge blocks for core concepts).
-2. Write 1 sentence of celebration for mastering "${node.title}".
-3. Write a bridge sentence like "接下来我们来学习「${nextNode.title}」".
-4. STOP here. Do NOT start teaching "${nextNode.title}" in this turn. The system will automatically start a new turn for the next knowledge point.`,
+            instruction: `节点「${node.title}」已掌握。用一句话确认并预告下一节「${nextNode.title}」（例如"✓ 掌握，下一节我们来学 ${nextNode.title}"），然后停止本轮。不要生成掌握总结报告，不要庆祝长文，不要复述已学概念。系统会自动开始下一节教学。`,
             activatedNextNode: { id: nextNode.id, title: nextNode.title },
           };
         }
@@ -94,7 +90,7 @@ export const assessMasteryTool: ToolDefinition = {
             masteredNodes: masteredCount,
             totalNodes: refreshedNodes.length,
           },
-          instruction: `All nodes have been mastered! Congratulate the learner warmly and summarize the overall journey.`,
+          instruction: `全部知识点已掌握！用一句话简短祝贺学习成果，然后结束本轮。不要生成长篇总结报告。`,
         };
       }
     }

@@ -70,7 +70,9 @@ describe("assessMastery tool", () => {
       expect(result.success).toBe(true);
       expect(result.activatedNextNode).toEqual({ id: "n2", title: "Node2" });
       expect(result.instruction).toContain("Node2");
-      expect(result.instruction).toContain("STOP");
+      expect(result.instruction).not.toContain("STOP");
+      expect(result.instruction).not.toContain("renderUI");
+      expect(result.instruction).toContain("掌握");
       expect(result.roadmapUpdate).toBeDefined();
       expect(result.roadmapUpdate.nodes).toHaveLength(2);
       expect(result.sessionUpdate).toEqual({ masteredNodes: 1, totalNodes: 2 });
@@ -97,7 +99,8 @@ describe("assessMastery tool", () => {
       const result: any = await assessMasteryTool.execute(baseParams, ctx);
 
       expect(result.activatedNextNode).toBeUndefined();
-      expect(result.instruction).toContain("All nodes have been mastered");
+      expect(result.instruction).toContain("掌握");
+      expect(result.instruction).not.toContain("All nodes have been mastered");
       expect(result.sessionUpdate).toEqual({ masteredNodes: 2, totalNodes: 2 });
     });
 
