@@ -4,126 +4,141 @@
 
 @theme {
   /* ── Backgrounds ── */
-  --color-background:         #0f1117;
-  --color-background-deep:    #0a0c10;
-  --color-foreground:         #e2e4e9;
+  --color-background: #0f1117;
+  --color-background-deep: #0a0c10;
+  --color-foreground: #e2e4e9;
 
   /* ── Cards & Surfaces ── */
-  --color-card:               #161922;
-  --color-card-foreground:    #e2e4e9;
-  --color-popover:            #1c1f2e;
+  --color-card: #161922;
+  --color-card-foreground: #e2e4e9;
+  --color-popover: #1c1f2e;
   --color-popover-foreground: #e2e4e9;
 
   /* ── Primary — muted indigo ── */
-  --color-primary:            #6366f1;
-  --color-primary-hover:      #818cf8;
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
   --color-primary-foreground: #f8f9fc;
 
   /* ── Secondary — slate ── */
-  --color-secondary:          #1e2130;
-  --color-secondary-hover:    #262a3a;
+  --color-secondary: #1e2130;
+  --color-secondary-hover: #262a3a;
   --color-secondary-foreground: #c4c7d0;
 
   /* ── Muted ── */
-  --color-muted:              #1a1d2b;
-  --color-muted-foreground:   #8b8fa3;
+  --color-muted: #1a1d2b;
+  --color-muted-foreground: #8b8fa3;
 
   /* ── Accent — teal ── */
-  --color-accent:             #2dd4bf;
-  --color-accent-hover:       #5eead4;
-  --color-accent-foreground:  #042f2e;
+  --color-accent: #2dd4bf;
+  --color-accent-hover: #5eead4;
+  --color-accent-foreground: #042f2e;
 
   /* ── Destructive ── */
-  --color-destructive:        #ef4444;
-  --color-destructive-hover:  #f87171;
+  --color-destructive: #ef4444;
+  --color-destructive-hover: #f87171;
   --color-destructive-foreground: #fef2f2;
 
   /* ── Borders & Inputs ── */
-  --color-border:             #232738;
-  --color-border-strong:      #2e3348;
-  --color-input:              #161922;
-  --color-input-border:       #2e3348;
-  --color-ring:               #6366f1;
+  --color-border: #232738;
+  --color-border-strong: #2e3348;
+  --color-input: #161922;
+  --color-input-border: #2e3348;
+  --color-ring: #6366f1;
 
   /* ── Radius ── */
-  --radius:                   0.625rem;
+  --radius: 0.625rem;
 
   /* ══════════════════════════════════════
      SIDEBAR
      ══════════════════════════════════════ */
-  --color-sidebar:            #0c0e14;
+  --color-sidebar: #0c0e14;
   --color-sidebar-foreground: #c4c7d0;
-  --color-sidebar-border:     #1a1d2b;
-  --color-sidebar-accent:     #6366f1;
+  --color-sidebar-border: #1a1d2b;
+  --color-sidebar-accent: #6366f1;
   --color-sidebar-accent-foreground: #f8f9fc;
-  --color-sidebar-muted:      #8b8fa3;
-  --color-sidebar-hover:      #161922;
-  --color-sidebar-active:     #1e2130;
+  --color-sidebar-muted: #8b8fa3;
+  --color-sidebar-hover: #161922;
+  --color-sidebar-active: #1e2130;
 
   /* ══════════════════════════════════════
      CHAT
      ══════════════════════════════════════ */
-  --color-chat-bg:            #0f1117;
-  --color-chat-user-bubble:   #1c2040;
-  --color-chat-user-text:     #e2e4e9;
-  --color-chat-ai-bubble:     #12151e;
-  --color-chat-ai-text:       #d0d3dc;
-  --color-chat-system:        #8b8fa3;
-  --color-chat-input-bg:      #161922;
-  --color-chat-input-border:  #2e3348;
-  --color-chat-input-focus:   #6366f1;
-  --color-chat-input-text:    #e2e4e9;
+  --color-chat-bg: #0f1117;
+  --color-chat-user-bubble: #1c2040;
+  --color-chat-user-text: #e2e4e9;
+  --color-chat-ai-bubble: #12151e;
+  --color-chat-ai-text: #d0d3dc;
+  --color-chat-system: #8b8fa3;
+  --color-chat-input-bg: #161922;
+  --color-chat-input-border: #2e3348;
+  --color-chat-input-focus: #6366f1;
+  --color-chat-input-text: #e2e4e9;
   --color-chat-input-placeholder: #5a5e73;
-  --color-chat-thinking:      #6366f1;
+  --color-chat-thinking: #6366f1;
 
   /* ══════════════════════════════════════
      ROADMAP
      ══════════════════════════════════════ */
-  --color-roadmap-node:           #1e2130;
-  --color-roadmap-node-active:    #6366f1;
-  --color-roadmap-node-mastered:  #2dd4bf;
-  --color-roadmap-node-locked:    #232738;
-  --color-roadmap-edge:           #232738;
-  --color-roadmap-edge-active:    #6366f1;
-  --color-roadmap-label:          #c4c7d0;
-  --color-roadmap-label-muted:    #5a5e73;
+  --color-roadmap-node: #1e2130;
+  --color-roadmap-node-active: #6366f1;
+  --color-roadmap-node-mastered: #2dd4bf;
+  --color-roadmap-node-locked: #232738;
+  --color-roadmap-edge: #232738;
+  --color-roadmap-edge-active: #6366f1;
+  --color-roadmap-label: #c4c7d0;
+  --color-roadmap-label-muted: #5a5e73;
+
+  /* ══════════════════════════════════════
+     MODE ACCENTS — 三模式主色（spec §5.5）
+     学习=primary 靛蓝 / 复习=review 黄 / 面试=interview 红
+     不动 accent（teal 被 roadmap-mastered 等复用）
+     ══════════════════════════════════════ */
+  --color-review: #eab308;
+  --color-review-hover: #f59e0b;
+  --color-review-foreground: #1a1a0a;
+
+  --color-interview: #f43f5e;
+  --color-interview-hover: #fb7185;
+  --color-interview-foreground: #fff1f2;
 
   /* ── Legacy aliases (backward compat) ── */
-  --color-sidebar-bg:         #0c0e14;
-  --color-sidebar-surface:    #161922;
-  --color-sidebar-text:       #c4c7d0;
+  --color-sidebar-bg: #0c0e14;
+  --color-sidebar-surface: #161922;
+  --color-sidebar-text: #c4c7d0;
   --color-sidebar-active-text: #f8f9fc;
 
-  --color-chat-user:          #1c2040;
-  --color-chat-tutor:         #12151e;
-  --color-chat-tutor-text:    #d0d3dc;
+  --color-chat-user: #1c2040;
+  --color-chat-tutor: #12151e;
+  --color-chat-tutor-text: #d0d3dc;
 
-  --color-roadmap-track:      #232738;
-  --color-roadmap-fill:       #6366f1;
-  --color-roadmap-mastered:   #2dd4bf;
-  --color-roadmap-active:     #6366f1;
-  --color-roadmap-idle:       #8b8fa3;
+  --color-roadmap-track: #232738;
+  --color-roadmap-fill: #6366f1;
+  --color-roadmap-mastered: #2dd4bf;
+  --color-roadmap-active: #6366f1;
+  --color-roadmap-idle: #8b8fa3;
 
   /* ── Code ── */
-  --color-code-bg:            #0d0f16;
-  --color-code-border:        #232738;
-  --color-code-text:          #c8ccd8;
-  --color-code-keyword:       #c084fc;
-  --color-code-string:        #86efac;
-  --color-code-comment:       #5a5e73;
-  --color-code-function:      #93c5fd;
-  --color-code-number:        #fdba74;
-  --color-code-operator:      #e2e4e9;
+  --color-code-bg: #0d0f16;
+  --color-code-border: #232738;
+  --color-code-text: #c8ccd8;
+  --color-code-keyword: #c084fc;
+  --color-code-string: #86efac;
+  --color-code-comment: #5a5e73;
+  --color-code-function: #93c5fd;
+  --color-code-number: #fdba74;
+  --color-code-operator: #e2e4e9;
   --color-code-line-highlight: #1a1d2b;
-  --color-code-copy-btn:      #8b8fa3;
-  --color-code-copy-btn-hover:#e2e4e9;
-  --color-code-lang:          #8b8fa3;
-  --color-code-accent:        #6366f1;
+  --color-code-copy-btn: #8b8fa3;
+  --color-code-copy-btn-hover: #e2e4e9;
+  --color-code-lang: #8b8fa3;
+  --color-code-accent: #6366f1;
 
   /* ── Shadows (minimal in dark mode) ── */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.15);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.15);
+  --shadow-md:
+    0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.15);
 
   /* ── Animation ── */
   --animate-pulse-soft: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -138,128 +153,146 @@
 
 [data-theme="light"] {
   /* ── Backgrounds ── */
-  --color-background:         #fafafa;
-  --color-background-deep:    #f5f5f5;
-  --color-foreground:         #1a1a1a;
+  --color-background: #fafafa;
+  --color-background-deep: #f5f5f5;
+  --color-foreground: #1a1a1a;
 
   /* ── Cards & Surfaces ── */
-  --color-card:               #ffffff;
-  --color-card-foreground:    #1a1a1a;
-  --color-popover:            #ffffff;
+  --color-card: #ffffff;
+  --color-card-foreground: #1a1a1a;
+  --color-popover: #ffffff;
   --color-popover-foreground: #1a1a1a;
 
   /* ── Primary — muted indigo ── */
-  --color-primary:            #6366f1;
-  --color-primary-hover:      #4f46e5;
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
   --color-primary-foreground: #ffffff;
 
   /* ── Secondary — slate ── */
-  --color-secondary:          #f1f5f9;
-  --color-secondary-hover:    #e2e8f0;
+  --color-secondary: #f1f5f9;
+  --color-secondary-hover: #e2e8f0;
   --color-secondary-foreground: #475569;
 
   /* ── Muted ── */
-  --color-muted:              #f1f5f9;
-  --color-muted-foreground:   #6b7280;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #6b7280;
 
   /* ── Accent — teal ── */
-  --color-accent:             #2dd4bf;
-  --color-accent-hover:       #14b8a6;
-  --color-accent-foreground:  #134e4a;
+  --color-accent: #2dd4bf;
+  --color-accent-hover: #14b8a6;
+  --color-accent-foreground: #134e4a;
 
   /* ── Destructive ── */
-  --color-destructive:        #ef4444;
-  --color-destructive-hover:  #dc2626;
+  --color-destructive: #ef4444;
+  --color-destructive-hover: #dc2626;
   --color-destructive-foreground: #ffffff;
 
   /* ── Borders & Inputs ── */
-  --color-border:             #e5e7eb;
-  --color-border-strong:      #d1d5db;
-  --color-input:              #ffffff;
-  --color-input-border:       #d1d5db;
-  --color-ring:               #6366f1;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+  --color-input: #ffffff;
+  --color-input-border: #d1d5db;
+  --color-ring: #6366f1;
 
   /* ══════════════════════════════════════
      SIDEBAR
      ══════════════════════════════════════ */
-  --color-sidebar:            #f5f5f5;
+  --color-sidebar: #f5f5f5;
   --color-sidebar-foreground: #374151;
-  --color-sidebar-border:     #e5e7eb;
-  --color-sidebar-accent:     #6366f1;
+  --color-sidebar-border: #e5e7eb;
+  --color-sidebar-accent: #6366f1;
   --color-sidebar-accent-foreground: #4338ca;
-  --color-sidebar-muted:      #6b7280;
-  --color-sidebar-hover:      #e5e7eb;
-  --color-sidebar-active:     #dbeafe;
+  --color-sidebar-muted: #6b7280;
+  --color-sidebar-hover: #e5e7eb;
+  --color-sidebar-active: #dbeafe;
 
   /* ══════════════════════════════════════
      CHAT
      ══════════════════════════════════════ */
-  --color-chat-bg:            #fafafa;
-  --color-chat-user-bubble:   #e8e8ff;
-  --color-chat-user-text:     #1a1a1a;
-  --color-chat-ai-bubble:     #f5f5f5;
-  --color-chat-ai-text:       #374151;
-  --color-chat-system:        #6b7280;
-  --color-chat-input-bg:      #ffffff;
-  --color-chat-input-border:  #d1d5db;
-  --color-chat-input-focus:   #6366f1;
-  --color-chat-input-text:    #1a1a1a;
+  --color-chat-bg: #fafafa;
+  --color-chat-user-bubble: #e8e8ff;
+  --color-chat-user-text: #1a1a1a;
+  --color-chat-ai-bubble: #f5f5f5;
+  --color-chat-ai-text: #374151;
+  --color-chat-system: #6b7280;
+  --color-chat-input-bg: #ffffff;
+  --color-chat-input-border: #d1d5db;
+  --color-chat-input-focus: #6366f1;
+  --color-chat-input-text: #1a1a1a;
   --color-chat-input-placeholder: #9ca3af;
-  --color-chat-thinking:      #6366f1;
+  --color-chat-thinking: #6366f1;
 
   /* ══════════════════════════════════════
      ROADMAP
      ══════════════════════════════════════ */
-  --color-roadmap-node:           #f1f5f9;
-  --color-roadmap-node-active:    #6366f1;
-  --color-roadmap-node-mastered:  #2dd4bf;
-  --color-roadmap-node-locked:    #e5e7eb;
-  --color-roadmap-edge:           #d1d5db;
-  --color-roadmap-edge-active:    #6366f1;
-  --color-roadmap-label:          #374151;
-  --color-roadmap-label-muted:    #9ca3af;
+  --color-roadmap-node: #f1f5f9;
+  --color-roadmap-node-active: #6366f1;
+  --color-roadmap-node-mastered: #2dd4bf;
+  --color-roadmap-node-locked: #e5e7eb;
+  --color-roadmap-edge: #d1d5db;
+  --color-roadmap-edge-active: #6366f1;
+  --color-roadmap-label: #374151;
+  --color-roadmap-label-muted: #9ca3af;
+
+  /* ══════════════════════════════════════
+     MODE ACCENTS — 三模式主色（spec §5.5）
+     ══════════════════════════════════════ */
+  --color-review: #eab308;
+  --color-review-hover: #d97706;
+  --color-review-foreground: #422006;
+
+  --color-interview: #f43f5e;
+  --color-interview-hover: #e11d48;
+  --color-interview-foreground: #fff1f2;
 
   /* ── Legacy aliases ── */
-  --color-sidebar-bg:         #f5f5f5;
-  --color-sidebar-surface:    #ffffff;
-  --color-sidebar-text:       #374151;
+  --color-sidebar-bg: #f5f5f5;
+  --color-sidebar-surface: #ffffff;
+  --color-sidebar-text: #374151;
   --color-sidebar-active-text: #4338ca;
 
-  --color-chat-user:          #e8e8ff;
-  --color-chat-tutor:         #f5f5f5;
-  --color-chat-tutor-text:    #374151;
+  --color-chat-user: #e8e8ff;
+  --color-chat-tutor: #f5f5f5;
+  --color-chat-tutor-text: #374151;
 
-  --color-roadmap-track:      #d1d5db;
-  --color-roadmap-fill:       #6366f1;
-  --color-roadmap-mastered:   #2dd4bf;
-  --color-roadmap-active:     #6366f1;
-  --color-roadmap-idle:       #9ca3af;
+  --color-roadmap-track: #d1d5db;
+  --color-roadmap-fill: #6366f1;
+  --color-roadmap-mastered: #2dd4bf;
+  --color-roadmap-active: #6366f1;
+  --color-roadmap-idle: #9ca3af;
 
   /* ── Code ── */
-  --color-code-bg:            #f3f4f6;
-  --color-code-border:        #e5e7eb;
-  --color-code-text:          #1f2937;
-  --color-code-keyword:       #7c3aed;
-  --color-code-string:        #16a34a;
-  --color-code-comment:       #9ca3af;
-  --color-code-function:      #2563eb;
-  --color-code-number:        #ea580c;
-  --color-code-operator:      #374151;
+  --color-code-bg: #f3f4f6;
+  --color-code-border: #e5e7eb;
+  --color-code-text: #1f2937;
+  --color-code-keyword: #7c3aed;
+  --color-code-string: #16a34a;
+  --color-code-comment: #9ca3af;
+  --color-code-function: #2563eb;
+  --color-code-number: #ea580c;
+  --color-code-operator: #374151;
   --color-code-line-highlight: #e0e7ff;
-  --color-code-copy-btn:      #9ca3af;
-  --color-code-copy-btn-hover:#374151;
-  --color-code-lang:          #6b7280;
-  --color-code-accent:        #6366f1;
+  --color-code-copy-btn: #9ca3af;
+  --color-code-copy-btn-hover: #374151;
+  --color-code-lang: #6b7280;
+  --color-code-accent: #6366f1;
 
   /* ── Shadows (stronger in light mode) ── */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.06);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-md:
+    0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.06);
 }
 
 @keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 @keyframes fadeSlideIn {
@@ -285,8 +318,16 @@
 }
 
 @keyframes pulse-dot {
-  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
-  40% { opacity: 1; transform: scale(1); }
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @layer base {
@@ -301,7 +342,8 @@
   body {
     color: var(--color-foreground);
     background: var(--color-background);
-    font-family: var(--font-sans), "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-family:
+      var(--font-sans), "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -336,13 +378,16 @@
   /* ── Focus states ── */
   :focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--color-background),
-                0 0 0 4px var(--color-ring);
+    box-shadow:
+      0 0 0 2px var(--color-background),
+      0 0 0 4px var(--color-ring);
   }
 
   /* ── Reduced motion ── */
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
     }

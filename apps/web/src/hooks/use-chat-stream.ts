@@ -3,7 +3,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import type { UIMessage } from "ai";
 
 interface UseChatStreamOptions {
-  teachingMode?: "warm" | "strict" | "interviewer";
+  teachingMode?: "warm" | "strict";
   llmConfigId?: string;
   onFinish?: () => void;
   onError?: (error: string) => void;

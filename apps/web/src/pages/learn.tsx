@@ -20,6 +20,7 @@ import { useSession } from "@/contexts/session-context";
 import { SandboxProvider } from "@/contexts/sandbox-context";
 import type { UIMessage } from "ai";
 import { GraduationCap, PanelRightClose, PanelRight } from "lucide-react";
+import { ModeTabs, type ActiveMode } from "@/components/layout/mode-tabs";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -170,7 +171,7 @@ export function Component() {
   const [pageError, setPageError] = useState<string | null>(null);
   const [isNewSession, setIsNewSession] = useState(false);
   const prevSessionRef = useRef<string | null>(null);
-  const [teachingMode, setTeachingMode] = useState<"warm" | "strict" | "interviewer">("warm");
+  const [teachingMode, setTeachingMode] = useState<"warm" | "strict">("warm");
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
   const [diagnosticAnalyzing, setDiagnosticAnalyzing] = useState(false);
@@ -193,9 +194,9 @@ export function Component() {
   } | null>(null);
 
   const [rightCollapsed, setRightCollapsed] = useState(false);
-  const [rightTab, setRightTab] = useState<"roadmap" | "code" | "interactive" | "review" | "interview">("roadmap");
+  const [rightTab, setRightTab] = useState<"roadmap" | "code" | "interactive">("roadmap");
   const [interactivePanel, setInteractivePanel] = useState<{ html: string } | null>(null);
-  const [activeMode, setActiveMode] = useState<"learning" | "review" | "interview">("learning");
+  const [activeMode, setActiveMode] = useState<ActiveMode>("learning");
   const [reviewDueNodes, setReviewDueNodes] = useState<Array<{
     id: string;
     index: number;
@@ -605,6 +606,27 @@ export function Component() {
     }
   }
 
+  // 顶部 Tab 切模式（spec §5.1）：切 activeMode + 触发对应模式首轮；切回 learning 不发消息
+  async function handleModeChange(mode: ActiveMode) {
+    if (mode === activeMode) return;
+    if (mode === "review") {
+      handleStartReview();
+    } else if (mode === "interview") {
+      handleStartInterview();
+    } else {
+      try {
+        await fetch(`/api/sessions/${sessionId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activeMode: "learning" }),
+        });
+        setActiveMode("learning");
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   // 抽认卡自评事件：POST /review/result 更新记忆强度 + 发消息推进对话（spec §3.2/§3.3）
   useEffect(() => {
     if (!sessionId) return;
@@ -919,6 +941,11 @@ export function Component() {
             </button>
           </div>
         )}
+        <ModeTabs
+          activeMode={activeMode}
+          masteredCount={nodes.filter((n) => n.status === "mastered").length}
+          onChange={handleModeChange}
+        />
         {isNewSession ? (
           <>
             <ChatArea
@@ -973,6 +1000,7 @@ export function Component() {
           >
             <RightSidebar
               nodes={nodes}
+              activeMode={activeMode}
               codePanel={codePanel}
               onCodePanelChange={handleCodePanelChange}
               interactivePanel={interactivePanel}

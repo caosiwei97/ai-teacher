@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
-export type TeachingMode = "warm" | "strict" | "interviewer";
+export type TeachingMode = "warm" | "strict";
 
 interface ModeOption {
   value: TeachingMode;
@@ -14,7 +14,6 @@ interface ModeOption {
 const modes: ModeOption[] = [
   { value: "warm", icon: "☕", label: "温暖私教", description: "慢慢来，不着急" },
   { value: "strict", icon: "🔥", label: "严格教练", description: "不接受'差不多就行'" },
-  { value: "interviewer", icon: "💼", label: "面试官", description: "像真实面试一样" },
 ];
 
 interface ModeSelectorProps {

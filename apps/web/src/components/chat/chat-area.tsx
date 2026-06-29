@@ -41,8 +41,8 @@ interface ChatAreaProps {
   onDiagnosticSubmit?: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
   diagnosticSubmitted?: boolean;
   diagnosticAnalyzing?: boolean;
-  teachingMode?: "warm" | "strict" | "interviewer";
-  onTeachingModeChange?: (mode: "warm" | "strict" | "interviewer") => void;
+  teachingMode?: "warm" | "strict";
+  onTeachingModeChange?: (mode: "warm" | "strict") => void;
   error?: string | null;
   welcomeContent?: React.ReactNode;
   currentModel?: string;

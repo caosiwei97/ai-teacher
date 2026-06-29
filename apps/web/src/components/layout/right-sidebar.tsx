@@ -2,6 +2,7 @@
 import { RoadmapNode } from "@/components/roadmap/roadmap-node";
 import { CodePanel } from "@/components/sidebar/code-panel";
 import { InteractiveBlockRenderer } from "@/components/ui-blocks/interactive-block";
+import { type ActiveMode } from "./mode-tabs";
 import { MapPin, Code2, Sparkles, RefreshCw, Flame } from "lucide-react";
 
 interface Node {
@@ -30,6 +31,7 @@ export interface InterviewSummary {
 
 interface RightSidebarProps {
   nodes: Node[];
+  activeMode: ActiveMode;
   codePanel?: {
     code: string;
     language: string;
@@ -37,8 +39,8 @@ interface RightSidebarProps {
   } | null;
   onCodePanelChange?: (code: string) => void;
   interactivePanel?: { html: string } | null;
-  activeTab: "roadmap" | "code" | "interactive" | "review" | "interview";
-  onTabChange: (tab: "roadmap" | "code" | "interactive" | "review" | "interview") => void;
+  activeTab: "roadmap" | "code" | "interactive";
+  onTabChange: (tab: "roadmap" | "code" | "interactive") => void;
   reviewDueNodes?: ReviewDueItem[];
   onStartReview?: () => void;
   reviewActive?: boolean;
@@ -49,6 +51,7 @@ interface RightSidebarProps {
 
 export function RightSidebar({
   nodes,
+  activeMode,
   codePanel,
   onCodePanelChange,
   interactivePanel,
@@ -65,17 +68,16 @@ export function RightSidebar({
   const hasInteractive = !!interactivePanel;
   const mastered = nodes.filter((n) => n.status === "mastered").length;
   const hasReview = mastered > 0;
-  const showTabs = hasCode || hasInteractive || hasReview;
 
   const total = nodes.length;
   const progress = total > 0 ? Math.round((mastered / total) * 100) : 0;
 
-  const isIdeMode = activeTab === "code" && hasCode;
+  // 学习模式：tab bar 切 roadmap/code/interactive（spec §5.1 决策1）
+  const showLearningTabs = activeMode === "learning" && (hasCode || hasInteractive);
+  const isIdeMode = activeTab === "code" && hasCode && activeMode === "learning";
   const codeActive = activeTab === "code";
   const roadmapActive = activeTab === "roadmap";
   const interactiveActive = activeTab === "interactive";
-  const reviewActiveTab = activeTab === "review";
-  const interviewActiveTab = activeTab === "interview";
 
   const tabBtnStyle = (active: boolean) =>
     isIdeMode
@@ -93,8 +95,8 @@ export function RightSidebar({
       className={`flex h-full w-full flex-col${isIdeMode ? "" : " bg-sidebar"}`}
       style={isIdeMode ? { background: "#1e1e2e" } : undefined}
     >
-      {/* Tab bar */}
-      {showTabs && (
+      {/* 学习模式 tab bar（roadmap/code/interactive）；复习/面试模式无 tab bar，固定 panel */}
+      {showLearningTabs && (
         <div
           className="flex shrink-0 px-2 py-0"
           style={isIdeMode
@@ -122,31 +124,6 @@ export function RightSidebar({
               代码
             </button>
           )}
-          {hasReview && (
-            <button
-              onClick={() => onTabChange("review")}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
-              style={tabBtnStyle(reviewActiveTab)}
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              复习
-              {reviewDueNodes.length > 0 && (
-                <span className="ml-0.5 rounded-full bg-accent/20 px-1.5 text-[10px] font-semibold text-accent">
-                  {reviewDueNodes.length}
-                </span>
-              )}
-            </button>
-          )}
-          {hasReview && (
-            <button
-              onClick={() => onTabChange("interview")}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
-              style={tabBtnStyle(interviewActiveTab)}
-            >
-              <Flame className="h-3.5 w-3.5" />
-              面试
-            </button>
-          )}
           <button
             onClick={() => onTabChange("roadmap")}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
@@ -158,9 +135,25 @@ export function RightSidebar({
         </div>
       )}
 
-      {/* Tab content */}
+      {/* Tab content：复习/面试模式固定 panel，学习模式按 activeTab */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {activeTab === "roadmap" && (
+        {activeMode === "review" && hasReview && (
+          <ReviewList
+            dueNodes={reviewDueNodes}
+            onStartReview={onStartReview}
+            reviewActive={reviewActive}
+          />
+        )}
+
+        {activeMode === "interview" && hasReview && (
+          <InterviewPanel
+            result={interviewResult}
+            onStartInterview={onStartInterview}
+            interviewActive={interviewActive}
+          />
+        )}
+
+        {activeMode === "learning" && activeTab === "roadmap" && (
           <>
             <div className="border-b border-border px-5 py-4">
               <div className="flex items-center justify-between">
@@ -220,23 +213,7 @@ export function RightSidebar({
           </>
         )}
 
-        {activeTab === "review" && hasReview && (
-          <ReviewList
-            dueNodes={reviewDueNodes}
-            onStartReview={onStartReview}
-            reviewActive={reviewActive}
-          />
-        )}
-
-        {activeTab === "interview" && hasReview && (
-          <InterviewPanel
-            result={interviewResult}
-            onStartInterview={onStartInterview}
-            interviewActive={interviewActive}
-          />
-        )}
-
-        {activeTab === "code" && hasCode && (
+        {activeMode === "learning" && activeTab === "code" && hasCode && (
           <CodePanel
             code={codePanel!.code}
             language={codePanel!.language}
@@ -245,7 +222,7 @@ export function RightSidebar({
           />
         )}
 
-        {activeTab === "interactive" && hasInteractive && interactivePanel && (
+        {activeMode === "learning" && activeTab === "interactive" && hasInteractive && interactivePanel && (
           <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3">
             <InteractiveBlockRenderer
               block={{ type: "interactive", html: interactivePanel.html }}
@@ -257,7 +234,7 @@ export function RightSidebar({
   );
 }
 
-// 复习清单（spec §3.1 智能推荐 + §5.1 右栏复习态，黄色基调）
+// 复习清单（spec §3.1 智能推荐 + §5.1 右栏复习态，黄色基调 --color-review）
 function ReviewList({
   dueNodes,
   onStartReview,
@@ -282,13 +259,13 @@ function ReviewList({
         {!reviewActive && dueNodes.length > 0 && onStartReview && (
           <button
             onClick={onStartReview}
-            className="mt-3 w-full rounded-lg bg-accent/15 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent/25"
+            className="mt-3 w-full rounded-lg bg-review/15 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-review/25"
           >
             🔁 开始复习
           </button>
         )}
         {reviewActive && (
-          <p className="mt-3 rounded-lg bg-accent/10 px-3 py-2 text-[11px] text-muted-foreground">
+          <p className="mt-3 rounded-lg bg-review/10 px-3 py-2 text-[11px] text-muted-foreground">
             复习进行中，在对话区作答
           </p>
         )}
@@ -312,7 +289,7 @@ function ReviewList({
                   {n.title}
                 </span>
                 {n.isOverdue && (
-                  <span className="rounded-full bg-accent/20 px-1.5 py-0.5 text-[10px] font-semibold text-accent">
+                  <span className="rounded-full bg-review/20 px-1.5 py-0.5 text-[10px] font-semibold text-review">
                     逾期
                   </span>
                 )}
@@ -320,7 +297,7 @@ function ReviewList({
               <div className="mt-1.5 flex items-center gap-2">
                 <div className="h-1 flex-1 rounded-full bg-roadmap-track">
                   <div
-                    className="h-1 rounded-full bg-accent"
+                    className="h-1 rounded-full bg-review"
                     style={{ width: `${Math.round(n.memoryStrength * 100)}%` }}
                   />
                 </div>
@@ -336,7 +313,7 @@ function ReviewList({
   );
 }
 
-// 面试入口 + 结果摘要（spec §4.1 + §5.1 右栏面试态，红色基调）
+// 面试入口 + 结果摘要（spec §4.1 + §5.1 右栏面试态，红色基调 --color-interview）
 const DIFFICULTY_LABEL: Record<InterviewSummary["difficulty"], string> = {
   easy: "🟢 初级",
   medium: "🟡 中级",
@@ -369,13 +346,13 @@ function InterviewPanel({
         {!interviewActive && onStartInterview && (
           <button
             onClick={onStartInterview}
-            className="mt-3 w-full rounded-lg bg-accent/20 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent/30"
+            className="mt-3 w-full rounded-lg bg-interview/20 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-interview/30"
           >
             🔥 开始面试
           </button>
         )}
         {interviewActive && (
-          <p className="mt-3 rounded-lg bg-accent/10 px-3 py-2 text-[11px] text-muted-foreground">
+          <p className="mt-3 rounded-lg bg-interview/10 px-3 py-2 text-[11px] text-muted-foreground">
             面试进行中，在对话区作答
           </p>
         )}
@@ -384,7 +361,7 @@ function InterviewPanel({
         {result ? (
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-baseline justify-center gap-1">
-              <span className="text-3xl font-bold text-accent">
+              <span className="text-3xl font-bold text-interview">
                 {result.totalScore}
               </span>
               <span className="text-xs text-muted-foreground">/ 100</span>
