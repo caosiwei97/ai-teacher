@@ -16,6 +16,7 @@ interface SessionInfo {
   id: string;
   topic: string;
   status: string;
+  activeMode?: "learning" | "review" | "interview";
   progress: { totalNodes: number; masteredNodes: number; currentNodeId: string | null };
 }
 

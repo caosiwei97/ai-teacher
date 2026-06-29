@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, BookOpen, Plus, Archive, Settings, MessageSquare } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Archive, Settings, MessageSquare } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Link } from "react-router";
@@ -8,7 +8,20 @@ interface Session {
   id: string;
   topic: string;
   status: string;
+  activeMode?: "learning" | "review" | "interview";
   progress: { totalNodes: number; masteredNodes: number };
+}
+
+// 模式图标 + 主色（spec §5.3③ 会话前模式图标 + §5.5 进度条颜色随模式）
+function modeIcon(activeMode?: string): string {
+  if (activeMode === "review") return "🔁";
+  if (activeMode === "interview") return "🔥";
+  return "🌱";
+}
+function modeColorVar(activeMode?: string): string {
+  if (activeMode === "review") return "var(--color-review)";
+  if (activeMode === "interview") return "var(--color-interview)";
+  return "var(--color-primary)";
 }
 
 interface LeftSidebarProps {
@@ -105,13 +118,13 @@ export function LeftSidebar({
       </div>
 
       {onNewSession && (
-        <div className="px-3 pb-2">
+        <div className="px-3 pb-3">
           <button
             onClick={onNewSession}
-            className="rounded-md p-1.5 text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
-            title="新建会话"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-sidebar-accent/40 bg-sidebar-accent/10 px-3 py-2 text-sm font-medium text-sidebar-accent transition-colors hover:bg-sidebar-accent/20"
           >
             <Plus className="h-4 w-4" />
+            新对话
           </button>
         </div>
       )}
@@ -136,7 +149,10 @@ export function LeftSidebar({
                         : "text-sidebar-foreground hover:bg-sidebar-hover",
                     )}
                   >
-                    <p className="truncate text-[13px] font-medium leading-snug pr-6">{s.topic}</p>
+                    <p className="truncate text-[13px] font-medium leading-snug pr-6">
+                      <span className="mr-1.5">{modeIcon(s.activeMode)}</span>
+                      {s.topic}
+                    </p>
                   </button>
                   {onArchiveSession && !isLastSessionAndNew && (
                     <button
@@ -172,16 +188,16 @@ export function LeftSidebar({
                         : "text-sidebar-foreground hover:bg-sidebar-hover",
                     )}
                   >
-                    <p className="truncate text-[13px] font-medium leading-snug pr-6">{s.topic}</p>
+                    <p className="truncate text-[13px] font-medium leading-snug pr-6">
+                      <span className="mr-1.5">{modeIcon(s.activeMode)}</span>
+                      {s.topic}
+                    </p>
                     {s.progress.totalNodes > 0 ? (
                       <div className="mt-1.5 flex items-center gap-2">
                         <div className="h-1 flex-1 rounded-full bg-sidebar-hover">
                           <div
-                            className={cn(
-                              "h-1 rounded-full transition-all",
-                              isActive ? "bg-sidebar-accent-foreground/60" : "bg-sidebar-muted/50",
-                            )}
-                            style={{ width: `${progress}%` }}
+                            className="h-1 rounded-full transition-all"
+                            style={{ width: `${progress}%`, background: modeColorVar(s.activeMode) }}
                           />
                         </div>
                         <span className={cn("text-[10px]", isActive ? "text-sidebar-accent-foreground/70" : "text-sidebar-muted")}>
@@ -225,8 +241,9 @@ export function LeftSidebar({
                   )}
                 >
                   <div className="flex items-center gap-2 pr-6">
-                    <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                    <span className="shrink-0 text-xs">{modeIcon(s.activeMode)}</span>
                     <p className="truncate text-[13px]">{s.topic}</p>
+                    <span className="ml-auto shrink-0 text-[10px] text-sidebar-muted">✓</span>
                   </div>
                 </button>
                 {onArchiveSession && (

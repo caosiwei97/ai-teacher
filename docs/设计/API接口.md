@@ -103,7 +103,7 @@ POST /api/sessions
 
 - `GET /api/sessions` 自动排除 `archived` 状态的会话
 - 按会话 `updatedAt` 降序排列
-- 响应包含 `source`（关联资料）、`llmConfigId`、`progress`（`{ totalNodes, masteredNodes, currentNodeId, currentNodeTitle }`）字段
+- 响应包含 `source`（关联资料）、`llmConfigId`、`activeMode`（学/固/验模式，迭代 053②）、`progress`（`{ totalNodes, masteredNodes, currentNodeId, currentNodeTitle }`）字段
 
 ---
 

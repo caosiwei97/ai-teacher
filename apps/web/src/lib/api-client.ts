@@ -8,6 +8,7 @@ export async function fetchSessions(userId: string) {
       id: string;
       topic: string;
       status: string;
+      activeMode: "learning" | "review" | "interview";
       createdAt: string;
       updatedAt: string;
       progress: { totalNodes: number; masteredNodes: number; currentNodeId: string | null; currentNodeTitle: string | null };

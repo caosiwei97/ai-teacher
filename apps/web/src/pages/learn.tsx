@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useLocation } from "react-router";
 import { RightSidebar } from "@/components/layout/right-sidebar";
 import { ResizableDivider } from "@/components/layout/resizable-divider";
 import {
@@ -21,6 +21,7 @@ import { SandboxProvider } from "@/contexts/sandbox-context";
 import type { UIMessage } from "ai";
 import { GraduationCap, PanelRightClose, PanelRight } from "lucide-react";
 import { ModeTabs, type ActiveMode } from "@/components/layout/mode-tabs";
+import { StartupCard } from "@/components/chat/startup-card";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -197,6 +198,11 @@ export function Component() {
   const [rightTab, setRightTab] = useState<"roadmap" | "code" | "interactive">("roadmap");
   const [interactivePanel, setInteractivePanel] = useState<{ html: string } | null>(null);
   const [activeMode, setActiveMode] = useState<ActiveMode>("learning");
+  const location = useLocation();
+  const [startupTopic, setStartupTopic] = useState<string | undefined>(
+    () => (location.state as { topic?: string } | null)?.topic,
+  );
+  const [startupSubmitted, setStartupSubmitted] = useState(false);
   const [reviewDueNodes, setReviewDueNodes] = useState<Array<{
     id: string;
     index: number;
@@ -395,6 +401,8 @@ export function Component() {
       setReviewDueNodes([]);
       setInterviewResult(null);
       setRightTab("roadmap");
+      setStartupTopic(undefined);
+      setStartupSubmitted(false);
     }
     prevSessionRef.current = sessionId;
 
@@ -609,6 +617,8 @@ export function Component() {
   // 顶部 Tab 切模式（spec §5.1）：切 activeMode + 触发对应模式首轮；切回 learning 不发消息
   async function handleModeChange(mode: ActiveMode) {
     if (mode === activeMode) return;
+    // 乐观更新左栏模式图标（spec §5.3③）
+    setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, activeMode: mode } : s)));
     if (mode === "review") {
       handleStartReview();
     } else if (mode === "interview") {
@@ -658,6 +668,23 @@ export function Component() {
   function handleTopicClick(topic: string) {
     optimisticUpdateTopic(topic);
     chat.submitMessage(topic);
+  }
+
+  // 起步页提交/跳过 → 进入对话流（spec §5.3②）
+  function handleStartupSubmit(info: { motivation?: string; level?: string }) {
+    if (!startupTopic) return;
+    setStartupSubmitted(true);
+    setStartupTopic(undefined);
+    optimisticUpdateTopic(startupTopic);
+    const startupInfo = [info.motivation, info.level].filter(Boolean).join("；");
+    chat.submitMessage(startupInfo ? `${startupTopic}（${startupInfo}）` : startupTopic);
+  }
+  function handleStartupSkip() {
+    if (!startupTopic) return;
+    setStartupSubmitted(true);
+    setStartupTopic(undefined);
+    optimisticUpdateTopic(startupTopic);
+    chat.submitMessage(startupTopic);
   }
 
   function getLastAssistantMessage() {
@@ -951,30 +978,38 @@ export function Component() {
             <ChatArea
               {...chatAreaProps}
               welcomeContent={
-                <div className="flex flex-col items-center pt-16 pb-8">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-roadmap-fill/10">
-                    <GraduationCap className="h-6 w-6 text-roadmap-fill" />
+                startupTopic && !startupSubmitted ? (
+                  <StartupCard
+                    topic={startupTopic}
+                    onSubmit={handleStartupSubmit}
+                    onSkip={handleStartupSkip}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center pt-16 pb-8">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-roadmap-fill/10">
+                      <GraduationCap className="h-6 w-6 text-roadmap-fill" />
+                    </div>
+                    <h1 className="mt-4 text-xl font-semibold text-foreground">
+                      你好，我是 AI Teacher
+                    </h1>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      告诉我你对什么感兴趣，从零到精通，我带你
+                    </p>
+                    <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
+                    <div className="mt-3 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
+                      {fallbackTopics.map((topic) => (
+                        <button
+                          key={topic.id}
+                          onClick={() => handleTopicClick(topic.title)}
+                          disabled={chat.isLoading}
+                          className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 text-left text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
+                        >
+                          <span className="text-sm leading-snug">{topic.title}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <h1 className="mt-4 text-xl font-semibold text-foreground">
-                    你好，我是 AI Teacher
-                  </h1>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    告诉我你对什么感兴趣，从零到精通，我带你
-                  </p>
-                  <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
-                  <div className="mt-3 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
-                    {fallbackTopics.map((topic) => (
-                      <button
-                        key={topic.id}
-                        onClick={() => handleTopicClick(topic.title)}
-                        disabled={chat.isLoading}
-                        className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 text-left text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
-                      >
-                        <span className="text-sm leading-snug">{topic.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                )
               }
             />
             <QuickQuestion sessionId={sessionId} />
