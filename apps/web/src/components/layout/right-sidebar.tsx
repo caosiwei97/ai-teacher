@@ -1,9 +1,8 @@
 
 import { RoadmapNode } from "@/components/roadmap/roadmap-node";
 import { CodePanel } from "@/components/sidebar/code-panel";
-import { InteractiveBlockRenderer } from "@/components/ui-blocks/interactive-block";
 import { type ActiveMode } from "./mode-tabs";
-import { MapPin, Code2, Sparkles, RefreshCw, Flame } from "lucide-react";
+import { MapPin, Code2, RefreshCw, Flame } from "lucide-react";
 
 interface Node {
   id: string;
@@ -38,9 +37,8 @@ interface RightSidebarProps {
     instruction?: string;
   } | null;
   onCodePanelChange?: (code: string) => void;
-  interactivePanel?: { html: string } | null;
-  activeTab: "roadmap" | "code" | "interactive";
-  onTabChange: (tab: "roadmap" | "code" | "interactive") => void;
+  activeTab: "roadmap" | "code";
+  onTabChange: (tab: "roadmap" | "code") => void;
   reviewDueNodes?: ReviewDueItem[];
   onStartReview?: () => void;
   reviewActive?: boolean;
@@ -54,7 +52,6 @@ export function RightSidebar({
   activeMode,
   codePanel,
   onCodePanelChange,
-  interactivePanel,
   activeTab,
   onTabChange,
   reviewDueNodes = [],
@@ -65,7 +62,6 @@ export function RightSidebar({
   interviewActive = false,
 }: RightSidebarProps) {
   const hasCode = !!codePanel;
-  const hasInteractive = !!interactivePanel;
   const mastered = nodes.filter((n) => n.status === "mastered").length;
   const hasReview = mastered > 0;
 
@@ -73,11 +69,10 @@ export function RightSidebar({
   const progress = total > 0 ? Math.round((mastered / total) * 100) : 0;
 
   // 学习模式：tab bar 切 roadmap/code/interactive（spec §5.1 决策1）
-  const showLearningTabs = activeMode === "learning" && (hasCode || hasInteractive);
+  const showLearningTabs = activeMode === "learning" && hasCode;
   const isIdeMode = activeTab === "code" && hasCode && activeMode === "learning";
   const codeActive = activeTab === "code";
   const roadmapActive = activeTab === "roadmap";
-  const interactiveActive = activeTab === "interactive";
 
   const tabBtnStyle = (active: boolean) =>
     isIdeMode
@@ -95,7 +90,7 @@ export function RightSidebar({
       className={`flex h-full w-full flex-col${isIdeMode ? "" : " bg-sidebar"}`}
       style={isIdeMode ? { background: "#1e1e2e" } : undefined}
     >
-      {/* 学习模式 tab bar（roadmap/code/interactive）；复习/面试模式无 tab bar，固定 panel */}
+      {/* 学习模式 tab bar（roadmap/code）；复习/面试模式无 tab bar，固定 panel */}
       {showLearningTabs && (
         <div
           className="flex shrink-0 px-2 py-0"
@@ -104,16 +99,6 @@ export function RightSidebar({
             : { borderBottom: "1px solid var(--color-border)" }
           }
         >
-          {hasInteractive && (
-            <button
-              onClick={() => onTabChange("interactive")}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
-              style={tabBtnStyle(interactiveActive)}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              互动课
-            </button>
-          )}
           {hasCode && (
             <button
               onClick={() => onTabChange("code")}
@@ -220,14 +205,6 @@ export function RightSidebar({
             instruction={codePanel!.instruction}
             onCodeChange={onCodePanelChange ?? (() => {})}
           />
-        )}
-
-        {activeMode === "learning" && activeTab === "interactive" && hasInteractive && interactivePanel && (
-          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3">
-            <InteractiveBlockRenderer
-              block={{ type: "interactive", html: interactivePanel.html }}
-            />
-          </div>
         )}
       </div>
     </div>

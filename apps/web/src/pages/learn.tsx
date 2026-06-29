@@ -195,8 +195,7 @@ export function Component() {
   } | null>(null);
 
   const [rightCollapsed, setRightCollapsed] = useState(false);
-  const [rightTab, setRightTab] = useState<"roadmap" | "code" | "interactive">("roadmap");
-  const [interactivePanel, setInteractivePanel] = useState<{ html: string } | null>(null);
+  const [rightTab, setRightTab] = useState<"roadmap" | "code">("roadmap");
   const [activeMode, setActiveMode] = useState<ActiveMode>("learning");
   const location = useLocation();
   const [startupTopic, setStartupTopic] = useState<string | undefined>(
@@ -216,7 +215,6 @@ export function Component() {
     difficulty: "easy" | "medium" | "hard";
     questionCount: number;
   } | null>(null);
-  const initialLoadDoneRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [rightWidth, setRightWidth] = useState<number>(320);
 
@@ -357,29 +355,6 @@ export function Component() {
     }
   }, [codePanel]);
 
-  // 检测 ui-blocks 里的 interactive block → 推到右栏互动课面板
-  // 仅实时新消息自动切 Tab；初始加载历史不切（避免历史 interactive 污染 roadmap 默认 Tab）
-  useEffect(() => {
-    const wasInitialLoad = !initialLoadDoneRef.current;
-    initialLoadDoneRef.current = true;
-    for (let i = chat.messages.length - 1; i >= 0; i--) {
-      const msg = chat.messages[i];
-      if (msg.role === "assistant" && msg.metadata?.annotations) {
-        for (const ann of [...msg.metadata.annotations].reverse()) {
-          const blocks = (ann as { uiBlocks?: Array<{ type: string; html?: string }> }).uiBlocks;
-          if (blocks && Array.isArray(blocks)) {
-            const interactive = blocks.find((b) => b.type === "interactive");
-            if (interactive?.html) {
-              setInteractivePanel({ html: interactive.html });
-              if (!wasInitialLoad) setRightTab("interactive");
-              return;
-            }
-          }
-        }
-      }
-    }
-  }, [chat.messages]);
-
   useEffect(() => {
     if (!sessionId) return;
 
@@ -387,7 +362,6 @@ export function Component() {
       chat.setMessages([]);
       setNodes([]);
       setCodePanel(null);
-      setInteractivePanel(null);
       setLoaded(false);
       setPageError(null);
       setIsNewSession(false);
@@ -751,6 +725,7 @@ export function Component() {
   async function handleDiagnosticSubmit(
     answers: Array<{ questionId: string; optionId: string; optionText: string }>,
   ) {
+    setDiagnosticSubmitted(true);
     setDiagnosticAnalyzing(true);
 
     const answerLines = answers.map(
@@ -1045,7 +1020,6 @@ export function Component() {
               activeMode={activeMode}
               codePanel={codePanel}
               onCodePanelChange={handleCodePanelChange}
-              interactivePanel={interactivePanel}
               activeTab={rightTab}
               onTabChange={setRightTab}
               reviewDueNodes={reviewDueNodes}
