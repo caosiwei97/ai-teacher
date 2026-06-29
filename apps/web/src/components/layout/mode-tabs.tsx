@@ -27,7 +27,7 @@ export function ModeTabs({ activeMode, masteredCount, onChange }: ModeTabsProps)
   const unlocked = masteredCount > 0;
 
   return (
-    <div className="flex shrink-0 items-center gap-1 border-b border-border bg-card/50 px-3 py-1.5">
+    <div data-testid="mode-tabs" className="flex shrink-0 items-center gap-1 border-b border-border bg-card/50 px-3 py-1.5">
       {MODE_TABS.map((tab) => {
         const isActive = activeMode === tab.value;
         const isLocked = !unlocked && tab.value !== "learning";

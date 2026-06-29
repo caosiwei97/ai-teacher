@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { fetchSessions, archiveSession as archiveSessionApi } from "@/lib/api-client";
 
 const USER_ID = "seed-user-ai-teacher";
@@ -80,10 +80,11 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const navigate = useNavigate();
   const selectSession = useCallback((id: string) => {
     setCurrentSessionId(id);
-    window.history.replaceState(null, "", `/learn/${id}`);
-  }, []);
+    navigate(`/learn/${id}`, { replace: true });
+  }, [navigate]);
 
   const createNewSession = useCallback(() => {
     const currentSession = sessions.find((s) => s.id === currentSessionId);

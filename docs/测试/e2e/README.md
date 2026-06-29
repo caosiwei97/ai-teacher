@@ -30,7 +30,8 @@
 | Q        | 互动教学产物       | `interactive-lesson.spec.ts`         | 1      | 1      | 0      | 0     |
 | R        | 复习模式           | `review.spec.ts`                     | 3      | 3      | 0      | 0     |
 | S        | 面试模式           | `interview.spec.ts`                  | 2      | 2      | 0      | 0     |
-| **合计** |                    |                                      | **50** | **25** | **19** | **7** |
+| T        | 模式切换与渐进解锁 | `mode-switch.spec.ts`                | 6      | 3      | 3      | 0     |
+| **合计** |                    |                                      | **56** | **28** | **22** | **7** |
 
 ### A. 新会话与诊断 (New Session & Diagnostic)
 

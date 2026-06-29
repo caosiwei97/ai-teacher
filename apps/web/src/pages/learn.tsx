@@ -19,7 +19,7 @@ import {
 import { useSession } from "@/contexts/session-context";
 import { SandboxProvider } from "@/contexts/sandbox-context";
 import type { UIMessage } from "ai";
-import { GraduationCap, PanelRightClose, PanelRight } from "lucide-react";
+import { GraduationCap, PanelRightClose, MapPin } from "lucide-react";
 import { ModeTabs, type ActiveMode } from "@/components/layout/mode-tabs";
 import { StartupCard } from "@/components/chat/startup-card";
 
@@ -475,6 +475,7 @@ export function Component() {
           setNodes(loadedNodes);
           setIsNewSession(false);
           setSelectedConfigId((sessionData.session as Record<string, unknown>).llmConfigId as string | undefined);
+          setActiveMode(sessionData.session.activeMode);
 
           if (loadedNodes.length > 0) {
             setDiagnosticSubmitted(true);
@@ -956,16 +957,22 @@ export function Component() {
       <div className="relative flex min-w-0 flex-1 flex-col">
         {showRight && (
           <div className="absolute right-3 top-3 z-10 hidden lg:block">
-            <button
-              onClick={() => setRightCollapsed(!rightCollapsed)}
-              className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
-            >
-              {rightCollapsed ? (
+            {rightCollapsed ? (
+              <button
+                onClick={() => setRightCollapsed(false)}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                <span>路线 {nodes.filter((n) => n.status === "mastered").length}/{nodes.length}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setRightCollapsed(true)}
+                className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
+              >
                 <PanelRightClose className="h-4 w-4 text-foreground" />
-              ) : (
-                <PanelRight className="h-4 w-4 text-foreground" />
-              )}
-            </button>
+              </button>
+            )}
           </div>
         )}
         <ModeTabs

@@ -8,14 +8,12 @@ const REACT_HOOKS_SESSION = "seed-session-react-hooks";
 const REVIEW_MULTI_SESSION = "seed-session-review-multi"; // 2 mastered，面试 mock 流程用（避免污染 react-hooks 共享会话）
 
 test.describe("Interview — 面试模式（分类 S）", () => {
-  test("面试入口：右栏面试 tab + 开始面试按钮 + 初始无结果", async ({ page, request }) => {
+  test("面试入口：顶部面试 Tab 可见 + 初始无结果", async ({ page, request }) => {
     await page.goto(`/learn/${REACT_HOOKS_SESSION}`);
     await page.waitForSelector("textarea");
 
-    // 面试 tab 可见 + 切换
-    await page.locator("button:has(.lucide-flame)").click();
-    await expect(page.locator("text=面试模式")).toBeVisible({ timeout: 10000 });
-    await expect(page.locator("button:has-text('开始面试')")).toBeVisible();
+    // 顶部面试 Tab（🔥）可见（spec §5.1 顶部 Tab 替代右栏 tab）
+    await expect(page.locator("button", { hasText: "面试" })).toBeVisible();
 
     // 初始无面试结果
     const res = await request.get(

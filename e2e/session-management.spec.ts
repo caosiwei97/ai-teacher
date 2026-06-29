@@ -78,7 +78,7 @@ test.describe("Session Management — Home Page", () => {
   test("should show session cards in sidebar on learn page", async ({ page }) => {
     await page.goto("/");
 
-    const sessionItem = page.locator("button", { hasText: "React Hooks" });
+    const sessionItem = page.locator(".bg-sidebar").locator("button", { hasText: "React Hooks" }).first();
     await expect(sessionItem).toBeVisible({ timeout: 10000 });
     await sessionItem.click();
 
@@ -97,13 +97,13 @@ test.describe("Session Management — Home Page", () => {
   }) => {
     await page.goto("/");
 
-    const sessionItem = page.locator("button", { hasText: "React Hooks" });
+    const sessionItem = page.locator(".bg-sidebar").locator("button", { hasText: "React Hooks" }).first();
     await expect(sessionItem).toBeVisible({ timeout: 10000 });
     await sessionItem.click();
 
     await expect(page).toHaveURL(/\/learn\//, { timeout: 10000 });
 
-    const newBtn = page.locator('button[title="新建会话"]');
+    const newBtn = page.locator("button", { hasText: "新对话" });
     await expect(newBtn).toBeVisible();
   });
 });
@@ -111,9 +111,9 @@ test.describe("Session Management — Home Page", () => {
 test.describe("Session Management — Left Sidebar", () => {
   test("should show new session button in sidebar", async ({ page }) => {
     await page.goto("/learn/seed-session-react-hooks");
-    await page.waitForSelector("text=学习路线", { timeout: 10000 });
+    await page.waitForSelector("textarea", { timeout: 10000 });
 
-    const newBtn = page.locator('button[title="新建会话"]');
+    const newBtn = page.locator("button", { hasText: "新对话" });
     await expect(newBtn).toBeVisible();
   });
 
@@ -121,7 +121,7 @@ test.describe("Session Management — Left Sidebar", () => {
     page,
   }) => {
     await page.goto("/learn/seed-session-react-hooks");
-    await page.waitForSelector("text=学习路线", { timeout: 10000 });
+    await page.waitForSelector("textarea", { timeout: 10000 });
 
     const sidebar = page.locator(".bg-sidebar").first();
     await expect(sidebar).toBeVisible();

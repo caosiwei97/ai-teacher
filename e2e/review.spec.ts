@@ -57,15 +57,18 @@ test.describe("Review — 复习模式（分类 R）", () => {
     expect(summary.weakNodes.map((n: { id: string }) => n.id)).toContain(nodeId);
   });
 
-  test("抽认卡翻面 + 自评答错 → POST 更新记忆强度（UI，mock LLM）", async ({ page }) => {
+  test("抽认卡翻面 + 自评答错 → POST 更新记忆强度（UI，mock LLM）", async ({ page, request }) => {
     test.setTimeout(60000);
     await page.goto(`/learn/${REACT_HOOKS_SESSION}`);
     await page.waitForSelector("textarea");
 
-    // 复习 tab → 到期清单显示 1 项（单点场景）+ 开始复习按钮可见
-    await page.locator("button:has(.lucide-refresh-cw)").click();
+    // 点顶部复习 Tab（mastered≥1 解锁）→ 触发复习模式（spec §5.1 顶部 Tab 替代右栏 tab）
+    await page.getByTestId("mode-tabs").locator("button", { hasText: "复习" }).click();
+    // 右栏复习清单可见（到期 1 项，单点场景）
     await expect(page.locator("text=理解 useState")).toBeVisible({ timeout: 10000 });
-    await expect(page.locator("button:has-text('开始复习')")).toBeVisible();
+
+    // 等"开始复习吧"触发的 mock chat 回复完，避免 loading 吞 [render-flashcard] 提交
+    await page.waitForTimeout(3000);
 
     // mock 触发抽认卡：输入 [render-flashcard]（chat 空闲态，避免 loading 吞提交）
     const textarea = page.locator("textarea");
@@ -93,5 +96,10 @@ test.describe("Review — 复习模式（分类 R）", () => {
     expect(body).toEqual({ nodeId: "seed-node-use-state", correct: false });
     const { result } = await resultRes.json();
     expect(result.trend).toBe("衰退");
+
+    // 恢复 activeMode=learning，避免污染共享会话（learn/mastery 也用此会话，串行下确保恢复后跑）
+    await request.patch(`/api/sessions/${REACT_HOOKS_SESSION}`, {
+      data: { activeMode: "learning" },
+    });
   });
 });
