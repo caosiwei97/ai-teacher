@@ -43,6 +43,108 @@ function getMockProvider(): (modelId: string) => LanguageModel {
           // content 可能是 string 或 parts 数组（如 [{type:'text',text:'...'}]），统一 stringify 检测标记
           const userText = JSON.stringify(lastUser?.content ?? "");
 
+          // 防止 tool-call 循环：若 prompt 已含 tool 结果（上一轮调过 tool），返回默认文本
+          const hasToolResult = (prompt ?? []).some(
+            (m) => m.role === "tool",
+          );
+          if (hasToolResult) {
+            return {
+              stream: simulateReadableStream({
+                chunks: [
+                  { type: "text-start", id: "text-0" },
+                  { type: "text-delta", id: "text-0", delta: "这是一个模拟回复。" },
+                  { type: "text-end", id: "text-0" },
+                  {
+                    type: "finish",
+                    finishReason: { unified: "stop", raw: undefined },
+                    logprobs: undefined,
+                    usage: {
+                      inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+                      outputTokens: { total: 20, text: 20, reasoning: undefined },
+                    },
+                  },
+                ],
+              }),
+            };
+          }
+
+          // E2E 标记：[score-answer] → scoreAnswer tool call（面试每题评分，迭代 052③）
+          if (userText.includes("[score-answer]")) {
+            return {
+              stream: simulateReadableStream({
+                chunks: [
+                  {
+                    type: "tool-call",
+                    toolCallId: "call-score",
+                    toolName: "scoreAnswer",
+                    input: JSON.stringify({
+                      question: "闭包中变量是引用还是拷贝？",
+                      answer: "引用",
+                      score: 90,
+                      isCorrect: true,
+                      difficulty: "medium",
+                      feedback: "答对核心",
+                    }),
+                  },
+                  {
+                    type: "finish",
+                    finishReason: { unified: "stop", raw: undefined },
+                    logprobs: undefined,
+                    usage: {
+                      inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+                      outputTokens: { total: 20, text: 20, reasoning: undefined },
+                    },
+                  },
+                ],
+              }),
+            };
+          }
+
+          // E2E 标记：[finalize-interview] → finalizeInterview + renderUI(interviewScore)（面试复盘，迭代 052③）
+          if (userText.includes("[finalize-interview]")) {
+            return {
+              stream: simulateReadableStream({
+                chunks: [
+                  {
+                    type: "tool-call",
+                    toolCallId: "call-finalize",
+                    toolName: "finalizeInterview",
+                    input: JSON.stringify({
+                      improvement: "建议多练闭包与执行上下文的基础概念，注意变量引用与生命周期。",
+                      weakPoints: ["闭包变量生命周期", "执行上下文创建时机"],
+                    }),
+                  },
+                  {
+                    type: "tool-call",
+                    toolCallId: "call-scorecard",
+                    toolName: "renderUI",
+                    input: JSON.stringify({
+                      blocks: [
+                        {
+                          type: "interviewScore",
+                          totalScore: 75,
+                          difficulty: "medium",
+                          weakPoints: ["闭包变量生命周期", "执行上下文创建时机"],
+                          improvement: "建议多练闭包与执行上下文的基础概念。",
+                          questionCount: 1,
+                        },
+                      ],
+                    }),
+                  },
+                  {
+                    type: "finish",
+                    finishReason: { unified: "stop", raw: undefined },
+                    logprobs: undefined,
+                    usage: {
+                      inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+                      outputTokens: { total: 20, text: 20, reasoning: undefined },
+                    },
+                  },
+                ],
+              }),
+            };
+          }
+
           if (userText.includes("[render-interactive]")) {
             const html =
               '<button id="btn">点我</button><p id="out">未点击</p>' +

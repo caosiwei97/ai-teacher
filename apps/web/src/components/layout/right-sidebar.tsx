@@ -2,7 +2,7 @@
 import { RoadmapNode } from "@/components/roadmap/roadmap-node";
 import { CodePanel } from "@/components/sidebar/code-panel";
 import { InteractiveBlockRenderer } from "@/components/ui-blocks/interactive-block";
-import { MapPin, Code2, Sparkles, RefreshCw } from "lucide-react";
+import { MapPin, Code2, Sparkles, RefreshCw, Flame } from "lucide-react";
 
 interface Node {
   id: string;
@@ -21,6 +21,13 @@ export interface ReviewDueItem {
   isOverdue: boolean;
 }
 
+export interface InterviewSummary {
+  status: "in_progress" | "completed";
+  totalScore: number;
+  difficulty: "easy" | "medium" | "hard";
+  questionCount: number;
+}
+
 interface RightSidebarProps {
   nodes: Node[];
   codePanel?: {
@@ -30,11 +37,14 @@ interface RightSidebarProps {
   } | null;
   onCodePanelChange?: (code: string) => void;
   interactivePanel?: { html: string } | null;
-  activeTab: "roadmap" | "code" | "interactive" | "review";
-  onTabChange: (tab: "roadmap" | "code" | "interactive" | "review") => void;
+  activeTab: "roadmap" | "code" | "interactive" | "review" | "interview";
+  onTabChange: (tab: "roadmap" | "code" | "interactive" | "review" | "interview") => void;
   reviewDueNodes?: ReviewDueItem[];
   onStartReview?: () => void;
   reviewActive?: boolean;
+  interviewResult?: InterviewSummary | null;
+  onStartInterview?: () => void;
+  interviewActive?: boolean;
 }
 
 export function RightSidebar({
@@ -47,6 +57,9 @@ export function RightSidebar({
   reviewDueNodes = [],
   onStartReview,
   reviewActive = false,
+  interviewResult = null,
+  onStartInterview,
+  interviewActive = false,
 }: RightSidebarProps) {
   const hasCode = !!codePanel;
   const hasInteractive = !!interactivePanel;
@@ -62,6 +75,7 @@ export function RightSidebar({
   const roadmapActive = activeTab === "roadmap";
   const interactiveActive = activeTab === "interactive";
   const reviewActiveTab = activeTab === "review";
+  const interviewActiveTab = activeTab === "interview";
 
   const tabBtnStyle = (active: boolean) =>
     isIdeMode
@@ -121,6 +135,16 @@ export function RightSidebar({
                   {reviewDueNodes.length}
                 </span>
               )}
+            </button>
+          )}
+          {hasReview && (
+            <button
+              onClick={() => onTabChange("interview")}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+              style={tabBtnStyle(interviewActiveTab)}
+            >
+              <Flame className="h-3.5 w-3.5" />
+              面试
             </button>
           )}
           <button
@@ -201,6 +225,14 @@ export function RightSidebar({
             dueNodes={reviewDueNodes}
             onStartReview={onStartReview}
             reviewActive={reviewActive}
+          />
+        )}
+
+        {activeTab === "interview" && hasReview && (
+          <InterviewPanel
+            result={interviewResult}
+            onStartInterview={onStartInterview}
+            interviewActive={interviewActive}
           />
         )}
 
@@ -298,6 +330,85 @@ function ReviewList({
               </div>
             </div>
           ))
+        )}
+      </div>
+    </>
+  );
+}
+
+// 面试入口 + 结果摘要（spec §4.1 + §5.1 右栏面试态，红色基调）
+const DIFFICULTY_LABEL: Record<InterviewSummary["difficulty"], string> = {
+  easy: "🟢 初级",
+  medium: "🟡 中级",
+  hard: "🔴 高级",
+};
+
+function InterviewPanel({
+  result,
+  onStartInterview,
+  interviewActive,
+}: {
+  result: InterviewSummary | null;
+  onStartInterview?: () => void;
+  interviewActive: boolean;
+}) {
+  return (
+    <>
+      <div className="border-b border-border px-5 py-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-foreground">面试模式</h2>
+          {result && (
+            <span className="text-xs text-muted-foreground">
+              {result.status === "completed" ? "已完成" : "进行中"}
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          全程不讲解只追问，高压检验已学知识
+        </p>
+        {!interviewActive && onStartInterview && (
+          <button
+            onClick={onStartInterview}
+            className="mt-3 w-full rounded-lg bg-accent/20 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent/30"
+          >
+            🔥 开始面试
+          </button>
+        )}
+        {interviewActive && (
+          <p className="mt-3 rounded-lg bg-accent/10 px-3 py-2 text-[11px] text-muted-foreground">
+            面试进行中，在对话区作答
+          </p>
+        )}
+      </div>
+      <div className="flex-1 overflow-y-auto p-3">
+        {result ? (
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-3xl font-bold text-accent">
+                {result.totalScore}
+              </span>
+              <span className="text-xs text-muted-foreground">/ 100</span>
+            </div>
+            <div className="mt-3 space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">难度</span>
+                <span className="text-foreground">
+                  {DIFFICULTY_LABEL[result.difficulty]}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">题数</span>
+                <span className="text-foreground">{result.questionCount}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Flame className="mb-3 h-8 w-8 text-muted-foreground/30" />
+            <p className="text-xs text-muted-foreground">
+              点击"开始面试"进入高压检验
+            </p>
+          </div>
         )}
       </div>
     </>

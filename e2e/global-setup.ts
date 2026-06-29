@@ -9,15 +9,18 @@ const DEFAULT_DATABASE_URL =
   "postgresql://postgres:postgres@localhost:25432/ai_teacher";
 
 async function resetTestDb(prisma: PrismaClient) {
+  // 删除顺序遵从外键依赖：先删子（session 的附属 + session 本身）再删父（source/llmConfig/user）
+  // session 引用 source + llmConfig + user，故 session 须在 source/llmConfig 之前删
   await prisma.checkpoint.deleteMany();
   await prisma.message.deleteMany();
   await prisma.node.deleteMany();
   await prisma.documentChunk.deleteMany();
   await prisma.roadmap.deleteMany();
-  await prisma.learnerProfile.deleteMany();
-  await prisma.llmConfig.deleteMany();
+  await prisma.interviewResult.deleteMany();
   await prisma.session.deleteMany();
   await prisma.source.deleteMany();
+  await prisma.llmConfig.deleteMany();
+  await prisma.learnerProfile.deleteMany();
   await prisma.user.deleteMany();
 }
 

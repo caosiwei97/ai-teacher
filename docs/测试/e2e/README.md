@@ -29,6 +29,7 @@
 | P        | LLM 配置           | `llm-config.spec.ts`                 | —      | —      | —      | —     |
 | Q        | 互动教学产物       | `interactive-lesson.spec.ts`         | 1      | 1      | 0      | 0     |
 | R        | 复习模式           | `review.spec.ts`                     | 3      | 3      | 0      | 0     |
+| S        | 面试模式           | `interview.spec.ts`                  | 2      | 2      | 0      | 0     |
 | **合计** |                    |                                      | **50** | **25** | **19** | **7** |
 
 ### A. 新会话与诊断 (New Session & Diagnostic)
@@ -154,6 +155,13 @@
 | E2E-R01 | 多节点到期清单（≥2 mastered 交错场景）    | P0     | seed-session-review-multi     |
 | E2E-R02 | 提交复习结果更新记忆强度 + 薄弱点汇总     | P0     | E2E-R01                       |
 | E2E-R03 | 抽认卡翻面 + 自评答错 → POST 更新记忆强度 | P0     | mock LLM `[render-flashcard]` |
+
+### S. 面试模式 (Interview，迭代 052③)
+
+| ID      | 测试场景                                             | 优先级 | 前置条件                                         |
+| ------- | ---------------------------------------------------- | ------ | ------------------------------------------------ |
+| E2E-S01 | 面试入口（右栏面试 tab + 开始面试按钮 + 初始无结果） | P0     | seed-session-react-hooks                         |
+| E2E-S02 | scoreAnswer 评分 + finalizeInterview 评分卡/复盘     | P0     | mock LLM `[score-answer]`/`[finalize-interview]` |
 
 ---
 

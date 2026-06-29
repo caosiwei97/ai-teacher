@@ -14,6 +14,7 @@ import { BadgeBlock } from "./badge-block";
 import { MasteryReportBlock } from "./mastery-report-block";
 import { InteractiveBlockRenderer } from "./interactive-block";
 import { FlashcardBlockRenderer } from "./flashcard-block";
+import { InterviewScoreBlockRenderer } from "./interview-score-block";
 
 export const UIBlockRegistry: Record<string, ComponentType<{ block: UIBlock }>> = {
   text: TextBlock as ComponentType<{ block: UIBlock }>,
@@ -30,4 +31,5 @@ export const UIBlockRegistry: Record<string, ComponentType<{ block: UIBlock }>> 
   "mastery-report": MasteryReportBlock as ComponentType<{ block: UIBlock }>,
   interactive: InteractiveBlockRenderer as ComponentType<{ block: UIBlock }>,
   flashcard: FlashcardBlockRenderer as ComponentType<{ block: UIBlock }>,
+  interviewScore: InterviewScoreBlockRenderer as ComponentType<{ block: UIBlock }>,
 };

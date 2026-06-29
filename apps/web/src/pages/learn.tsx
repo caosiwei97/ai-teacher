@@ -193,7 +193,7 @@ export function Component() {
   } | null>(null);
 
   const [rightCollapsed, setRightCollapsed] = useState(false);
-  const [rightTab, setRightTab] = useState<"roadmap" | "code" | "interactive" | "review">("roadmap");
+  const [rightTab, setRightTab] = useState<"roadmap" | "code" | "interactive" | "review" | "interview">("roadmap");
   const [interactivePanel, setInteractivePanel] = useState<{ html: string } | null>(null);
   const [activeMode, setActiveMode] = useState<"learning" | "review" | "interview">("learning");
   const [reviewDueNodes, setReviewDueNodes] = useState<Array<{
@@ -203,6 +203,12 @@ export function Component() {
     memoryStrength: number;
     isOverdue: boolean;
   }>>([]);
+  const [interviewResult, setInterviewResult] = useState<{
+    status: "in_progress" | "completed";
+    totalScore: number;
+    difficulty: "easy" | "medium" | "hard";
+    questionCount: number;
+  } | null>(null);
   const initialLoadDoneRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [rightWidth, setRightWidth] = useState<number>(320);
@@ -386,12 +392,15 @@ export function Component() {
       setSuggestion(undefined);
       setActiveMode("learning");
       setReviewDueNodes([]);
+      setInterviewResult(null);
       setRightTab("roadmap");
     }
     prevSessionRef.current = sessionId;
 
     // 拉取今日复习到期清单（有 mastered 节点时）
     fetchReviewDue();
+    // 拉取最新面试结果（评分卡/复盘）
+    fetchInterviewResult();
 
     getLlmConfigs(USER_ID)
       .then((data) => setLlmConfigs(data.configs))
@@ -556,6 +565,46 @@ export function Component() {
     }
   }
 
+  // 面试模式：拉取最新面试结果（评分卡/复盘，spec §4）
+  const fetchInterviewResult = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/interview/result`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const r = data.result;
+      if (!r) {
+        setInterviewResult(null);
+        return;
+      }
+      const log = (r.questionLog ?? []) as unknown[];
+      setInterviewResult({
+        status: r.status,
+        totalScore: r.totalScore ?? 0,
+        difficulty: r.difficulty ?? "medium",
+        questionCount: log.length,
+      });
+    } catch {
+      /* ignore */
+    }
+  }, [sessionId]);
+
+  // 开始面试：切 activeMode=interview + 发消息触发面试官 agent
+  async function handleStartInterview() {
+    if (!sessionId) return;
+    try {
+      await fetch(`/api/sessions/${sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activeMode: "interview" }),
+      });
+      setActiveMode("interview");
+      chat.submitMessage("开始面试吧");
+    } catch {
+      /* ignore */
+    }
+  }
+
   // 抽认卡自评事件：POST /review/result 更新记忆强度 + 发消息推进对话（spec §3.2/§3.3）
   useEffect(() => {
     if (!sessionId) return;
@@ -577,6 +626,12 @@ export function Component() {
     window.addEventListener("review-flashcard-answer", handler);
     return () => window.removeEventListener("review-flashcard-answer", handler);
   }, [sessionId, chat, fetchReviewDue]);
+
+  // 面试模式：每轮对话后刷新面试结果（scoreAnswer/finalizeInterview 可能已更新，spec §4）
+  useEffect(() => {
+    if (activeMode !== "interview" || !sessionId) return;
+    fetchInterviewResult();
+  }, [activeMode, sessionId, chat.messages, fetchInterviewResult]);
 
   function handleTopicClick(topic: string) {
     optimisticUpdateTopic(topic);
@@ -926,6 +981,9 @@ export function Component() {
               reviewDueNodes={reviewDueNodes}
               onStartReview={handleStartReview}
               reviewActive={activeMode === "review"}
+              interviewResult={interviewResult}
+              onStartInterview={handleStartInterview}
+              interviewActive={activeMode === "interview"}
             />
           </div>
         </>
