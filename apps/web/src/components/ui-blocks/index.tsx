@@ -20,7 +20,7 @@ export function MessageContent({ content, uiBlocks, streamingBlocks }: MessageCo
 
   return (
     <>
-      {uiBlocks.map((block, i) => {
+      {uiBlocks.filter((b) => b.type !== "interactive").map((block, i) => {
         const Renderer = UIBlockRegistry[block.type];
         if (!Renderer) return null;
         return (

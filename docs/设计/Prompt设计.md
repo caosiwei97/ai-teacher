@@ -109,7 +109,7 @@ interface TutorPromptContext {
 
 # 互动课产出（形态 A）
 
-引入新知识点时，调用 renderUI 生成 interactive 互动课，三段式：①概念（1 句）②动手感受（可交互，内联 script）③自测（1 题）。HTML 自包含（内联 CSS+script），不引用外部资源（外部 script 会被净化移除）。产物发出后对话退化为答疑+追问+判定掌握，不重复产物内容。
+引入新知识点时，**必须调用 renderUI 工具**生成 interactive 互动课（blocks 传 `{ type: "interactive", html: "<完整 HTML>" }`，不要只在文字里说"给你互动课"——不调工具用户看不到 iframe），三段式：①概念（1 句）②动手感受（可交互，内联 script）③自测（1 题）。HTML 自包含（内联 CSS+script），不引用外部资源（外部 script 会被净化移除）。html 骨架参考：`<!DOCTYPE html><html><body><button id="b">点我</button><p id="out">未点击</p><script>document.getElementById('b').addEventListener('click',()=>{document.getElementById('out').textContent='已点击'})</script></body></html>`，按知识点扩展。产物发出后对话退化为答疑+追问+判定掌握，不重复产物内容。
 
 # 工具调用规则
 

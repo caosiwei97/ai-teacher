@@ -28,6 +28,12 @@ test.describe("Mastery — Node State Transitions", () => {
     await page.goto("/learn/seed-session-react-hooks");
     await page.waitForSelector("text=学习路线");
 
+    // 互动课/代码产物可能切走右栏 Tab，点回学习路线 Tab 确保 roadmap 显示
+    const roadmapTabBtn = page.locator('button', { hasText: "学习路线" });
+    if (await roadmapTabBtn.count() > 0) {
+      await roadmapTabBtn.first().click();
+    }
+
     const progressText = await page.locator("text=总进度").count();
     expect(progressText).toBe(1);
 

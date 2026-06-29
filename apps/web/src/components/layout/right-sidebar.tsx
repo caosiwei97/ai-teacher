@@ -1,7 +1,8 @@
 
 import { RoadmapNode } from "@/components/roadmap/roadmap-node";
 import { CodePanel } from "@/components/sidebar/code-panel";
-import { MapPin, Code2 } from "lucide-react";
+import { InteractiveBlockRenderer } from "@/components/ui-blocks/interactive-block";
+import { MapPin, Code2, Sparkles } from "lucide-react";
 
 interface Node {
   id: string;
@@ -20,18 +21,22 @@ interface RightSidebarProps {
     instruction?: string;
   } | null;
   onCodePanelChange?: (code: string) => void;
-  activeTab: "roadmap" | "code";
-  onTabChange: (tab: "roadmap" | "code") => void;
+  interactivePanel?: { html: string } | null;
+  activeTab: "roadmap" | "code" | "interactive";
+  onTabChange: (tab: "roadmap" | "code" | "interactive") => void;
 }
 
 export function RightSidebar({
   nodes,
   codePanel,
   onCodePanelChange,
+  interactivePanel,
   activeTab,
   onTabChange,
 }: RightSidebarProps) {
   const hasCode = !!codePanel;
+  const hasInteractive = !!interactivePanel;
+  const showTabs = hasCode || hasInteractive;
 
   const mastered = nodes.filter((n) => n.status === "mastered").length;
   const total = nodes.length;
@@ -40,14 +45,26 @@ export function RightSidebar({
   const isIdeMode = activeTab === "code" && hasCode;
   const codeActive = activeTab === "code";
   const roadmapActive = activeTab === "roadmap";
+  const interactiveActive = activeTab === "interactive";
+
+  const tabBtnStyle = (active: boolean) =>
+    isIdeMode
+      ? {
+          color: active ? "#cdd6f4" : "#6c7086",
+          borderBottom: active ? "2px solid #89b4fa" : "2px solid transparent",
+        }
+      : {
+          color: active ? "var(--color-foreground)" : "var(--color-muted-foreground)",
+          borderBottom: active ? "2px solid var(--color-primary)" : "2px solid transparent",
+        };
 
   return (
     <div
       className={`flex h-full w-full flex-col${isIdeMode ? "" : " bg-sidebar"}`}
       style={isIdeMode ? { background: "#1e1e2e" } : undefined}
     >
-      {/* Tab bar — only show when both roadmap and code exist */}
-      {hasCode && (
+      {/* Tab bar — show when code or interactive exists */}
+      {showTabs && (
         <div
           className="flex shrink-0 px-2 py-0"
           style={isIdeMode
@@ -55,36 +72,30 @@ export function RightSidebar({
             : { borderBottom: "1px solid var(--color-border)" }
           }
         >
-          <button
-            onClick={() => onTabChange("code")}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
-            style={isIdeMode
-              ? {
-                  color: codeActive ? "#cdd6f4" : "#6c7086",
-                  borderBottom: codeActive ? "2px solid #89b4fa" : "2px solid transparent",
-                }
-              : {
-                  color: codeActive ? "var(--color-foreground)" : "var(--color-muted-foreground)",
-                  borderBottom: codeActive ? "2px solid var(--color-primary)" : "2px solid transparent",
-                }
-            }
-          >
-            <Code2 className="h-3.5 w-3.5" />
-            代码
-          </button>
+          {hasInteractive && (
+            <button
+              onClick={() => onTabChange("interactive")}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+              style={tabBtnStyle(interactiveActive)}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              互动课
+            </button>
+          )}
+          {hasCode && (
+            <button
+              onClick={() => onTabChange("code")}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+              style={tabBtnStyle(codeActive)}
+            >
+              <Code2 className="h-3.5 w-3.5" />
+              代码
+            </button>
+          )}
           <button
             onClick={() => onTabChange("roadmap")}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
-            style={isIdeMode
-              ? {
-                  color: roadmapActive ? "#cdd6f4" : "#6c7086",
-                  borderBottom: roadmapActive ? "2px solid #89b4fa" : "2px solid transparent",
-                }
-              : {
-                  color: roadmapActive ? "var(--color-foreground)" : "var(--color-muted-foreground)",
-                  borderBottom: roadmapActive ? "2px solid var(--color-primary)" : "2px solid transparent",
-                }
-            }
+            style={tabBtnStyle(roadmapActive)}
           >
             <MapPin className="h-3.5 w-3.5" />
             学习路线
@@ -103,7 +114,7 @@ export function RightSidebar({
                     学习路线
                   </h2>
                 </div>
-                <span className="text-xs font-medium text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {mastered}/{total}
                 </span>
               </div>
@@ -161,6 +172,14 @@ export function RightSidebar({
             instruction={codePanel!.instruction}
             onCodeChange={onCodePanelChange ?? (() => {})}
           />
+        )}
+
+        {activeTab === "interactive" && hasInteractive && interactivePanel && (
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto p-3">
+            <InteractiveBlockRenderer
+              block={{ type: "interactive", html: interactivePanel.html }}
+            />
+          </div>
         )}
       </div>
     </div>
