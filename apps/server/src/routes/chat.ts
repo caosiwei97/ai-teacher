@@ -155,6 +155,10 @@ export const chatRoute = new Hono()
       description: n.description,
       status: n.status,
       masteryScore: n.masteryScore,
+      memoryStrength: n.memoryStrength,
+      lastReviewedAt: n.lastReviewedAt,
+      nextReviewAt: n.nextReviewAt,
+      reviewInterval: n.reviewInterval,
     })) ?? [];
 
     await chatQueue.add("chat-turn", {
@@ -165,6 +169,7 @@ export const chatRoute = new Hono()
       hidden: hidden ?? false,
       topic: session!.topic,
       teachingMode: session!.teachingMode ?? "warm",
+      activeMode: session!.activeMode,
       userId: session!.userId,
       roadmapNodes,
       llmConfigId: llmConfigId ?? session!.llmConfigId,

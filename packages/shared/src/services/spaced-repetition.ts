@@ -22,6 +22,20 @@ export interface ReviewMemoryState {
   reviewInterval: number;
 }
 
+/** 可复习的节点（mastered 判定 + 记忆字段，供 selectDueReviewNodes 纯函数消费） */
+export interface ReviewableNode {
+  id: string;
+  index: number;
+  title: string;
+  description: string;
+  status: string;
+  masteryScore: number;
+  memoryStrength: number;
+  lastReviewedAt: Date | null;
+  nextReviewAt: Date | null;
+  reviewInterval: number;
+}
+
 /** 一次复习提交后的产出（对应 spec §3.3 结束输出） */
 export interface ReviewOutcome {
   memoryStrength: number;
@@ -83,4 +97,21 @@ export function applyReviewResult(
     reviewInterval,
     trend,
   };
+}
+
+/**
+ * 从节点列表筛选今日到期复习项（spec §3.1 智能推荐）：
+ * 1. 仅 mastered 节点（status==='mastered'，复习范围=已掌握知识点，§5.2）
+ * 2. isReviewDue（nextReviewAt null/逾期 优先）
+ * 3. 标记 isOverdue（nextReviewAt===null，从未复习/老数据）
+ * 纯函数，server（到期清单 API）与 worker（考官 prompt 上下文）共用。
+ */
+export function selectDueReviewNodes(
+  nodes: ReviewableNode[],
+  now: Date = new Date(),
+): Array<ReviewableNode & { isOverdue: boolean }> {
+  return nodes
+    .filter((n) => n.status === "mastered")
+    .filter((n) => isReviewDue(n, now))
+    .map((n) => ({ ...n, isOverdue: n.nextReviewAt === null }));
 }

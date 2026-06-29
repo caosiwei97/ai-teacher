@@ -119,6 +119,58 @@ interface TutorPromptContext {
 - 不要编造节点 ID，使用上面列表中提供的真实 ID
 ```
 
+### 2.3 Review Agent System Prompt（迭代 051②）
+
+复习模式（`session.activeMode === "review"`）下，chat-turn 改用考官 prompt + 复习工具集（`renderUI` + `recordReviewResult`），不走 tutor。核心理念：**复习不重讲概念，让学习者主动回忆——答对放行，答错才提示**（spec §3.2）。
+
+```typescript
+interface ReviewPromptContext {
+  topic: string;
+  dueNodes: Array<{
+    // 今日到期知识点（mastered + 间隔重复到期，由 selectDueReviewNodes 筛选）
+    id: string;
+    index: number;
+    title: string;
+    description: string;
+    memoryStrength: number;
+    isOverdue: boolean; // 从未复习/老数据
+  }>;
+  learnerProfile: string;
+}
+```
+
+Prompt 核心片段：
+
+```markdown
+# 角色
+
+你是一个复习考官，用提取练习帮助学习者对抗遗忘、巩固已学知识。你不教新内容，只检验和激活已有记忆。
+
+# 核心规则
+
+1. **提取练习，不重讲概念**。复习不是重新教学——禁止主动讲解知识点全貌。让学习者先主动回忆。
+2. **答对放行，答错才提示**。答对 → 简短确认推进；答错 → 只给关键提示（1-2 句），不展开重讲。
+3. **一次一题**。每轮一个复习项（抽认卡或回忆测验）。
+4. **温和基调**。保持学习积极性，答错不批评。
+5. **语气自然**。
+
+# 复习产物
+
+- 抽认卡：renderUI 产 `{ type: "flashcard", nodeId, front, back }`，学习者翻面自评后调 recordReviewResult
+- 回忆测验：文字提问 → 学习者作答 → 你评判对错 → 调 recordReviewResult
+
+# 今日复习清单
+
+- 学习主题：{topic}
+- 到期知识点：{dueNodes 列表（id/标题/强度/是否逾期）}
+
+# 工具调用规则
+
+- recordReviewResult：每个知识点复习完、学习者给出对错后必须调用，传 nodeId + correct。系统按间隔重复算法更新记忆强度（答对翻倍 1→2→4→8→16→32d，答错重置 1d），返回 trend（强化/维持/衰退）+ nextReviewAt
+- 一个知识点只记录一次，记录后推进下一题
+- 全部复习完用一句话总结：记忆强度 + 下次复习时间 + 薄弱点
+```
+
 ---
 
 ## 3. Agent 工具定义
@@ -279,15 +331,15 @@ interface TutorPromptContext {
 
 ### 3.7 renderUI
 
-生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告、互动产物），让教学内容更直观（迭代 024 新增，迭代 029 扩展，050② 加 interactive）。
+生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告、互动产物、抽认卡），让教学内容更直观（迭代 024 新增，迭代 029 扩展，050② 加 interactive，051② 加 flashcard）。
 
 ```typescript
 {
   name: "renderUI",
-  description: "生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告、互动产物）",
+  description: "生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告、互动产物、抽认卡）",
   parameters: {
     blocks: [{
-      type: "table" | "callout" | "comparison" | "heading" | "badge" | "mastery-report" | "interactive",
+      type: "table" | "callout" | "comparison" | "heading" | "badge" | "mastery-report" | "interactive" | "flashcard",
       // table: { title?, headers: string[], rows: string[][] }
       // callout: { variant: "tip"|"warning"|"key", title?, content: string }
       // comparison: { title?, items: { label, left, right }[] }
@@ -295,6 +347,7 @@ interface TutorPromptContext {
       // badge: { items: { text, variant: "success"|"warning"|"info" }[] }
       // mastery-report: { nodeId, nodeName, score, summary, table: { columns, rows }, badges: string[] }
       // interactive: { html: string } — 自包含 HTML，iframe 沙箱渲染（迭代 050②）
+      // flashcard: { nodeId, front, back } — 复习抽认卡，正面问题→翻面答案（迭代 051②）
     }]
   },
   // 返回: { success: true, uiBlocks: Block[] } — 前端自动渲染对应组件
@@ -312,11 +365,12 @@ interface TutorPromptContext {
 | `badge`          | 徽章标签，展示关键要点       | `items`: [{text, variant}]                                  |
 | `mastery-report` | 掌握总结报告（迭代 029）     | `nodeId`, `nodeName`, `score`, `summary`, `table`, `badges` |
 | `interactive`    | 互动教学产物（迭代 050②）    | `html`（自包含 HTML，iframe 沙箱渲染）                      |
+| `flashcard`      | 复习抽认卡（迭代 051②）      | `nodeId`, `front`, `back`（正面问题→翻面答案）              |
 
 **Prompt 片段**（注入 system prompt）：
 
 ```
-**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持七种类型：
+**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持八种类型：
 - table: 表格（适合对比多个属性、罗列要点）
 - callout: 提示卡（tip=提示, warning=注意事项, key=核心要点）
 - comparison: 对比卡（适合两种方案的横向比较）
@@ -324,6 +378,7 @@ interface TutorPromptContext {
 - badge: 徽章标签（success/warning/info，展示关键要点）
 - mastery-report: 掌握总结报告（节点掌握后自动生成）
 - interactive: 互动教学产物（自包含 HTML，iframe 沙箱渲染，用户可交互；让概念可看可练）
+- flashcard: 复习抽认卡（正面问题 front → 翻面答案 back，需带 nodeId；复习模式提取练习用）
 每次调用可以生成多个 block，它们会按顺序显示在你的回复中。
 ```
 
@@ -337,18 +392,18 @@ interface TutorPromptContext {
 
 **⚠️ 既有债：UIBlock type 产出路径梳理（迭代 050②）**
 
-`ui-block.ts` 定义 13 种 UIBlock type，但产出路径不一，部分脱节：
+`ui-block.ts` 定义 14 种 UIBlock type，但产出路径不一，部分脱节：
 
-| UIBlock type                                                      | 产出路径                                        | 说明                                   |
-| ----------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------- |
-| table/callout/comparison/heading/badge/mastery-report/interactive | `renderUI` tool（`render-ui.ts` union，7 种）   | 经 renderUI tool 产出，SSE `ui-blocks` |
-| text                                                              | `message-service` 流式增量                      | agent 文本回复                         |
-| assessment                                                        | `message-service`（掌握报告 `hasAssessment`）   | 非 renderUI 路径                       |
-| quiz                                                              | `askQuestion` 工具产出 questions，前端构造      | 非 renderUI 路径                       |
-| code-result                                                       | `execute-code` 工具产出 stdout/stderr，前端构造 | 非 renderUI 路径                       |
-| formula/diagram                                                   | **无产出路径命中**（疑似 schema 定义未接入）    | registry 有 renderer 但无产出，待治理  |
+| UIBlock type                                                                | 产出路径                                        | 说明                                   |
+| --------------------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------- |
+| table/callout/comparison/heading/badge/mastery-report/interactive/flashcard | `renderUI` tool（`render-ui.ts` union，8 种）   | 经 renderUI tool 产出，SSE `ui-blocks` |
+| text                                                                        | `message-service` 流式增量                      | agent 文本回复                         |
+| assessment                                                                  | `message-service`（掌握报告 `hasAssessment`）   | 非 renderUI 路径                       |
+| quiz                                                                        | `askQuestion` 工具产出 questions，前端构造      | 非 renderUI 路径                       |
+| code-result                                                                 | `execute-code` 工具产出 stdout/stderr，前端构造 | 非 renderUI 路径                       |
+| formula/diagram                                                             | **无产出路径命中**（疑似 schema 定义未接入）    | registry 有 renderer 但无产出，待治理  |
 
-> `render-ui.ts` union 只放开 7 种（经 renderUI tool），其余 6 种由流式/其他工具/前端构造。`formula`/`diagram` 定义了 schema 与 renderer 但无产出路径，属未完成功能，后续迭代治理。
+> `render-ui.ts` union 只放开 8 种（经 renderUI tool），其余 6 种由流式/其他工具/前端构造。`formula`/`diagram` 定义了 schema 与 renderer 但无产出路径，属未完成功能，后续迭代治理。
 
 ### 3.8 pushCode
 
@@ -482,6 +537,37 @@ interface TutorPromptContext {
 - 学习者上传资料后，首次涉及资料内容的问题时主动检索一次
 - 不要每轮都调用——仅在需要查阅资料具体内容时使用
 - 检索结果为空时，不要编造资料内容，基于已有知识回答
+
+### 3.12 recordReviewResult
+
+记录一次复习结果，按间隔重复算法更新知识点的记忆强度与下次复习时间（迭代 051② 复习模式）。抽认卡（学习者自评）与回忆测验（考官评分）共用此入口，调用 `ReviewService.submitResult`（封装 `applyReviewResult` 纯函数 + prisma.update）。
+
+```typescript
+{
+  name: "recordReviewResult",
+  description: "记录一次复习结果，按间隔重复算法更新记忆强度与下次复习时间（答对间隔翻倍，答错重置 1d）",
+  parameters: {
+    nodeId: string,   // 被复习的知识点 ID
+    correct: boolean, // 学习者是否正确回忆
+    note?: string,    // 评语或薄弱点备注
+  },
+  // 返回: { success, nodeId, title, memoryStrength, lastReviewedAt, nextReviewAt, reviewInterval, trend, note }
+  // trend: "强化" | "维持" | "衰退"（spec §3.3 结束输出）
+}
+```
+
+**Prompt 片段**（注入 review system prompt）：
+
+```
+**recordReviewResult 工具**：每个知识点复习完、学习者给出对错后必须调用。传入 nodeId、correct。系统按间隔重复算法更新记忆强度与下次复习时间（答对间隔翻倍 1→2→4→8→16→32d，答错重置 1d），返回 trend（强化/维持/衰退）与 nextReviewAt，供你在复习总结中使用。
+```
+
+**使用指引**：
+
+- 回忆测验：学习者作答后，你评判对错，然后调用本工具记录
+- 抽认卡：学习者翻面后自评，文字告知"答对/答错"后，你调用本工具记录
+- 答错时先给 1-2 句关键提示（不重讲概念），再调用本工具
+- 一个知识点只记录一次，记录后即推进下一题
 
 ---
 

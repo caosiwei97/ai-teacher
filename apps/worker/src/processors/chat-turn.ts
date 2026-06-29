@@ -4,13 +4,15 @@ import { prisma } from "@ai-teacher/db";
 import { StructuredSummarySchema } from "@ai-teacher/shared";
 import { tool as aiTool, type Tool } from "ai";
 import { runAgentLoop } from "../agent/run-agent-loop";
-import { tutorToolDefinitions } from "../agent/tools/create-tools";
+import { tutorToolDefinitions, reviewToolDefinitions } from "../agent/tools/create-tools";
 import { createDelegateTaskTool } from "../agent/tools/delegate-task";
 import { subagentConfigs } from "../agent/subagents";
 import { MessageService } from "../agent/services/message-service";
 import { buildLearnerProfile } from "../lib/learner-profile";
 import { ContextManager } from "../agent/context-manager";
 import { buildTutorSystemPrompt } from "../agent/prompts/tutor";
+import { buildReviewSystemPrompt } from "../agent/prompts/review";
+import { selectDueReviewNodes } from "@ai-teacher/shared/services/spaced-repetition";
 import {
   createProviderForConfig,
   getFallbackProvider,
@@ -29,6 +31,10 @@ export interface RoadmapNodePayload {
   description: string;
   status: string;
   masteryScore: number;
+  memoryStrength: number;
+  lastReviewedAt: Date | null;
+  nextReviewAt: Date | null;
+  reviewInterval: number;
 }
 
 export interface ChatTurnJobData {
@@ -39,6 +45,7 @@ export interface ChatTurnJobData {
   hidden?: boolean;
   topic?: string;
   teachingMode?: string;
+  activeMode?: string;
   userId?: string;
   roadmapNodes?: RoadmapNodePayload[];
   llmConfigId?: string;
@@ -138,6 +145,7 @@ export function createChatTurnWorker(
 
         let topic: string;
         let teachingMode: string;
+        let activeMode: string;
         let userId: string;
         let roadmapNodes: RoadmapNodePayload[];
         let userProfile: Parameters<typeof buildLearnerProfile>[0] = null;
@@ -145,6 +153,7 @@ export function createChatTurnWorker(
         if (hasPayloadData) {
           topic = job.data.topic!;
           teachingMode = job.data.teachingMode ?? "warm";
+          activeMode = job.data.activeMode ?? "learning";
           userId = job.data.userId!;
           roadmapNodes = job.data.roadmapNodes ?? [];
 
@@ -176,6 +185,7 @@ export function createChatTurnWorker(
 
           topic = session.topic;
           teachingMode = session.teachingMode ?? "warm";
+          activeMode = session.activeMode;
           userId = session.userId;
           userProfile = session.user.profile;
           roadmapNodes = session.roadmap.nodes.map((n) => ({
@@ -185,6 +195,10 @@ export function createChatTurnWorker(
             description: n.description,
             status: n.status,
             masteryScore: n.masteryScore,
+            memoryStrength: n.memoryStrength,
+            lastReviewedAt: n.lastReviewedAt,
+            nextReviewAt: n.nextReviewAt,
+            reviewInterval: n.reviewInterval,
           }));
         }
 
@@ -232,30 +246,59 @@ export function createChatTurnWorker(
           ? roadmapNodes.every((n) => n.status === "not_started")
           : true;
 
-        const systemPrompt = buildTutorSystemPrompt({
-          topic,
-          currentNode: currentNode
-            ? {
-                id: currentNode.id,
-                title: currentNode.title,
-                description: currentNode.description,
-              }
-            : { id: "pending", title: topic, description: "等待诊断后生成学习路线" },
-          allNodes: hasNodes
-            ? roadmapNodes.map((n) => ({
-                id: n.id,
-                index: n.index,
-                title: n.title,
-                status: n.status,
-              }))
-            : [],
-          masteredNodes: masteredNodes.join(", ") || "无",
-          learnerProfile: buildLearnerProfile(userProfile) || "首次学习",
-          teachingMode: (teachingMode as "warm" | "strict") ?? "warm",
-          isDiagnosisPhase,
-          sandboxModel: llmJobConfig.sandboxModel,
-          sandboxBaseUrl: llmJobConfig.sandboxBaseUrl,
-        });
+        // 迭代 051：按 session.activeMode 分流——review → 考官 prompt + 复习 tools；learning → 既有 tutor
+        const isReviewMode = activeMode === "review";
+
+        let systemPrompt: string;
+        let allToolDefs: ToolDefinition[];
+
+        if (isReviewMode) {
+          const dueNodes = selectDueReviewNodes(roadmapNodes);
+          systemPrompt = buildReviewSystemPrompt({
+            topic,
+            dueNodes: dueNodes.map((n) => ({
+              id: n.id,
+              index: n.index,
+              title: n.title,
+              description: n.description,
+              memoryStrength: n.memoryStrength,
+              isOverdue: n.isOverdue,
+            })),
+            learnerProfile: buildLearnerProfile(userProfile) || "首次学习",
+          });
+          allToolDefs = [...reviewToolDefinitions];
+        } else {
+          systemPrompt = buildTutorSystemPrompt({
+            topic,
+            currentNode: currentNode
+              ? {
+                  id: currentNode.id,
+                  title: currentNode.title,
+                  description: currentNode.description,
+                }
+              : { id: "pending", title: topic, description: "等待诊断后生成学习路线" },
+            allNodes: hasNodes
+              ? roadmapNodes.map((n) => ({
+                  id: n.id,
+                  index: n.index,
+                  title: n.title,
+                  status: n.status,
+                }))
+              : [],
+            masteredNodes: masteredNodes.join(", ") || "无",
+            learnerProfile: buildLearnerProfile(userProfile) || "首次学习",
+            teachingMode: (teachingMode as "warm" | "strict") ?? "warm",
+            isDiagnosisPhase,
+            sandboxModel: llmJobConfig.sandboxModel,
+            sandboxBaseUrl: llmJobConfig.sandboxBaseUrl,
+          });
+          const delegateTaskDef = createDelegateTaskTool(
+            subagentConfigs,
+            { get: (name: string) => allToolDefs.find((t) => t.name === name), getAll: () => allToolDefs },
+            providerFn,
+          );
+          allToolDefs = [...tutorToolDefinitions, delegateTaskDef];
+        }
 
         // Build tools
         const toolCtx: ToolExecutionContext = {
@@ -264,26 +307,22 @@ export function createChatTurnWorker(
           userId,
         };
 
-        const delegateTaskDef = createDelegateTaskTool(
-          subagentConfigs,
-          { get: (name: string) => allToolDefs.find((t) => t.name === name), getAll: () => allToolDefs },
-          providerFn,
-        );
-        const allToolDefs = [...tutorToolDefinitions, delegateTaskDef];
-
         const toolPromptSection = collectPromptSection(allToolDefs);
         const fullSystemPrompt = toolPromptSection
           ? `${systemPrompt}\n\n# 工具使用说明\n\n${toolPromptSection}`
           : systemPrompt;
 
-        // 迭代 009：若用户有已就绪的学习资料，提示 Agent 可用 retrieveContext 检索
-        const readySourceCount = await prisma.source.count({
-          where: { userId, status: "ready" },
-        });
-        const ragHint =
-          readySourceCount > 0
-            ? `\n\n# 学习资料\n\n学习者已上传 ${readySourceCount} 份学习资料（已就绪可检索）。当问题涉及资料内容时，使用 retrieveContext 工具检索相关片段，基于资料内容教学。`
-            : "";
+        // 迭代 009：学习模式下若用户有已就绪的学习资料，提示 Agent 可用 retrieveContext 检索
+        let ragHint = "";
+        if (!isReviewMode) {
+          const readySourceCount = await prisma.source.count({
+            where: { userId, status: "ready" },
+          });
+          ragHint =
+            readySourceCount > 0
+              ? `\n\n# 学习资料\n\n学习者已上传 ${readySourceCount} 份学习资料（已就绪可检索）。当问题涉及资料内容时，使用 retrieveContext 工具检索相关片段，基于资料内容教学。`
+              : "";
+        }
         const finalSystemPrompt = `${fullSystemPrompt}${ragHint}`;
 
         const tools = buildToolsRecord(allToolDefs, toolCtx);

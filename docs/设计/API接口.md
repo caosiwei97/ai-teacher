@@ -13,11 +13,14 @@
 | POST   | `/api/sessions`                         | 创建学习会话                    | ✅   |
 | GET    | `/api/sessions`                         | 获取会话列表（排除已归档）      | ✅   |
 | GET    | `/api/sessions/:id`                     | 获取会话详情                    | ✅   |
-| PATCH  | `/api/sessions/:id`                     | 更新会话状态                    | ✅   |
+| PATCH  | `/api/sessions/:id`                     | 更新会话状态/模式               | ✅   |
 | DELETE | `/api/sessions/:id`                     | 归档会话                        | ✅   |
 | POST   | `/api/chat`                             | 流式对话（SSE，经 Hono Server） | ✅   |
 | POST   | `/api/sessions/:id/diagnostic`          | 生成诊断题                      | ✅   |
 | POST   | `/api/sessions/:id/diagnostic/evaluate` | 评估诊断答案                    | ✅   |
+| GET    | `/api/sessions/:id/review/due`          | 今日到期复习清单（迭代 051②）   | ✅   |
+| POST   | `/api/sessions/:id/review/result`       | 提交复习结果（更新记忆强度）    | ✅   |
+| GET    | `/api/sessions/:id/review/summary`      | 薄弱点汇总（错题本）            | ✅   |
 | POST   | `/api/quick-question`                   | 快问（选中文字提问）            | ✅   |
 | POST   | `/api/suggest-reply`                    | AI 建议回复                     | ✅   |
 | GET    | `/api/suggested-topics`                 | 获取推荐学习话题                | ✅   |
@@ -131,7 +134,8 @@ PATCH /api/sessions/:id
 
 ```json
 {
-  "status": "active | completed | archived"
+  "status": "active | completed | archived", // 可选，迭代 051 起可选
+  "activeMode": "learning | review | interview" // 可选，迭代 051②：切换学/固/验模式
 }
 ```
 
@@ -142,6 +146,7 @@ PATCH /api/sessions/:id
   "session": {
     "id": "clx...",
     "status": "completed",
+    "activeMode": "review",
     "topic": "React Hooks 原理",
     "messages": [...],
     "roadmap": { ... }
@@ -151,8 +156,9 @@ PATCH /api/sessions/:id
 
 ### 说明
 
-- 用于手动标记会话完成或归档
-- Zod 验证 status 只接受 `active`、`completed`、`archived`
+- 用于手动标记会话完成或归档，或切换当前学习/复习/面试模式（迭代 051②）
+- Zod 验证 status 只接受 `active`、`completed`、`archived`；activeMode 只接受 `learning`、`review`、`interview`
+- 两个字段均可选，可单独 PATCH（如切换复习模式只传 `activeMode`）
 - 当 status 变为 `completed` 时，自动触发学习者画像更新：
   - 从 roadmap 节点中提取已掌握/未掌握知识点
   - 去重合并到用户的 LearnerProfile（strengths/weaknesses/sessionsSummary）
@@ -753,6 +759,110 @@ DELETE /api/sources/:sourceId?userId=...
 ### 状态机
 
 `Source.status`：`pending`（已入队）→ `processing`（解析/embedding 中）→ `ready`（可检索）/ `failed`（处理失败）。
+
+---
+
+## 16. 复习模式（迭代 051②）
+
+复习模式 API，挂载于 `/api/sessions/:sessionId/review`。间隔重复算法（`applyReviewResult`）+ 数据服务（`ReviewService`）位于 `packages/shared/src/services/`，server 与 worker 共用。
+
+### 16.1 今日到期复习清单
+
+```
+GET /api/sessions/:sessionId/review/due
+```
+
+#### 响应 `200`
+
+```json
+{
+  "dueNodes": [
+    {
+      "id": "clx...",
+      "index": 0,
+      "title": "useState",
+      "description": "状态钩子",
+      "memoryStrength": 1.0,
+      "lastReviewedAt": null,
+      "nextReviewAt": null,
+      "reviewInterval": 1,
+      "isOverdue": true
+    }
+  ]
+}
+```
+
+#### 说明
+
+- 返回 mastered 且间隔重复到期（`nextReviewAt` 为 null/逾期）的知识点（spec §3.1 智能推荐）
+- `isOverdue=true` 表示从未复习/老数据，进入复习模式优先呈现
+
+### 16.2 提交复习结果
+
+```
+POST /api/sessions/:sessionId/review/result
+```
+
+#### 请求体
+
+```json
+{
+  "nodeId": "clx...",
+  "correct": true
+}
+```
+
+#### 响应 `200`
+
+```json
+{
+  "result": {
+    "nodeId": "clx...",
+    "title": "useState",
+    "memoryStrength": 1.0,
+    "lastReviewedAt": "2026-06-29T12:00:00.000Z",
+    "nextReviewAt": "2026-07-01T12:00:00.000Z",
+    "reviewInterval": 2,
+    "trend": "维持"
+  }
+}
+```
+
+#### 说明
+
+- 抽认卡自评入口（学习者翻面后 UI 提交）；回忆测验由考官 agent 调 `recordReviewResult` 工具走同一 `ReviewService.submitResult`
+- 答对间隔翻倍（1→2→4→8→16→32d 封顶），答错重置 1d；记忆强度 +0.15/-0.3（spec §3.3/§9.2）
+- `trend`：强化（答对且强度上升）/ 维持（答对已封顶）/ 衰退（答错）
+- 节点不存在 → `404`
+
+### 16.3 薄弱点汇总
+
+```
+GET /api/sessions/:sessionId/review/summary
+```
+
+#### 响应 `200`
+
+```json
+{
+  "summary": {
+    "totalMastered": 3,
+    "weakNodes": [
+      {
+        "id": "clx...",
+        "title": "useMemo",
+        "memoryStrength": 0.2,
+        "reviewInterval": 1,
+        "lastReviewedAt": "2026-06-29T12:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+#### 说明
+
+- 薄弱点 = mastered 且 `memoryStrength < 0.6`，按强度升序（spec §3.3 错题本，可一键转回学习模式重学）
 
 ---
 

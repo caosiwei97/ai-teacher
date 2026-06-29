@@ -3,7 +3,9 @@ import {
   isReviewDue,
   computeNextInterval,
   applyReviewResult,
+  selectDueReviewNodes,
   MAX_INTERVAL_DAYS,
+  type ReviewableNode,
 } from "./spaced-repetition";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -103,5 +105,56 @@ describe("spaced-repetition（间隔重复算法）", () => {
       expect(intervals).toEqual([2, 4, 8, 16, 32, 32, 32]);
       expect(state.memoryStrength).toBe(1.0);
     });
+  });
+});
+
+describe("selectDueReviewNodes", () => {
+  const baseNode = (over: Partial<ReviewableNode>): ReviewableNode => ({
+    id: over.id ?? "n",
+    index: over.index ?? 0,
+    title: over.title ?? "t",
+    description: over.description ?? "d",
+    status: over.status ?? "mastered",
+    masteryScore: over.masteryScore ?? 90,
+    memoryStrength: over.memoryStrength ?? 1.0,
+    lastReviewedAt: over.lastReviewedAt ?? null,
+    nextReviewAt: over.nextReviewAt ?? null,
+    reviewInterval: over.reviewInterval ?? 1,
+  });
+
+  it("只选 mastered 节点（排除 not_started/in_progress）", () => {
+    const nodes = [
+      baseNode({ id: "n1", status: "mastered", nextReviewAt: null }),
+      baseNode({ id: "n2", status: "in_progress", nextReviewAt: null }),
+      baseNode({ id: "n3", status: "not_started", nextReviewAt: null }),
+      baseNode({ id: "n4", status: "in_progress", masteryScore: 90, nextReviewAt: null }), // masteryScore>=80 但未 mastered → 不选
+    ];
+    const due = selectDueReviewNodes(nodes, NOW);
+    expect(due.map((n) => n.id)).toEqual(["n1"]);
+  });
+
+  it("mastered 且到期（nextReviewAt null 或过去）→ 选，并标 isOverdue", () => {
+    const nodes = [
+      baseNode({ id: "n1", nextReviewAt: null }), // 逾期
+      baseNode({ id: "n2", nextReviewAt: addDays(NOW, -1) }), // 过去
+      baseNode({ id: "n3", nextReviewAt: addDays(NOW, 3) }), // 未来，不选
+    ];
+    const due = selectDueReviewNodes(nodes, NOW);
+    expect(due.map((n) => n.id)).toEqual(["n1", "n2"]);
+    expect(due[0].isOverdue).toBe(true); // null → 逾期
+    expect(due[1].isOverdue).toBe(false); // 有明确时间且已过
+  });
+
+  it("保留记忆字段供 prompt 使用", () => {
+    const nodes = [
+      baseNode({ id: "n1", memoryStrength: 0.7, reviewInterval: 4, nextReviewAt: null }),
+    ];
+    const due = selectDueReviewNodes(nodes, NOW);
+    expect(due[0].memoryStrength).toBe(0.7);
+    expect(due[0].reviewInterval).toBe(4);
+  });
+
+  it("无 mastered 节点 → 空列表", () => {
+    expect(selectDueReviewNodes([], NOW)).toEqual([]);
   });
 });

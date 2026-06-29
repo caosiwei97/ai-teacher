@@ -112,6 +112,14 @@ export const InteractiveBlockSchema = z.object({
   html: z.string(),
 });
 
+// 迭代 051：复习抽认卡（正面问题 → 翻面答案，提取练习）
+export const FlashcardBlockSchema = z.object({
+  type: z.literal("flashcard"),
+  nodeId: z.string(),
+  front: z.string(),
+  back: z.string(),
+});
+
 export const UIBlockSchema = z.discriminatedUnion("type", [
   TextBlockSchema,
   AssessmentBlockSchema,
@@ -126,6 +134,7 @@ export const UIBlockSchema = z.discriminatedUnion("type", [
   BadgeBlockSchema,
   MasteryReportBlockSchema,
   InteractiveBlockSchema,
+  FlashcardBlockSchema,
 ]);
 
 export type UIBlock = z.infer<typeof UIBlockSchema>;
@@ -142,6 +151,7 @@ export type HeadingBlock = z.infer<typeof HeadingBlockSchema>;
 export type BadgeBlock = z.infer<typeof BadgeBlockSchema>;
 export type MasteryReportBlock = z.infer<typeof MasteryReportBlockSchema>;
 export type InteractiveBlock = z.infer<typeof InteractiveBlockSchema>;
+export type FlashcardBlock = z.infer<typeof FlashcardBlockSchema>;
 
 export interface UIStreamStartEvent {
   type: "ui-stream-start";

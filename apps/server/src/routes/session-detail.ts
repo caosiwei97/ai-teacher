@@ -5,7 +5,8 @@ import { prisma } from "@ai-teacher/db";
 import { ProfileService } from "@ai-teacher/shared/services/profile-service";
 
 const updateSessionSchema = z.object({
-  status: z.enum(["active", "completed", "archived"]),
+  status: z.enum(["active", "completed", "archived"]).optional(),
+  activeMode: z.enum(["learning", "review", "interview"]).optional(),
 });
 
 const sessionIncludes = {
@@ -99,7 +100,8 @@ export const sessionDetailRoute = new Hono()
     const session = await prisma.session.update({
       where: { id: sessionId },
       data: {
-        status: parsed.status,
+        ...(parsed.status ? { status: parsed.status } : {}),
+        ...(parsed.activeMode ? { activeMode: parsed.activeMode } : {}),
       },
       include: sessionIncludes,
     });
