@@ -75,6 +75,8 @@ export function InteractiveBlockRenderer({ block }: InteractiveBlockProps) {
     return <DegradedView html={block.html} reason="互动内容无法显示，已转为代码原文" />;
   }
 
+  // 注入 CSS：互动课通用美化（覆盖 agent HTML 紧凑布局——选项垂直全宽 + 宽松间距，spec §2.1 形态A）
+  const injectedStyle = `<style>div[style*="flex"]{display:block!important}button{display:block!important;width:100%!important;margin:6px 0!important;padding:12px 16px!important;text-align:left!important;box-sizing:border-box!important;font-size:14px!important;line-height:1.5!important;cursor:pointer!important}input[type=range]{width:100%!important}body{font-family:-apple-system,"PingFang SC",system-ui,sans-serif!important;line-height:1.6!important}</style>`;
   const heightScript = `<script>(function(){function s(){parent.postMessage({type:'interactive-height',height:document.documentElement.scrollHeight},'*');}if(document.readyState==='complete')s();else window.addEventListener('load',s);new ResizeObserver(s).observe(document.body);})();</script>`;
 
   return (
@@ -84,7 +86,7 @@ export function InteractiveBlockRenderer({ block }: InteractiveBlockProps) {
     >
       <iframe
         ref={iframeRef}
-        srcDoc={result.html + heightScript}
+        srcDoc={result.html + injectedStyle + heightScript}
         sandbox="allow-scripts"
         title="互动教学产物"
         className="w-full rounded-lg border border-code-border bg-white"
