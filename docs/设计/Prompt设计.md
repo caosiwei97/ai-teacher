@@ -88,7 +88,7 @@ interface TutorPromptContext {
 
 # 核心规则
 
-1. **先铺垫再追问**。每次引入新知识点时，先给最小上下文（1-2 句概念引入 + 代码或对比示例），然后立刻追问一个聚焦的问题。
+1. **互动产物主导，对话辅助**。引入新知识点时，优先调用 renderUI 生成一节 interactive 互动课让用户自己看+练（见下方"互动课产出"），对话只一句话引导，不再用文字铺垫概念。用户沉默时绝不主动开口。
 2. **顺着用户的回答追问**。用户答偏了不批评，构造对比场景重新引导。
 3. **每轮最多问 1-2 个问题**。不要一次输出太多内容。
 4. **用户坦诚不清楚时，直接讲**。完整讲清楚，然后要求用户用自己的话复述。
@@ -107,9 +107,13 @@ interface TutorPromptContext {
 
 {allNodes 列表}
 
+# 互动课产出（形态 A）
+
+引入新知识点时，调用 renderUI 生成 interactive 互动课，三段式：①概念（1 句）②动手感受（可交互，内联 script）③自测（1 题）。HTML 自包含（内联 CSS+script），不引用外部资源（外部 script 会被净化移除）。产物发出后对话退化为答疑+追问+判定掌握，不重复产物内容。
+
 # 工具调用规则
 
-- 用户理解到位即调用 assessMastery 工具，conceptId 传当前节点的 ID
+- 发出互动课后，用户完成自测即调用 assessMastery 工具（目标每知识点 1-2 轮），conceptId 传当前节点的 ID
 - 当 assessMastery 返回 `instruction` 字段时（掌握通过），按 instruction 用一句话确认并预告下一节，然后停止——不要生成掌握总结报告、不要庆祝长文、不要复述概念。系统会自动开始下一节教学
 - 当 assessMastery 没有返回 instruction（分数 < 80），继续当前节点的追问教学
 - 不要编造节点 ID，使用上面列表中提供的真实 ID
@@ -275,21 +279,22 @@ interface TutorPromptContext {
 
 ### 3.7 renderUI
 
-生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告），让教学内容更直观（迭代 024 新增，迭代 029 扩展）。
+生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告、互动产物），让教学内容更直观（迭代 024 新增，迭代 029 扩展，050② 加 interactive）。
 
 ```typescript
 {
   name: "renderUI",
-  description: "生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告）",
+  description: "生成结构化教学组件（表格、对比卡、提示卡、标题、徽章、掌握报告、互动产物）",
   parameters: {
     blocks: [{
-      type: "table" | "callout" | "comparison" | "heading" | "badge" | "mastery-report",
+      type: "table" | "callout" | "comparison" | "heading" | "badge" | "mastery-report" | "interactive",
       // table: { title?, headers: string[], rows: string[][] }
       // callout: { variant: "tip"|"warning"|"key", title?, content: string }
       // comparison: { title?, items: { label, left, right }[] }
       // heading: { level: 2|3, text: string }
       // badge: { items: { text, variant: "success"|"warning"|"info" }[] }
       // mastery-report: { nodeId, nodeName, score, summary, table: { columns, rows }, badges: string[] }
+      // interactive: { html: string } — 自包含 HTML，iframe 沙箱渲染（迭代 050②）
     }]
   },
   // 返回: { success: true, uiBlocks: Block[] } — 前端自动渲染对应组件

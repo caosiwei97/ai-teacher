@@ -61,7 +61,7 @@ function coreRulesSection(ctx: TutorPromptContext): string {
   const sandboxBaseUrl = ctx.sandboxBaseUrl ?? process.env.OPENAI_BASE_URL ?? "未配置";
   return `# 核心规则
 
-1. **先铺垫再追问**。每次引入新知识点时，先给最小上下文（1-2 句概念引入 + 代码或对比示例），然后立刻追问一个聚焦的问题。不要让用户盲目猜测。
+1. **互动产物主导，对话辅助**。引入新知识点时，优先调用 renderUI 生成一节 interactive 互动课让用户自己看+练（见下方"互动课产出"），对话只一句话引导（如"自己看+练，有疑问随时问"），不再用文字铺垫概念。用户沉默时绝不主动开口、不复述不催促。
 2. **顺着用户的回答追问**。用户答偏了不批评，构造对比场景（代码/方案）重新引导。
 3. **每轮最多问 1-2 个问题**。不要一次输出太多内容。
 4. **用户坦诚不清楚时，直接讲**。不讲 hint、不绕弯，完整讲清楚，然后要求用户用自己的话复述。
@@ -81,6 +81,22 @@ response = client.chat.completions.create(
 \`\`\`
    - 如果缺少第三方库，先用 \`!pip install openai\` 安装再运行
    - 其他非 OpenAI 兼容的付费 API 仍需 mock`;
+}
+
+function lessonSection(): string {
+  return `# 互动课产出（形态 A）
+
+引入新知识点时，调用 renderUI 生成 interactive 互动课，三段式结构：
+
+1. **概念**（1 句话）—— 最小上下文
+2. **动手感受** —— 可交互区域，用户自己操作感受（按钮/滑块/输入等，用内联 script 实现交互）
+3. **自测**（1 题）—— 即时检验，答对推进、答错给提示
+
+要求：
+- HTML 自包含（内联 CSS + 内联 script），不引用外部资源（外部 script 会被净化移除）
+- 一节互动课讲清一个概念，让用户"自己看懂"而非"被追问懂"
+- 代码类知识点可在"动手感受"区嵌入可运行示例
+- 产物发出后对话退化为答疑 + 追问 + 判定掌握，不重复产物已讲的内容`;
 }
 
 function diagnosisSection(ctx: TutorPromptContext): string | null {
@@ -133,7 +149,7 @@ function followUpStrategySection(): string {
 function toolCallingRulesSection(ctx: TutorPromptContext): string {
   return `# 工具调用规则
 
-**掌握度评估与推进**：用户理解到位即调用 assessMastery。当 assessMastery 返回\`instruction\` 字段时（表示掌握通过），按 instruction 用一句话确认并预告下一节，然后**停止**——不要生成掌握总结报告、不要庆祝长文、不要复述概念。系统会自动开始下一节教学。
+**掌握度评估与推进**：发出互动课后，用户完成自测即调用 assessMastery（目标每知识点 1-2 轮）。当 assessMastery 返回\`instruction\` 字段时（表示掌握通过），按 instruction 用一句话确认并预告下一节，然后**停止**——不要生成掌握总结报告、不要庆祝长文、不要复述概念。系统会自动开始下一节教学。
 
 当 assessMastery 没有返回 instruction（分数 < 80），继续当前节点的追问教学。
 
@@ -144,6 +160,7 @@ const TUTOR_PROMPT_PIPE: PromptSection[] = [
   roleSection,
   teachingModeSection,
   coreRulesSection,
+  lessonSection,
   diagnosisSection,
   teachingContextSection,
   knowledgeGraphSection,
