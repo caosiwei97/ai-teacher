@@ -188,6 +188,8 @@ export async function createLlmConfig(
     defaultModel: string;
     label?: string;
     isDefault?: boolean;
+    fallbackModelId?: string;
+    fallbackLlmConfigId?: string;
   },
 ) {
   const res = await fetch(`${LLM_BASE}?userId=${encodeURIComponent(userId)}`, {

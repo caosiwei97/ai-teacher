@@ -112,11 +112,12 @@ export function ChatInput({
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => llmConfigs && llmConfigs.length > 1 && setModelOpen(!modelOpen)}
-                    className="flex items-center gap-1 rounded-[8px] px-2 py-1 text-[11px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)]"
+                    disabled={isLoading}
+                    onClick={() => !isLoading && llmConfigs && llmConfigs.length > 1 && setModelOpen(!modelOpen)}
+                    className={`flex items-center gap-1 rounded-[8px] px-2 py-1 text-[11px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)] ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
-                    {currentModel}
-                    {llmConfigs && llmConfigs.length > 1 && <ChevronDown className="h-2.5 w-2.5" />}
+                    {isLoading ? "回答中…" : currentModel}
+                    {!isLoading && llmConfigs && llmConfigs.length > 1 && <ChevronDown className="h-2.5 w-2.5" />}
                   </button>
                   {modelOpen && llmConfigs && llmConfigs.length > 1 && (
                     <>
