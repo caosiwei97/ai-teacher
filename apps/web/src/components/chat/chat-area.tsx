@@ -8,6 +8,7 @@ import {
 import type { UIBlock } from "@ai-teacher/shared";
 import type { MessageMetadata, DiagnosticQuestionsData } from "@/hooks/use-chat-stream";
 import { ChatMessage } from "./chat-message";
+import type { InteractiveSubmitPayload } from "@/components/ui-blocks/interactive-block";
 import { ChatInput } from "./chat-input";
 import { Sparkles } from "lucide-react";
 
@@ -39,6 +40,8 @@ interface ChatAreaProps {
   onApplySuggestion?: () => void;
   onDismissSuggestion?: () => void;
   onDiagnosticSubmit?: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
+  onInteractiveSubmit?: (payload: InteractiveSubmitPayload) => void;
+  loadingLabelOverride?: string;
   diagnosticSubmitted?: boolean;
   diagnosticAnalyzing?: boolean;
   teachingMode?: "warm" | "strict";
@@ -113,6 +116,14 @@ function hasToolCallPending(message: UIMessage<MessageMetadata>, toolName: strin
   return hasCall && !hasResult;
 }
 
+function hasToolResult(message: UIMessage<MessageMetadata>, toolName: string): boolean {
+  const annotations = message.metadata?.annotations;
+  if (!annotations) return false;
+  return annotations.some(
+    (a) => isObject(a) && a.toolName === toolName && "result" in a,
+  );
+}
+
 function getDiagnosticQuestionsFromMessage(message: UIMessage<MessageMetadata>): DiagnosticQuestionsData | undefined {
   const annotations = message.metadata?.annotations;
   if (annotations) {
@@ -141,6 +152,8 @@ export function ChatArea({
   onApplySuggestion,
   onDismissSuggestion,
   onDiagnosticSubmit,
+  onInteractiveSubmit,
+  loadingLabelOverride,
   diagnosticSubmitted,
   diagnosticAnalyzing,
   teachingMode,
@@ -208,6 +221,7 @@ export function ChatArea({
               streamingBlocks={uiBlocksResult.streaming}
               diagnosticQuestions={diagnosticQuestions}
               onDiagnosticSubmit={diagnosticQuestions ? onDiagnosticSubmit : undefined}
+              onInteractiveSubmit={onInteractiveSubmit}
               diagnosticSubmitted={diagnosticSubmitted}
               diagnosticAnalyzing={diagnosticAnalyzing}
             />
@@ -237,16 +251,29 @@ export function ChatArea({
             .map((p) => p.text)
             .join("") ?? "";
           const hasDiagnosticQuestions = getDiagnosticQuestionsFromMessage(lastMsg) !== undefined;
+          const lastUIBlocks = getUIBlocksFromMessage(lastMsg);
           const isFirstAssistantMsg = messages.filter((m) => m.role === "assistant").length === 1;
 
           let label = "";
-          if (hasToolCallPending(lastMsg, "askQuestion")) {
+          if (loadingLabelOverride && !lastUIBlocks.blocks) {
+            label = loadingLabelOverride;
+          } else if (hasToolCallPending(lastMsg, "renderUI") || lastUIBlocks.streaming) {
+            label = "正在生成互动练习…";
+          } else if (hasToolCallPending(lastMsg, "generateRoadmap")) {
+            label = "正在生成学习路线…";
+          } else if (hasToolCallPending(lastMsg, "assessMastery")) {
+            label = "正在判断掌握情况…";
+          } else if (hasToolCallPending(lastMsg, "askQuestion")) {
             label = "老师正在给你出题中…";
           } else if (lastText.trim() && isFirstAssistantMsg && !hasDiagnosticQuestions) {
             label = "老师正在给你出题中…";
           } else {
-            if (lastText.trim()) return null;
-            label = "老师正在思考中…";
+            if (lastText.trim()) {
+              if (!hasToolResult(lastMsg, "renderUI")) return null;
+              label = "正在整理下一步…";
+            } else {
+              label = "老师正在思考中…";
+            }
           }
 
           return (

@@ -10,6 +10,7 @@ import { ChatArea } from "@/components/chat/chat-area";
 import { ChatInput } from "@/components/chat/chat-input";
 import { QuickQuestion } from "@/components/chat/quick-question";
 import type { TeachingMode } from "@/components/chat/mode-selector";
+import type { InteractiveSubmitPayload } from "@/components/ui-blocks/interactive-block";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import type { MessageMetadata, DiagnosticQuestionsData, AnnotationData } from "@/hooks/use-chat-stream";
 import {
@@ -354,6 +355,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
   const [diagnosticAnalyzing, setDiagnosticAnalyzing] = useState(false);
+  const [firstLessonPreparing, setFirstLessonPreparing] = useState(false);
+  const [interactiveResponding, setInteractiveResponding] = useState(false);
 
   const [masteryTransitionPending, setMasteryTransitionPending] = useState(false);
   const [nextNodeTitle, setNextNodeTitle] = useState<string | undefined>(undefined);
@@ -454,6 +457,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
         setIsNewSession(false);
         refreshSessions();
       }
+      setFirstLessonPreparing(false);
+      setInteractiveResponding(false);
       if (masteryTransitionPending) {
         const title = nextNodeTitle;
         setTimeout(() => {
@@ -506,6 +511,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
     onError: (error) => {
       streamErrorRef.current = true;
       setChatError(error);
+      setFirstLessonPreparing(false);
+      setInteractiveResponding(false);
       setMasteryTransitionPending(false);
       setNextNodeTitle(undefined);
       setTimeout(() => setChatError(null), 5000);
@@ -574,6 +581,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
       setIsNewSession(false);
       setDiagnosticSubmitted(false);
       setDiagnosticAnalyzing(false);
+      setFirstLessonPreparing(false);
+      setInteractiveResponding(false);
       setMasteryTransitionPending(false);
       setNextNodeTitle(undefined);
       streamErrorRef.current = false;
@@ -1089,6 +1098,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
       setDiagnosticAnalyzing(false);
       setDiagnosticSubmitted(true);
       if (roadmapGenerated) {
+        setFirstLessonPreparing(true);
         chat.submitHiddenMessage(
           `[Continue] 开始教学知识点：${firstNodeTitle ?? "第一个知识点"}`,
           { assistantId: `assistant-first-lesson-${Date.now()}` },
@@ -1097,6 +1107,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
     } catch (err) {
       console.error("Diagnostic submit error:", err);
       setDiagnosticAnalyzing(false);
+      setFirstLessonPreparing(false);
       setDiagnosticSubmitted(true);
       setChatError(err instanceof Error ? err.message : "诊断分析失败，请稍后重试");
       setTimeout(() => setChatError(null), 5000);
@@ -1115,6 +1126,17 @@ function ChatView({ sessionId }: { sessionId: string }) {
       .catch(console.error);
   }
 
+  function handleInteractiveSubmit(payload: InteractiveSubmitPayload) {
+    if (interactiveResponding || chat.isLoading) return;
+    const answer = payload.answer ? `答案：${payload.answer}` : "用户已完成互动课自测";
+    const feedback = payload.feedback ? `；互动反馈：${payload.feedback}` : "";
+    setInteractiveResponding(true);
+    chat.submitHiddenMessage(
+      `[Interactive Response] ${answer}${feedback}`,
+      { assistantId: `assistant-interactive-${Date.now()}` },
+    );
+  }
+
   const chatAreaProps = {
     messages: pendingFirstMessage ? pendingFirstMessages : chat.messages,
     input: chat.input,
@@ -1128,6 +1150,12 @@ function ChatView({ sessionId }: { sessionId: string }) {
     onApplySuggestion: handleApplySuggestion,
     onDismissSuggestion: handleDismissSuggestion,
     onDiagnosticSubmit: handleDiagnosticSubmit,
+    onInteractiveSubmit: handleInteractiveSubmit,
+    loadingLabelOverride: firstLessonPreparing
+      ? "路线已生成，正在准备第一节互动练习…"
+      : interactiveResponding
+        ? "老师正在根据你的互动结果继续…"
+        : undefined,
     diagnosticSubmitted,
     diagnosticAnalyzing,
     teachingMode,
