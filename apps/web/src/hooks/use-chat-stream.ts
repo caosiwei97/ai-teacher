@@ -21,6 +21,12 @@ interface SSEEvent {
   data?: unknown;
 }
 
+interface SubmitOptions {
+  hidden?: boolean;
+  showUser?: boolean;
+  requestMessages?: Array<{ role: "user" | "assistant"; content: string }>;
+}
+
 export interface DiagnosticQuestionsData {
   questions: Array<{
     id: string;
@@ -78,10 +84,16 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
   );
 
   const handleSubmit = useCallback(
-    async (e?: React.FormEvent, overrideText?: string, optimisticIds?: { userId?: string; assistantId?: string }) => {
+    async (
+      e?: React.FormEvent,
+      overrideText?: string,
+      optimisticIds?: { userId?: string; assistantId?: string },
+      submitOptions?: SubmitOptions,
+    ) => {
       e?.preventDefault();
       const text = overrideText ?? input;
       if (!text.trim() || isLoading) return;
+      const showUser = submitOptions?.showUser ?? true;
 
       const userMessage: UIMessage<MessageMetadata> = {
         id: optimisticIds?.userId ?? `user-${Date.now()}`,
@@ -96,9 +108,15 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
         metadata: { annotations: [] },
       };
 
-      const newMessages = [...messages, userMessage, assistantMessage];
+      const newMessages = [
+        ...messages,
+        ...(showUser ? [userMessage] : []),
+        assistantMessage,
+      ];
       setMessages(newMessages);
-      setInput("");
+      if (showUser) {
+        setInput("");
+      }
       setIsLoading(true);
 
       abortControllerRef.current?.abort();
@@ -112,10 +130,16 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             sessionId,
-            messages: [...messages, userMessage].map((m) => ({
-              role: m.role,
-              content: getTextFromParts(m.parts),
-            })),
+            messages:
+              submitOptions?.requestMessages ??
+              [
+                ...messages.map((m) => ({
+                  role: m.role,
+                  content: getTextFromParts(m.parts),
+                })),
+                { role: "user" as const, content: text.trim() },
+              ],
+            ...(submitOptions?.hidden ? { hidden: true } : {}),
             ...(options?.teachingMode ? { teachingMode: options.teachingMode } : {}),
             ...(options?.llmConfigId ? { llmConfigId: options.llmConfigId } : {}),
           }),
@@ -346,6 +370,22 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
     [handleSubmit],
   );
 
+  const submitHiddenMessage = useCallback(
+    (text: string, optimisticIds?: { assistantId?: string }) => {
+      return handleSubmit(
+        undefined,
+        text,
+        { assistantId: optimisticIds?.assistantId },
+        {
+          hidden: true,
+          showUser: false,
+          requestMessages: [{ role: "user", content: text.trim() }],
+        },
+      );
+    },
+    [handleSubmit],
+  );
+
   const resumeStream = useCallback(async () => {
     if (isLoading) return;
     setIsLoading(true);
@@ -538,5 +578,5 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
     }
   }, [isLoading, sessionId, options]);
 
-  return { messages, input, isLoading, handleInputChange, handleSubmit, submitMessage, stop, setMessages, resumeStream };
+  return { messages, input, isLoading, handleInputChange, handleSubmit, submitMessage, submitHiddenMessage, stop, setMessages, resumeStream };
 }

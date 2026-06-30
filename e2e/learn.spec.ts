@@ -60,6 +60,31 @@ test.describe("Learn Page — Chat Input", () => {
     await expect(page.getByText("开始你的学习之旅吧")).toHaveCount(0);
   });
 
+  test("should submit diagnostic answers and continue without duplicate diagnostic prompt", async ({ page }) => {
+    test.setTimeout(90000);
+
+    await page.goto("/learn");
+    await page.locator("button", { hasText: "个人投资理财入门" }).click();
+
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 30000 });
+    await expect(page.getByTestId("diagnostic-quiz-card")).toBeVisible({ timeout: 30000 });
+
+    await page.getByTestId("diagnostic-option-d1-b").click();
+    await page.getByTestId("diagnostic-option-d2-b").click();
+    await page.getByTestId("diagnostic-option-d3-a").click();
+    await expect(page.getByTestId("diagnostic-submit-button")).toBeEnabled();
+    await page.getByTestId("diagnostic-submit-button").click();
+
+    const loadingTip = page.getByTestId("diagnostic-loading-tip");
+    await expect(loadingTip).toBeVisible({ timeout: 10000 });
+    await expect(loadingTip).not.toHaveClass(/border/);
+
+    await expect(page.getByText("路线已经准备好。")).toBeVisible({ timeout: 60000 });
+    await expect(page.getByTestId("diagnostic-loading-tip")).toHaveCount(0);
+    await expect(page.getByTestId("diagnostic-quiz-card")).toHaveCount(1);
+    await expect(page.getByText("很高兴带你进入个人投资理财的世界")).toHaveCount(0);
+  });
+
   test("should display textarea with placeholder", async ({ page }) => {
     await page.goto(LEARN_PATH);
 

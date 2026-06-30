@@ -10,6 +10,7 @@ export const MessageService = {
     sessionId: string,
     assistantContent: string,
     toolResults: ToolResultEntry[],
+    options?: { hidden?: boolean },
   ) {
     const assistantMetadata =
       toolResults.length > 0
@@ -34,6 +35,7 @@ export const MessageService = {
         type: hasAssessment ? "assessment" : "text",
         content: assistantContent,
         metadata: assistantMetadata,
+        hidden: options?.hidden ?? false,
       },
     });
   },

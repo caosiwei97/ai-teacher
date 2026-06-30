@@ -9,7 +9,7 @@ import type { UIBlock } from "@ai-teacher/shared";
 import type { MessageMetadata, DiagnosticQuestionsData } from "@/hooks/use-chat-stream";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 function getTextFromParts(parts: UIMessage["parts"]): string {
   if (!parts) return "";
@@ -214,9 +214,18 @@ export function ChatArea({
           );
         })}
         {diagnosticAnalyzing && (
-          <div className="my-4 flex items-center justify-center gap-2.5 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-sm font-medium text-foreground">正在为你定制学习路线…</span>
+          <div
+            data-testid="diagnostic-loading-tip"
+            className="mb-4 flex justify-start"
+          >
+            <div className="flex items-center gap-2 py-2">
+              <div className="flex gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0s' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.2s' }} />
+                <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: 'pulse-dot 1.4s ease-in-out infinite', animationDelay: '0.4s' }} />
+              </div>
+              <span className="text-[13px] text-muted-foreground">正在为你定制学习路线...</span>
+            </div>
           </div>
         )}
         {isLoading && messages.length > 0 && (() => {

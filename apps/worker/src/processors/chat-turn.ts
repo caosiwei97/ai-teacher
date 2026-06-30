@@ -398,6 +398,11 @@ export function createChatTurnWorker(
           sessionId,
           loopResult.assistantText,
           loopResult.toolResults,
+          {
+            hidden:
+              (job.data.hidden ?? false) &&
+              loopResult.toolResults.some((tr) => tr.toolName === "generateRoadmap"),
+          },
         );
 
         await prisma.message.update({

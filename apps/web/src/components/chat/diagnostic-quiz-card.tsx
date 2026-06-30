@@ -117,7 +117,10 @@ export function DiagnosticQuizCard({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div
+      data-testid="diagnostic-quiz-card"
+      className="rounded-xl border border-border bg-card overflow-hidden"
+    >
       <div className="px-4 pt-3 pb-2 border-b border-border bg-secondary/30">
         <p className="text-sm font-medium text-foreground">{title}</p>
       </div>
@@ -153,6 +156,7 @@ export function DiagnosticQuizCard({
               <button
                 key={opt.id}
                 type="button"
+                data-testid={`diagnostic-option-${currentQuestion.id}-${opt.id}`}
                 onClick={() =>
                   handleSelectOption(currentQuestion.id, opt.id, opt.text)
                 }
@@ -241,6 +245,7 @@ export function DiagnosticQuizCard({
               type="button"
               onClick={handleSubmit}
               disabled={!allAnswered}
+              data-testid="diagnostic-submit-button"
               className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-medium transition-all ${
                 allAnswered
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"

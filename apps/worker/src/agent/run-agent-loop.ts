@@ -154,7 +154,11 @@ export async function runAgentLoop(
       break;
     }
 
-    if (stepToolResults.some((r) => r.toolName === "askQuestion")) {
+    if (
+      stepToolResults.some(
+        (r) => r.toolName === "askQuestion" || r.toolName === "generateRoadmap",
+      )
+    ) {
       break;
     }
 

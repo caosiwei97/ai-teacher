@@ -130,11 +130,11 @@ ${p.startHint ? `起点建议：${p.startHint}` : ""}`;
       },
     };
   },
-  promptSnippet: `**generateRoadmap 工具**：在诊断摸底完成后、收到学习者答案并分析其水平后，立即调用此工具生成个性化学习路线图。传入学习主题、学习者水平（beginner/intermediate/advanced）、诊断分析和起点建议。系统会根据学习者水平生成合适的学习节点，并自动将第一个节点设为 in_progress。生成完成后你需要立即从第一个知识点开始教学。`,
+  promptSnippet: `**generateRoadmap 工具**：在诊断摸底完成后、收到学习者答案并分析其水平后，立即调用此工具生成个性化学习路线图。传入学习主题、学习者水平（beginner/intermediate/advanced）、诊断分析和起点建议。系统会根据学习者水平生成合适的学习节点，并自动将第一个节点设为 in_progress。生成完成后不要再输出文字，也不要再次调用 askQuestion；系统会用已生成的路线图自动续接第一课。`,
   promptGuidelines: [
     "必须在诊断摸底完成、分析完学习者水平后才能调用",
     "learnerLevel 要根据诊断答案的实际质量判断，不要默认给 beginner",
     "诊断答案中多个选项都选了最高级 → advanced；选了中级 → intermediate；选了初级 → beginner",
-    "生成完成后，说一句简短过渡语（如「太好了，我为你定制了学习路线！」），然后直接开始教第一个知识点，不要重复提及定制路线",
+    "生成完成后立即停止本轮，不要输出过渡语；第一课由系统基于新路线图自动续接",
   ],
 };

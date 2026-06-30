@@ -316,6 +316,27 @@ function getDiagnosticQuestionsFromMetadata(metadata: unknown): DiagnosticQuesti
   return undefined;
 }
 
+function hasToolResult(metadata: unknown, toolName: string): boolean {
+  if (!isObject(metadata) || !Array.isArray(metadata.toolResults)) {
+    return false;
+  }
+
+  return metadata.toolResults.some(
+    (toolResult) => isObject(toolResult) && toolResult.toolName === toolName,
+  );
+}
+
+function shouldHideLegacyDiagnosticRoadmapMessage(message: {
+  role: string;
+  metadata: unknown;
+}) {
+  if (message.role !== "tutor") return false;
+  return (
+    hasToolResult(message.metadata, "generateRoadmap") &&
+    hasToolResult(message.metadata, "askQuestion")
+  );
+}
+
 // ─── ChatView：聊天态（有 sessionId），现有 learn 主体逻辑 ───
 function ChatView({ sessionId }: { sessionId: string }) {
   const navigate = useNavigate();
@@ -602,7 +623,10 @@ function ChatView({ sessionId }: { sessionId: string }) {
               setSessions([virtualSession, ...sessionsList]);
               setNodes(fetchedNodes);
               const hasVisibleMessages = sessionData.session.messages.some(
-                (m) => (m.role === "learner" || m.role === "tutor") && !m.hidden,
+                (m) =>
+                  (m.role === "learner" || m.role === "tutor") &&
+                  !m.hidden &&
+                  !shouldHideLegacyDiagnosticRoadmapMessage(m),
               );
               setIsNewSession(!hasVisibleMessages);
               if (hasVisibleMessages) {
@@ -638,7 +662,10 @@ function ChatView({ sessionId }: { sessionId: string }) {
           setNodes(loadedNodes);
           // isNewSession 判定：无可见消息（落地页刚建的空会话）→ true，触发首屏 + 自动诊断
           const hasVisibleMessages = sessionData.session.messages.some(
-            (m) => (m.role === "learner" || m.role === "tutor") && !m.hidden,
+            (m) =>
+              (m.role === "learner" || m.role === "tutor") &&
+              !m.hidden &&
+              !shouldHideLegacyDiagnosticRoadmapMessage(m),
           );
           setIsNewSession(!hasVisibleMessages);
           setSelectedConfigId((sessionData.session as Record<string, unknown>).llmConfigId as string | undefined);
@@ -649,7 +676,12 @@ function ChatView({ sessionId }: { sessionId: string }) {
           }
 
           const historyMessages: UIMessage<MessageMetadata>[] = sessionData.session.messages
-            .filter((m) => (m.role === "learner" || m.role === "tutor") && !m.hidden)
+            .filter(
+              (m) =>
+                (m.role === "learner" || m.role === "tutor") &&
+                !m.hidden &&
+                !shouldHideLegacyDiagnosticRoadmapMessage(m),
+            )
             .map((m, i) => {
               const assessment =
                 m.type === "assessment" ? getAssessmentFromMetadata(m.metadata) : undefined;
@@ -927,15 +959,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
     );
     const hiddenContent = `[Quiz Response] ${answerLines.join(" | ")}`;
 
-    const assistantMessage: UIMessage<MessageMetadata> = {
-      id: `assistant-diag-${Date.now()}`,
-      role: "assistant",
-      parts: [{ type: "text" as const, text: "" }],
-      metadata: { annotations: [] },
-    };
-
-    const newMessages = [...chat.messages, assistantMessage];
-    chat.setMessages(newMessages);
+    let roadmapGenerated = false;
+    let firstNodeTitle: string | undefined;
 
     try {
       const postRes = await fetch("/api/chat", {
@@ -982,31 +1007,56 @@ function ChatView({ sessionId }: { sessionId: string }) {
             const jsonStr = line.slice(6);
             if (jsonStr === "[DONE]") continue;
 
-            let event: { type: string; content?: string; data?: unknown };
+            let event: { type: string; content?: string; data?: unknown; message?: string };
             try {
               event = JSON.parse(jsonStr);
             } catch {
               continue;
             }
 
-            const assistantIdx = newMessages.length - 1;
-
-            if (event.type === "text-delta" && typeof event.content === "string") {
-              const prevText = newMessages[assistantIdx].parts
-                ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
-                .map((p) => p.text)
-                .join("") ?? "";
-              const updatedText = prevText + event.content;
-              newMessages[assistantIdx] = {
-                ...newMessages[assistantIdx],
-                parts: [{ type: "text" as const, text: updatedText }],
+            if (event.type === "tool-result" && event.data) {
+              const data = event.data as {
+                toolName?: string;
+                result?: {
+                  firstNode?: { title?: string };
+                  roadmapUpdate?: { nodes?: NodeInfo[] };
+                  sessionUpdate?: { masteredNodes?: number; totalNodes?: number };
+                };
               };
-              chat.setMessages([...newMessages]);
+              if (data.toolName === "generateRoadmap") {
+                roadmapGenerated = true;
+                firstNodeTitle = data.result?.firstNode?.title ?? firstNodeTitle;
+                if (Array.isArray(data.result?.roadmapUpdate?.nodes)) {
+                  setNodes(data.result.roadmapUpdate.nodes);
+                }
+                if (data.result?.sessionUpdate?.totalNodes !== undefined) {
+                  const sessionUpdate = data.result.sessionUpdate;
+                  setSessions((prev) =>
+                    prev.map((s) =>
+                      s.id === sessionId
+                        ? {
+                            ...s,
+                            progress: {
+                              ...s.progress,
+                              totalNodes: sessionUpdate.totalNodes!,
+                              masteredNodes: sessionUpdate.masteredNodes ?? 0,
+                            },
+                          }
+                        : s,
+                    ),
+                  );
+                }
+              }
             }
 
             if (event.type === "roadmap-updated" && event.data) {
+              roadmapGenerated = true;
               const data = event.data as { nodes: NodeInfo[] };
               setNodes(data.nodes);
+              firstNodeTitle =
+                data.nodes.find((node) => node.status === "in_progress")?.title ??
+                data.nodes[0]?.title ??
+                firstNodeTitle;
             }
 
             if (event.type === "session-updated" && event.data) {
@@ -1028,16 +1078,28 @@ function ChatView({ sessionId }: { sessionId: string }) {
                 );
               }
             }
+
+            if (event.type === "error") {
+              throw new Error(event.message ?? "诊断分析失败，请稍后重试");
+            }
           }
         }
       }
 
       setDiagnosticAnalyzing(false);
       setDiagnosticSubmitted(true);
+      if (roadmapGenerated) {
+        chat.submitHiddenMessage(
+          `[Continue] 开始教学知识点：${firstNodeTitle ?? "第一个知识点"}`,
+          { assistantId: `assistant-first-lesson-${Date.now()}` },
+        );
+      }
     } catch (err) {
       console.error("Diagnostic submit error:", err);
       setDiagnosticAnalyzing(false);
       setDiagnosticSubmitted(true);
+      setChatError(err instanceof Error ? err.message : "诊断分析失败，请稍后重试");
+      setTimeout(() => setChatError(null), 5000);
     }
 
     fetchSession(sessionId)
