@@ -6,7 +6,7 @@ import {
   type AssessmentCardProps,
 } from "./assessment-card";
 import type { UIBlock } from "@ai-teacher/shared";
-import type { MessageMetadata, DiagnosticQuestionsData } from "@/hooks/use-chat-stream";
+import type { MessageMetadata, DiagnosticQuestionsData, LoopTrace } from "@/hooks/use-chat-stream";
 import { ChatMessage } from "./chat-message";
 import type { InteractiveSubmitPayload } from "@/components/ui-blocks/interactive-block";
 import { ChatInput } from "./chat-input";
@@ -139,6 +139,20 @@ function getDiagnosticQuestionsFromMessage(message: UIMessage<MessageMetadata>):
   return undefined;
 }
 
+function getLoopTraceFromMessage(message: UIMessage<MessageMetadata>): LoopTrace | undefined {
+  const annotations = message.metadata?.annotations;
+  if (!annotations) return undefined;
+  for (const annotation of annotations) {
+    if (isObject(annotation) && "loopTrace" in annotation && annotation.loopTrace) {
+      const trace = annotation.loopTrace as LoopTrace;
+      if (trace && Array.isArray(trace.steps)) {
+        return trace;
+      }
+    }
+  }
+  return undefined;
+}
+
 export function ChatArea({
   messages,
   input,
@@ -210,6 +224,7 @@ export function ChatArea({
 
           const diagnosticQuestions = msg.role === "assistant" ? getDiagnosticQuestionsFromMessage(msg) : undefined;
           const uiBlocksResult = msg.role === "assistant" ? getUIBlocksFromMessage(msg) : { blocks: undefined, streaming: false };
+          const loopTrace = msg.role === "assistant" ? getLoopTraceFromMessage(msg) : undefined;
 
           return (
             <ChatMessage
@@ -224,6 +239,7 @@ export function ChatArea({
               onInteractiveSubmit={onInteractiveSubmit}
               diagnosticSubmitted={diagnosticSubmitted}
               diagnosticAnalyzing={diagnosticAnalyzing}
+              loopTrace={loopTrace}
             />
           );
         })}

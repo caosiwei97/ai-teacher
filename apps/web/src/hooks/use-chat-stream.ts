@@ -37,6 +37,21 @@ export interface DiagnosticQuestionsData {
   nodeId: string;
 }
 
+export interface LoopTraceStep {
+  step: number;
+  total: number;
+  t0: number;
+  durationMs?: number;
+  reasoning?: string;
+  tools?: Array<{ name: string }>;
+}
+
+export interface LoopTrace {
+  steps: LoopTraceStep[];
+  failovers?: Array<{ from: string; to: string; reason: string; step: number }>;
+  loopWarnings?: Array<{ type: string; toolName: string; step: number }>;
+}
+
 export interface AnnotationData {
   toolName?: string;
   args?: unknown;
@@ -52,10 +67,29 @@ export interface AnnotationData {
     title?: string;
     learningStatus?: string;
   };
+  loopTrace?: LoopTrace;
 }
 
 export interface MessageMetadata {
   annotations?: AnnotationData[];
+}
+
+// 单条 annotation 里承载 loopTrace（单对象，非数组）。updater 对该对象做就地变更，
+// 若不存在则新建。返回新的 annotations 数组（不可变更新）。
+function updateLoopTrace(
+  annotations: AnnotationData[],
+  updater: (trace: LoopTrace) => LoopTrace,
+): AnnotationData[] {
+  const idx = annotations.findIndex((a) => a && "loopTrace" in a && a.loopTrace);
+  if (idx === -1) {
+    const fresh: LoopTrace = { steps: [] };
+    const next = updater(fresh);
+    return [...annotations, { loopTrace: next }];
+  }
+  const updated = [...annotations];
+  const current = (annotations[idx].loopTrace as LoopTrace) ?? { steps: [] };
+  updated[idx] = { ...annotations[idx], loopTrace: updater(current) };
+  return updated;
 }
 
 function getTextFromParts(parts: UIMessage["parts"]): string {
@@ -415,6 +449,124 @@ export function useChatStream(
               ) {
                 const data = event.data as { title?: string };
                 if (data.title) options?.onTitleUpdate?.(data.title);
+              } else if (event.type === SSEEventType.StepStart && event.data) {
+                const data = event.data as { step: number; total: number };
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      steps: [
+                        ...trace.steps,
+                        {
+                          step: Number(data.step),
+                          total: Number(data.total),
+                          t0: Date.now(),
+                        },
+                      ],
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.StepEnd && event.data) {
+                const data = event.data as { step: number; durationMs?: number };
+                const stepNum = Number(data.step);
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      steps: trace.steps.map((s) =>
+                        s.step === stepNum
+                          ? { ...s, durationMs: data.durationMs ?? (Date.now() - s.t0) }
+                          : s,
+                      ),
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.ReasoningDelta && event.data) {
+                const data = event.data as { step: number; text: string };
+                const stepNum = Number(data.step);
+                const delta = String(data.text ?? "");
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      steps: trace.steps.map((s) =>
+                        s.step === stepNum
+                          ? { ...s, reasoning: (s.reasoning ?? "") + delta }
+                          : s,
+                      ),
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.Failover && event.data) {
+                const data = event.data as {
+                  from: string;
+                  to: string;
+                  reason: string;
+                  step: number;
+                };
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      failovers: [
+                        ...(trace.failovers ?? []),
+                        {
+                          from: String(data.from),
+                          to: String(data.to),
+                          reason: String(data.reason ?? ""),
+                          step: Number(data.step),
+                        },
+                      ],
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.LoopWarning && event.data) {
+                const data = event.data as { type: string; toolName: string; step: number };
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      loopWarnings: [
+                        ...(trace.loopWarnings ?? []),
+                        {
+                          type: String(data.type ?? ""),
+                          toolName: String(data.toolName ?? ""),
+                          step: Number(data.step),
+                        },
+                      ],
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
               } else if (event.type === SSEEventType.Error) {
                 const errorMsg =
                   typeof event.data === "string"
@@ -748,6 +900,135 @@ export function useChatStream(
             } else if (event.type === SSEEventType.TitleUpdated && event.data) {
               const data = event.data as { title?: string };
               if (data.title) options?.onTitleUpdate?.(data.title);
+            } else if (event.type === SSEEventType.StepStart && event.data) {
+              const data = event.data as { step: number; total: number };
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        steps: [
+                          ...trace.steps,
+                          { step: Number(data.step), total: Number(data.total), t0: Date.now() },
+                        ],
+                      })),
+                    },
+                  },
+                ];
+              });
+            } else if (event.type === SSEEventType.StepEnd && event.data) {
+              const data = event.data as { step: number; durationMs?: number };
+              const stepNum = Number(data.step);
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        steps: trace.steps.map((s) =>
+                          s.step === stepNum
+                            ? { ...s, durationMs: data.durationMs ?? (Date.now() - s.t0) }
+                            : s,
+                        ),
+                      })),
+                    },
+                  },
+                ];
+              });
+            } else if (event.type === SSEEventType.ReasoningDelta && event.data) {
+              const data = event.data as { step: number; text: string };
+              const stepNum = Number(data.step);
+              const delta = String(data.text ?? "");
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        steps: trace.steps.map((s) =>
+                          s.step === stepNum
+                            ? { ...s, reasoning: (s.reasoning ?? "") + delta }
+                            : s,
+                        ),
+                      })),
+                    },
+                  },
+                ];
+              });
+            } else if (event.type === SSEEventType.Failover && event.data) {
+              const data = event.data as {
+                from: string;
+                to: string;
+                reason: string;
+                step: number;
+              };
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        failovers: [
+                          ...(trace.failovers ?? []),
+                          {
+                            from: String(data.from),
+                            to: String(data.to),
+                            reason: String(data.reason ?? ""),
+                            step: Number(data.step),
+                          },
+                        ],
+                      })),
+                    },
+                  },
+                ];
+              });
+            } else if (event.type === SSEEventType.LoopWarning && event.data) {
+              const data = event.data as { type: string; toolName: string; step: number };
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        loopWarnings: [
+                          ...(trace.loopWarnings ?? []),
+                          {
+                            type: String(data.type ?? ""),
+                            toolName: String(data.toolName ?? ""),
+                            step: Number(data.step),
+                          },
+                        ],
+                      })),
+                    },
+                  },
+                ];
+              });
             } else if (event.type === SSEEventType.Error) {
               const errorMsg =
                 typeof event.data === "string"
