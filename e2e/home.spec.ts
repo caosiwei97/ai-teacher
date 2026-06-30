@@ -6,7 +6,8 @@ test.describe("Home Page — 落地页", () => {
   test("should show landing page with title and input", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByText("真正掌握，而不只是看过")).toBeVisible({ timeout: 10000 });
-    await expect(page.locator("input[placeholder*='想学的']")).toBeVisible();
+    // 落地页复用 ChatInput（textarea），含教学模式选择 + 文件上传
+    await expect(page.locator("textarea")).toBeVisible({ timeout: 10000 });
   });
 
   test("should show suggested topic chips", async ({ page }) => {
@@ -27,9 +28,9 @@ test.describe("Home Page — 落地页", () => {
     await expect(page.getByText("真正掌握，而不只是看过")).toBeVisible({ timeout: 10000 });
 
     // 新机制：发消息才建会话——输入消息发送 → POST /api/sessions 拿 id → 跳 /learn/:id
-    const input = page.locator("input[placeholder*='想学的']");
-    await input.fill("测试学习主题");
-    await input.press("Enter");
+    const textarea = page.locator("textarea").first();
+    await textarea.fill("测试学习主题");
+    await textarea.press("Enter");
 
     await expect(page).toHaveURL(/\/learn\//, { timeout: 30000 });
   });

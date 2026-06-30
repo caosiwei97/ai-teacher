@@ -16,12 +16,16 @@ export async function fetchSessions(userId: string) {
   }>;
 }
 
-// 创建会话（先建后端再跳转，替代前端生成空 id 的旧机制）
-export async function createSession(userId: string, topic: string) {
+// 创建会话（发消息才建会话：用户在 / 页输入首条消息发送时才创建）
+export async function createSession(
+  userId: string,
+  topic: string,
+  teachingMode?: "warm" | "strict",
+) {
   const res = await fetch("/api/sessions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, topic }),
+    body: JSON.stringify({ userId, topic, teachingMode }),
   });
   if (!res.ok) throw new Error("Failed to create session");
   const data = await res.json() as {

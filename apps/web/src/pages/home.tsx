@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { getEnvStatus, createSession } from "@/lib/api-client";
+import { getEnvStatus, getLlmConfigs, createSession, type LlmConfig } from "@/lib/api-client";
 import { useSession } from "@/contexts/session-context";
-import { GraduationCap, ArrowRight, Loader2 } from "lucide-react";
+import { ChatInput } from "@/components/chat/chat-input";
+import type { TeachingMode } from "@/components/chat/mode-selector";
+import { GraduationCap, ArrowRight } from "lucide-react";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -21,6 +23,10 @@ export function Component() {
   const [ready, setReady] = useState<boolean | null>(null);
   const [topic, setTopic] = useState("");
   const [creating, setCreating] = useState(false);
+  const [teachingMode, setTeachingMode] = useState<TeachingMode>("warm");
+  const [llmConfigs, setLlmConfigs] = useState<LlmConfig[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | undefined>(undefined);
+  const [hasEnvConfig, setHasEnvConfig] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -33,17 +39,31 @@ export function Component() {
     })();
   }, []);
 
-  // 发消息才建会话：用户输入首条消息 → POST /api/sessions（topic=未命名对话）拿 id → 跳转带 firstMessage
+  // 加载 LLM 配置（与 learn 页一致，用于 ChatInput 模型选择 + disabled 判定）
+  useEffect(() => {
+    getLlmConfigs(USER_ID)
+      .then((data) => {
+        setLlmConfigs(data.configs);
+        const def = data.configs.find((c) => c.isDefault) ?? data.configs[0];
+        setSelectedConfigId(def?.id);
+      })
+      .catch(() => setLlmConfigs([]));
+    getEnvStatus()
+      .then((s) => setHasEnvConfig(s.hasDefaultDbConfig || s.hasEnvConfig))
+      .catch(() => setHasEnvConfig(false));
+  }, []);
+
+  // 发消息才建会话：用户输入首条消息 → POST /api/sessions（topic=未命名对话 + teachingMode）拿 id → 跳转带 firstMessage
   // learn 页接收 firstMessage 立即发起 chat 流（首条即触发诊断），无空态闪烁
   async function sendMessage(text: string) {
     const trimmed = text.trim();
     if (!trimmed || creating) return;
     setCreating(true);
     try {
-      const newSession = await createSession(USER_ID, "未命名对话");
+      const newSession = await createSession(USER_ID, "未命名对话", teachingMode);
       setSessions((prev) => [newSession, ...prev]);
       navigate(`/learn/${newSession.id}`, {
-        state: { firstMessage: trimmed },
+        state: { firstMessage: trimmed, teachingMode },
         replace: true,
       });
     } catch (err) {
@@ -91,8 +111,9 @@ export function Component() {
   const learningSession = sessions.find(
     (s) => s.status === "active" || s.status === "diagnosing",
   );
+  const disabled = llmConfigs.length === 0 && !hasEnvConfig;
 
-  // 落地页（spec §5.3①）：大标题 + 输入框 + 推荐 chips + 三阶段示意
+  // 落地页（spec §5.3①）：大标题 + ChatInput（含教学模式/文件上传/模型选择）+ 推荐 chips + 三阶段示意
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 py-10">
       <div className="w-full max-w-2xl">
@@ -108,27 +129,26 @@ export function Component() {
           </p>
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            sendMessage(topic);
-          }}
-          className="relative mb-4"
-        >
-          <input
+        <div className="mb-4">
+          <ChatInput
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="输入你想学的，或直接提问，例如「React Hooks」"
-            className="w-full rounded-xl border border-border bg-card px-4 py-3.5 pr-12 text-[15px] text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendMessage(topic);
+            }}
+            onStop={() => {}}
+            isLoading={creating}
+            disabled={disabled}
+            teachingMode={teachingMode}
+            onTeachingModeChange={setTeachingMode}
+            currentModel={llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel}
+            llmConfigs={llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault }))}
+            selectedConfigId={selectedConfigId}
+            onModelChange={setSelectedConfigId}
+            frameless
           />
-          <button
-            type="submit"
-            disabled={!topic.trim() || creating}
-            className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-40"
-          >
-            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-          </button>
-        </form>
+        </div>
 
         <div className="mb-10 flex flex-wrap justify-center gap-2">
           {suggestedTopics.map((t) => (

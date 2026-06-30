@@ -165,13 +165,16 @@ export function Component() {
   const { setSessions, currentSessionId, refreshSessions } = useSession();
 
   const sessionId = currentSessionId ?? params.sessionId!;
+  const location = useLocation();
 
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [isNewSession, setIsNewSession] = useState(false);
   const prevSessionRef = useRef<string | null>(null);
-  const [teachingMode, setTeachingMode] = useState<"warm" | "strict">("warm");
+  const [teachingMode, setTeachingMode] = useState<"warm" | "strict">(
+    () => (location.state as { teachingMode?: "warm" | "strict" } | null)?.teachingMode ?? "warm",
+  );
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
   const [diagnosticAnalyzing, setDiagnosticAnalyzing] = useState(false);
@@ -196,7 +199,6 @@ export function Component() {
   const [rightCollapsed, setRightCollapsed] = useState(false);
   const [rightTab, setRightTab] = useState<"roadmap" | "code">("roadmap");
   const [activeMode, setActiveMode] = useState<ActiveMode>("learning");
-  const location = useLocation();
   // 落地页发首条消息后传入：新会话进入时立即发起 chat 流（首条即触发诊断），无空态闪烁
   const [firstMessage, setFirstMessage] = useState<string | undefined>(
     () => (location.state as { firstMessage?: string } | null)?.firstMessage,

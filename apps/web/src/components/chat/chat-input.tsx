@@ -29,6 +29,8 @@ interface ChatInputProps {
   llmConfigs?: LlmConfigOption[];
   selectedConfigId?: string;
   onModelChange?: (configId: string) => void;
+  /** 无边框模式：落地页等非底部栏场景用，去掉 border-t + p-5 外框 */
+  frameless?: boolean;
 }
 
 export function ChatInput({
@@ -49,6 +51,7 @@ export function ChatInput({
   llmConfigs,
   selectedConfigId,
   onModelChange,
+  frameless,
 }: ChatInputProps) {
   const [modelOpen, setModelOpen] = useState(false);
 
@@ -61,7 +64,7 @@ export function ChatInput({
   }
 
   return (
-    <div className="border-t border-border p-5">
+    <div className={frameless ? "" : "border-t border-border p-5"}>
       {disabled && (
         <div className="mx-auto mb-2 max-w-3xl rounded-lg bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-500">
           请先在<a href="/settings" className="underline font-medium hover:text-amber-400">设置页</a>配置模型后再开始对话
