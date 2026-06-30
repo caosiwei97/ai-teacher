@@ -23,6 +23,15 @@ test.describe("Interview — 面试模式（分类 S）", () => {
     expect(result).toBeNull();
   });
 
+  test("面试结果接口返回 200 不崩溃", async ({ request }) => {
+    const res = await request.get(
+      `/api/sessions/${REACT_HOOKS_SESSION}/interview/result`,
+    );
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body).toHaveProperty("result");
+  });
+
   test("scoreAnswer 评分 + finalizeInterview 评分卡（mock LLM）", async ({ page, request }) => {
     test.setTimeout(60000);
     // 用 review-multi 会话（2 mastered）跑面试 mock 流程，避免污染 react-hooks 共享会话
