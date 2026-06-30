@@ -53,7 +53,6 @@ function LandingView() {
   const { sessions, setSessions } = useSession();
   const [topic, setTopic] = useState("");
   const [creating, setCreating] = useState(false);
-  const [leaving, setLeaving] = useState(false); // 过渡态：发消息时淡出引导
   const [teachingMode, setTeachingMode] = useState<TeachingMode>("warm");
   const [llmConfigs, setLlmConfigs] = useState<LlmConfig[]>([]);
   const [selectedConfigId, setSelectedConfigId] = useState<string | undefined>(undefined);
@@ -72,24 +71,37 @@ function LandingView() {
       .catch(() => setHasEnvConfig(false));
   }, []);
 
+  // 统一包装为「请教我学习《》」；已含书名号或已是学习请求句式则不重复包装
+  function formatFirstMessage(text: string): string {
+    if (/《.+》/.test(text) || /^(请教|请教我|学习|我想学)/.test(text)) {
+      return text;
+    }
+    return `请教我学习《${text}》`;
+  }
+
   // 发消息才建会话：输入首条消息 → POST /api/sessions（topic=未命名对话 + teachingMode）拿 id → 跳转带 firstMessage
-  // 过渡态：先淡出引导（leaving=true），建会话完成后 navigate 到 ChatView（输入框在底部淡入）
+  // View Transitions API：同 view-transition-name 元素（ChatInput）跨路由自动位移插值，输入框从居中下沉到底部
+  // 旧浏览器降级为直接 navigate（无动画但功能正常）
   async function sendMessage(text: string) {
     const trimmed = text.trim();
     if (!trimmed || creating) return;
     setCreating(true);
-    setLeaving(true);
+    const formatted = formatFirstMessage(trimmed);
     try {
       const newSession = await createSession(USER_ID, "未命名对话", teachingMode);
       setSessions((prev) => [newSession, ...prev]);
-      navigate(`/learn/${newSession.id}`, {
-        state: { firstMessage: trimmed, teachingMode },
-        replace: true,
-      });
+      const target = `/learn/${newSession.id}`;
+      const navigateOpts = { state: { firstMessage: formatted, teachingMode }, replace: true };
+      if (typeof document !== "undefined" && document.startViewTransition) {
+        const t = document.startViewTransition(() => navigate(target, navigateOpts));
+        t.finished.finally(() => setCreating(false));
+      } else {
+        navigate(target, navigateOpts);
+        setCreating(false);
+      }
     } catch (err) {
       console.error("Failed to create session:", err);
       setCreating(false);
-      setLeaving(false);
     }
   }
 
@@ -99,9 +111,7 @@ function LandingView() {
   const disabled = llmConfigs.length === 0 && !hasEnvConfig;
 
   return (
-    <div
-      className={`flex h-full flex-col items-center justify-center px-6 py-10 transition-all duration-500 ${leaving ? "opacity-0 translate-y-4" : "opacity-100"}`}
-    >
+    <div className="flex h-full flex-col items-center justify-center px-6 py-10">
       <div className="w-full max-w-2xl">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">

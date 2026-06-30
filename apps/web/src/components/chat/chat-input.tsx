@@ -64,7 +64,10 @@ export function ChatInput({
   }
 
   return (
-    <div className={frameless ? "" : "border-t border-border p-5"}>
+    <div
+      className={frameless ? "" : "border-t border-border p-5"}
+      style={{ viewTransitionName: "chat-input-shell" } as React.CSSProperties}
+    >
       {disabled && (
         <div className="mx-auto mb-2 max-w-3xl rounded-lg bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-500">
           请先在<a href="/settings" className="underline font-medium hover:text-amber-400">设置页</a>配置模型后再开始对话
