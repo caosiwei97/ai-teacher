@@ -3,6 +3,7 @@
 // server（面试 API）与 worker（scoreAnswer/finalizeInterview tool）共用。
 
 import { prisma } from "@ai-teacher/db";
+import type { InterviewResult } from "@prisma/client";
 import {
   adjustDifficulty,
   computeTotalScore,
@@ -52,10 +53,9 @@ const DELEGATE_ERROR_MSG =
 
 export const InterviewService = {
   /** 取/建 in_progress 面试记录（设定阶段，幂等）。chat-turn 每轮调用注入 prompt */
-  async startOrGet(sessionId: string, difficulty: Difficulty = "medium") {
+  async startOrGet(sessionId: string, difficulty: Difficulty = "medium"): Promise<InterviewResult> {
     if (!prisma.interviewResult) {
-      console.error(DELEGATE_ERROR_MSG);
-      return null;
+      throw new Error(DELEGATE_ERROR_MSG);
     }
     const existing = await prisma.interviewResult.findFirst({
       where: { sessionId, status: "in_progress" },
@@ -131,7 +131,7 @@ export const InterviewService = {
   },
 
   /** 查询最新面试结果（评分卡/复盘，③ UI 用） */
-  async getResult(sessionId: string) {
+  async getResult(sessionId: string): Promise<InterviewResult | null> {
     if (!prisma.interviewResult) {
       console.error(DELEGATE_ERROR_MSG);
       return null;

@@ -36,7 +36,7 @@ describe("InterviewService", () => {
     it("有 in_progress → 直接返回（幂等）", async () => {
       mockFindFirst.mockResolvedValue({ id: "ir1", sessionId: "s1", status: "in_progress", difficulty: "medium", streak: 0, questionLog: [] });
       const r = await InterviewService.startOrGet("s1");
-      expect(r!.id).toBe("ir1");
+      expect(r.id).toBe("ir1");
       expect(mockCreate).not.toHaveBeenCalled();
     });
 
@@ -45,7 +45,7 @@ describe("InterviewService", () => {
       mockCreate.mockResolvedValue({ id: "ir2", sessionId: "s1", status: "in_progress", difficulty: "medium", streak: 0, questionLog: [] });
       const r = await InterviewService.startOrGet("s1");
       expect(mockCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ sessionId: "s1", status: "in_progress", difficulty: "medium", streak: 0 }) });
-      expect(r!.id).toBe("ir2");
+      expect(r.id).toBe("ir2");
     });
   });
 
@@ -144,14 +144,10 @@ describe("InterviewService — delegate undefined 防御", () => {
     errSpy.mockRestore();
   });
 
-  it("startOrGet：interviewResult delegate 缺失 → 返回 null 不抛错", async () => {
-    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const r = await InterviewService.startOrGet("s1");
-    expect(r).toBeNull();
+  it("startOrGet：interviewResult delegate 缺失 → 抛带提示的错误", async () => {
+    await expect(InterviewService.startOrGet("s1")).rejects.toThrow(/InterviewResult model 未生成.*pnpm db:generate/);
     expect(mockFindFirst).not.toHaveBeenCalled();
     expect(mockCreate).not.toHaveBeenCalled();
-    expect(errSpy).toHaveBeenCalled();
-    errSpy.mockRestore();
   });
 
   it("scoreAnswer：interviewResult delegate 缺失 → 抛带提示的错误", async () => {
