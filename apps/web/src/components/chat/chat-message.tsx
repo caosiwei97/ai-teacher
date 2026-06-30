@@ -55,9 +55,10 @@ export function ChatMessage({
       <div className={`${isUser ? "max-w-[80%]" : "w-full"} min-w-0 space-y-3`}>
         {(hasContent || hasBlocks) && (
           <div
+            data-testid={isUser ? "user-message-bubble" : undefined}
             className={`text-base leading-relaxed ${
               isUser
-                ? "rounded-xl rounded-br-[4px] bg-chat-user-bubble px-4 py-3 text-chat-user-text"
+                ? "rounded-xl bg-chat-user-bubble px-4 py-3 text-chat-user-text"
                 : "text-chat-ai-text"
             }`}
             style={{ animation: 'message-in 300ms cubic-bezier(0.33, 1, 0.68, 1) both' }}

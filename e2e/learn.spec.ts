@@ -124,6 +124,24 @@ test.describe("Learn Page — Chat Input", () => {
     const firstRowY = boxes[0].y;
     expect(boxes.filter((box) => Math.abs(box.y - firstRowY) <= 2)).toHaveLength(3);
   });
+
+  test("should render user message bubble with balanced corners", async ({ page }) => {
+    await page.goto(LEARN_PATH);
+    const bubble = page.getByTestId("user-message-bubble").first();
+    await expect(bubble).toBeVisible({ timeout: 10000 });
+
+    const radii = await bubble.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return [
+        style.borderTopLeftRadius,
+        style.borderTopRightRadius,
+        style.borderBottomRightRadius,
+        style.borderBottomLeftRadius,
+      ];
+    });
+
+    expect(new Set(radii).size).toBe(1);
+  });
 });
 
 test.describe("Learn Page — Code Editor", () => {
