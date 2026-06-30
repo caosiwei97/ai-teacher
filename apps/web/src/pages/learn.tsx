@@ -352,6 +352,10 @@ function ChatView({ sessionId }: { sessionId: string }) {
   const [firstMessage, setFirstMessage] = useState<string | undefined>(
     () => (location.state as { firstMessage?: string } | null)?.firstMessage,
   );
+  // 首条消息待发送标志：抑制 ChatArea 空态 fallback，避免「开始你的学习之旅吧」闪烁
+  const [pendingFirstMessage, setPendingFirstMessage] = useState(
+    () => !!(location.state as { firstMessage?: string } | null)?.firstMessage,
+  );
   const [reviewDueNodes, setReviewDueNodes] = useState<Array<{
     id: string;
     index: number;
@@ -531,6 +535,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
       setInterviewResult(null);
       setRightTab("roadmap");
       setFirstMessage(undefined);
+      setPendingFirstMessage(false);
     }
     prevSessionRef.current = sessionId;
 
@@ -798,12 +803,13 @@ function ChatView({ sessionId }: { sessionId: string }) {
   }, [activeMode, sessionId, chat.messages, fetchInterviewResult]);
 
   // 落地页发首条消息后自动接续流：新会话且带 firstMessage 时立即发起 chat 流
-  // 首条消息即触发 agent 诊断，messages 瞬间非空，无空态→hero→消息三态跳变
+  // submitMessage 同步 setMessages（user+assistant），messages 立即非空，空态 fallback 不触发
   useEffect(() => {
     if (!isNewSession || !firstMessage || chat.isLoading) return;
     if (chat.messages.length > 0) return; // 已有消息则不重复触发
     chat.submitMessage(firstMessage);
     setFirstMessage(undefined);
+    setPendingFirstMessage(false);
   }, [isNewSession, firstMessage, chat.isLoading, chat.messages.length]);
 
   function getLastAssistantMessage() {
@@ -1099,19 +1105,22 @@ function ChatView({ sessionId }: { sessionId: string }) {
           masteredCount={nodes.filter((n) => n.status === "mastered").length}
           onChange={handleModeChange}
         />
-        {isNewSession ? (
-          // 新会话：不传 welcomeContent（引导文字/标签已在 LandingView 展示，进入聊天态后隐藏）
-          // firstMessage 立即触发 chat 流，messages 瞬间非空；空态时用 ChatArea 默认 fallback 兜底
-          <>
-            <ChatArea {...chatAreaProps} />
-            <QuickQuestion sessionId={sessionId} />
-          </>
-        ) : (
-          <>
-            <ChatArea {...chatAreaProps} />
-            <QuickQuestion sessionId={sessionId} />
-          </>
-        )}
+        <ChatArea
+          {...chatAreaProps}
+          welcomeContent={
+            pendingFirstMessage ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+                <div className="flex gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0s" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.2s" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.4s" }} />
+                </div>
+                <p className="text-sm">正在发送…</p>
+              </div>
+            ) : undefined
+          }
+        />
+        <QuickQuestion sessionId={sessionId} />
       </div>
 
       {showRight && !rightCollapsed && (
