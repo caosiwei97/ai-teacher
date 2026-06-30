@@ -151,7 +151,7 @@ export async function runAgentLoop(
               await publisher.publish(
                 channel,
                 createSSEEvent(SSEEventType.Error, {
-                  message: `检测到循环调用（${detection.toolName}），已停止。请换个方式提问。`,
+                  data: { message: `检测到循环调用（${detection.toolName}），已停止。请换个方式提问。` },
                 }),
               );
               stopReason = "aborted";

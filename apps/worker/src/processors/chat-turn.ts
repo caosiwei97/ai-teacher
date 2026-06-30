@@ -527,7 +527,7 @@ export function createChatTurnWorker(
           : errorMessage;
         await publisher.publish(
           channel,
-          createSSEEvent(SSEEventType.Error, { message: userMessage }),
+          createSSEEvent(SSEEventType.Error, { data: { message: userMessage } }),
         );
 
         throw error;
