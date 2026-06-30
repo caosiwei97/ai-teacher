@@ -971,6 +971,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
     const hiddenContent = `[Quiz Response] ${answerLines.join(" | ")}`;
 
     let roadmapGenerated = false;
+    let diagnosticFailed = false;
     let firstNodeTitle: string | undefined;
 
     try {
@@ -1040,9 +1041,11 @@ function ChatView({ sessionId }: { sessionId: string }) {
                 const result = data.result;
                 if (result && result.success === false) {
                   setDiagnosticError(result.error ?? "路线图生成失败，请重试");
+                  setTimeout(() => setDiagnosticError(null), 5000);
                   setDiagnosticAnalyzing(false);
-                  setDiagnosticSubmitted(true);
-                  return;
+                  setDiagnosticSubmitted(false);
+                  diagnosticFailed = true;
+                  break;
                 }
                 if (
                   result?.success !== false &&
@@ -1109,11 +1112,15 @@ function ChatView({ sessionId }: { sessionId: string }) {
               throw new Error(event.message ?? "诊断分析失败，请稍后重试");
             }
           }
+          if (diagnosticFailed) break;
         }
+        if (diagnosticFailed) break;
       }
 
-      setDiagnosticAnalyzing(false);
-      setDiagnosticSubmitted(true);
+      if (!diagnosticFailed) {
+        setDiagnosticAnalyzing(false);
+        setDiagnosticSubmitted(true);
+      }
       if (roadmapGenerated) {
         setFirstLessonPreparing(true);
         chat.submitHiddenMessage(
