@@ -24,6 +24,8 @@ const updateSchema = z.object({
   defaultModel: z.string().min(1).optional(),
   label: z.string().optional(),
   isDefault: z.boolean().optional(),
+  fallbackModelId: z.string().nullable().optional(),
+  fallbackLlmConfigId: z.string().nullable().optional(),
 });
 
 const providerQuerySchema = z.object({
@@ -110,6 +112,8 @@ export const llmConfigRoute = new Hono()
         label: cfg.label,
         isDefault: cfg.isDefault,
         source: cfg.source,
+        fallbackModelId: cfg.fallbackModelId,
+        fallbackLlmConfigId: cfg.fallbackLlmConfigId,
         createdAt: cfg.createdAt.toISOString(),
         updatedAt: cfg.updatedAt.toISOString(),
       })),
@@ -152,6 +156,8 @@ export const llmConfigRoute = new Hono()
         defaultModel: data.defaultModel,
         label: data.label ?? null,
         isDefault: data.isDefault ?? false,
+        fallbackModelId: data.fallbackModelId ?? null,
+        fallbackLlmConfigId: data.fallbackLlmConfigId ?? null,
       },
     });
 
@@ -166,6 +172,8 @@ export const llmConfigRoute = new Hono()
         label: config.label,
         isDefault: config.isDefault,
         source: config.source,
+        fallbackModelId: config.fallbackModelId,
+        fallbackLlmConfigId: config.fallbackLlmConfigId,
         createdAt: config.createdAt.toISOString(),
         updatedAt: config.updatedAt.toISOString(),
       },
@@ -204,6 +212,8 @@ export const llmConfigRoute = new Hono()
     if (data.defaultModel !== undefined) updateData.defaultModel = data.defaultModel;
     if (data.label !== undefined) updateData.label = data.label;
     if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
+    if (data.fallbackModelId !== undefined) updateData.fallbackModelId = data.fallbackModelId;
+    if (data.fallbackLlmConfigId !== undefined) updateData.fallbackLlmConfigId = data.fallbackLlmConfigId;
 
     const config = await prisma.llmConfig.update({
       where: { id },
@@ -221,6 +231,8 @@ export const llmConfigRoute = new Hono()
         label: config.label,
         isDefault: config.isDefault,
         source: config.source,
+        fallbackModelId: config.fallbackModelId,
+        fallbackLlmConfigId: config.fallbackLlmConfigId,
         createdAt: config.createdAt.toISOString(),
         updatedAt: config.updatedAt.toISOString(),
       },

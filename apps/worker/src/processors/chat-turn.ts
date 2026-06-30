@@ -28,7 +28,7 @@ import {
   getFallbackProvider,
 } from "@ai-teacher/shared/services/provider-registry";
 import { decrypt } from "@ai-teacher/shared/services/crypto";
-import { resolveProviderConfig } from "@ai-teacher/shared/services/provider-select";
+import { resolveProviderConfig, resolveFallbackConfigs } from "@ai-teacher/shared/services/provider-select";
 import type { ToolDefinition, ToolExecutionContext } from "../agent/types";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
@@ -71,6 +71,9 @@ interface LlmJobConfig {
   ) => ReturnType<ReturnType<typeof createProviderForConfig>>;
   sandboxModel?: string;
   sandboxBaseUrl?: string;
+  fallbackModelId?: string;
+  fallbackProviderFn?: (modelId: string) => ReturnType<ReturnType<typeof createProviderForConfig>>;
+  fallbackModel?: string;
 }
 
 async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
@@ -88,15 +91,28 @@ async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
 
   if (resolved.config) {
     const apiKey = decrypt(resolved.config.encryptedKey);
-    return {
-      providerFn: createProviderForConfig({
-        provider: resolved.config.provider,
-        apiKey,
-        baseUrl: resolved.config.baseUrl ?? undefined,
-      }),
+    const providerFn = createProviderForConfig({
+      provider: resolved.config.provider,
+      apiKey,
+      baseUrl: resolved.config.baseUrl ?? undefined,
+    });
+    const { fallbackModelId, fallbackConfig } = await resolveFallbackConfigs(prisma, resolved.config);
+    const job: LlmJobConfig = {
+      providerFn,
       sandboxModel: resolved.config.defaultModel,
       sandboxBaseUrl: resolved.config.baseUrl ?? undefined,
+      fallbackModelId: fallbackModelId ?? undefined,
     };
+    if (fallbackConfig) {
+      const fbApiKey = decrypt(fallbackConfig.encryptedKey);
+      job.fallbackProviderFn = createProviderForConfig({
+        provider: fallbackConfig.provider,
+        apiKey: fbApiKey,
+        baseUrl: fallbackConfig.baseUrl ?? undefined,
+      });
+      job.fallbackModel = fallbackConfig.defaultModel;
+    }
+    return job;
   }
 
   return { providerFn: getFallbackProvider() };

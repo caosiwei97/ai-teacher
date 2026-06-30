@@ -7,6 +7,8 @@ export interface RawLlmConfig {
   baseUrl: string | null;
   defaultModel: string;
   isDefault: boolean;
+  fallbackModelId: string | null;
+  fallbackLlmConfigId: string | null;
 }
 
 export interface ResolveInput {
@@ -32,7 +34,7 @@ export async function resolveProviderConfig(
   if (input.llmConfigId) {
     const config = await prisma.llmConfig.findFirst({
       where: { id: input.llmConfigId, userId: input.userId },
-      select: { id: true, provider: true, encryptedKey: true, baseUrl: true, defaultModel: true, isDefault: true },
+      select: { id: true, provider: true, encryptedKey: true, baseUrl: true, defaultModel: true, isDefault: true, fallbackModelId: true, fallbackLlmConfigId: true },
     });
     if (!config) throw new Error(`LlmConfig ${input.llmConfigId} not found`);
     return { source: "explicit", config };
@@ -40,9 +42,25 @@ export async function resolveProviderConfig(
 
   const def = await prisma.llmConfig.findFirst({
     where: { userId: input.userId, isDefault: true },
-    select: { id: true, provider: true, encryptedKey: true, baseUrl: true, defaultModel: true, isDefault: true },
+    select: { id: true, provider: true, encryptedKey: true, baseUrl: true, defaultModel: true, isDefault: true, fallbackModelId: true, fallbackLlmConfigId: true },
   });
   if (def) return { source: "default-db", config: def };
 
   return { source: "env-fallback", config: null };
+}
+
+/** 解析 fallback 配置链：返回 fallbackModelId + fallbackConfig（跨 config） */
+export async function resolveFallbackConfigs(
+  prisma: PrismaClient,
+  config: RawLlmConfig,
+): Promise<{ fallbackModelId: string | null; fallbackConfig: RawLlmConfig | null }> {
+  let fallbackConfig: RawLlmConfig | null = null;
+  if (config.fallbackLlmConfigId) {
+    const fc = await prisma.llmConfig.findFirst({
+      where: { id: config.fallbackLlmConfigId },
+      select: { id: true, provider: true, encryptedKey: true, baseUrl: true, defaultModel: true, isDefault: true, fallbackModelId: true, fallbackLlmConfigId: true },
+    });
+    if (fc) fallbackConfig = fc;
+  }
+  return { fallbackModelId: config.fallbackModelId, fallbackConfig };
 }

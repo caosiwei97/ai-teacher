@@ -13,7 +13,7 @@ describe("resolveProviderConfig", () => {
   it("显式 llmConfigId → 直接查该配置", async () => {
     const prisma = mockPrisma({
       id: "explicit", provider: "zhipu", encryptedKey: "enc", baseUrl: null, defaultModel: "glm-5",
-      isDefault: true,
+      isDefault: true, fallbackModelId: null, fallbackLlmConfigId: null,
     });
     const result = await resolveProviderConfig(prisma, {
       userId: "u1",
@@ -26,7 +26,7 @@ describe("resolveProviderConfig", () => {
   it("无 llmConfigId → 查用户 default 配置", async () => {
     const prisma = mockPrisma({
       id: "def", provider: "deepseek", encryptedKey: "enc", baseUrl: "https://api.deepseek.com", defaultModel: "deepseek-v4-flash",
-      isDefault: true,
+      isDefault: true, fallbackModelId: null, fallbackLlmConfigId: null,
     });
     const result = await resolveProviderConfig(prisma, { userId: "u1" });
     expect(result.source).toBe("default-db");
