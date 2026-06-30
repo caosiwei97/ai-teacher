@@ -162,7 +162,7 @@ function getMockProvider(): (modelId: string) => LanguageModel {
 
           if (userText.includes("[render-interactive]")) {
             const html =
-              '<button id="btn">点我</button><p id="out">未点击</p>' +
+              '<div id="quiz"><button id="btn">点我</button><p id="out">未点击</p></div>' +
               '<script>document.getElementById("btn").addEventListener("click",function(){document.getElementById("out").textContent="已点击"})</script>';
             return {
               stream: simulateReadableStream({
@@ -175,6 +175,31 @@ function getMockProvider(): (modelId: string) => LanguageModel {
                       blocks: [{ type: "interactive", html }],
                     }),
                   },
+                  {
+                    type: "finish",
+                    finishReason: { unified: "stop", raw: undefined },
+                    logprobs: undefined,
+                    usage: {
+                      inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+                      outputTokens: { total: 20, text: 20, reasoning: undefined },
+                    },
+                  },
+                ],
+              }),
+            };
+          }
+
+          if (userText.includes("[Interactive Response]")) {
+            return {
+              stream: simulateReadableStream({
+                chunks: [
+                  { type: "text-start", id: "text-0" },
+                  {
+                    type: "text-delta",
+                    id: "text-0",
+                    delta: "收到你的互动结果，我们继续往下看下一步判断。",
+                  },
+                  { type: "text-end", id: "text-0" },
                   {
                     type: "finish",
                     finishReason: { unified: "stop", raw: undefined },
@@ -321,6 +346,9 @@ function getMockProvider(): (modelId: string) => LanguageModel {
           }
 
           if (userText.includes("[Continue] 开始教学知识点")) {
+            const html =
+              '<div id="quiz"><h3>现金流小测</h3><p>先存钱再消费，会优先锁定结余。</p><button id="optA">先消费再存钱</button><button id="optB">先存钱再消费</button><p id="feedback"></p></div>' +
+              '<script>document.getElementById("optA").addEventListener("click",function(){document.getElementById("feedback").textContent="再想想，结余容易被消费挤掉。"});document.getElementById("optB").addEventListener("click",function(){document.getElementById("feedback").textContent="正确，先锁定结余更稳定。"})</script>';
             return {
               stream: simulateReadableStream({
                 chunks: [
@@ -329,9 +357,17 @@ function getMockProvider(): (modelId: string) => LanguageModel {
                     type: "text-delta",
                     id: "text-0",
                     delta:
-                      "路线已经准备好。我们先从个人现金流开始：你觉得每个月先存钱再消费，和先消费再存钱，长期差别会在哪里？",
+                      "路线已经准备好。我们先从个人现金流开始，先做一个小互动。",
                   },
                   { type: "text-end", id: "text-0" },
+                  {
+                    type: "tool-call",
+                    toolCallId: "call-first-lesson-interactive",
+                    toolName: "renderUI",
+                    input: JSON.stringify({
+                      blocks: [{ type: "interactive", html }],
+                    }),
+                  },
                   {
                     type: "finish",
                     finishReason: { unified: "stop", raw: undefined },
@@ -342,6 +378,7 @@ function getMockProvider(): (modelId: string) => LanguageModel {
                     },
                   },
                 ],
+                chunkDelayInMs: 350,
               }),
             };
           }

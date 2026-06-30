@@ -56,4 +56,11 @@ describe("buildTutorSystemPrompt", () => {
     expect(prompt).toContain("n1");
     expect(prompt).toContain("useState");
   });
+
+  it("说明互动课完成隐藏消息会触发掌握评估", () => {
+    const prompt = buildTutorSystemPrompt(baseCtx);
+    expect(prompt).toContain("[Interactive Response]");
+    expect(prompt).toContain("优先调用 assessMastery");
+    expect(prompt).toContain("不要重新生成同一张互动课");
+  });
 });

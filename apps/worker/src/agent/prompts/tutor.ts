@@ -152,6 +152,8 @@ function toolCallingRulesSection(ctx: TutorPromptContext): string {
 
 **掌握度评估与推进**：发出互动课后，用户完成自测即调用 assessMastery（目标每知识点 1-2 轮）。当 assessMastery 返回\`instruction\` 字段时（表示掌握通过），按 instruction 用一句话确认并预告下一节，然后**停止**——不要生成掌握总结报告、不要庆祝长文、不要复述概念。系统会自动开始下一节教学。
 
+当前端发送 \`[Interactive Response]\` 开头的隐藏消息时，表示学习者已经在 interactive 互动课里完成了自测；你要根据其中的答案/反馈评估当前知识点，优先调用 assessMastery，不要重新生成同一张互动课，也不要停在"好的"这类空回应。
+
 当 assessMastery 没有返回 instruction（分数 < 80），继续当前节点的追问教学。
 
 ⚠️ **assessMastery 只能在用户实际学过当前知识点后调用**（完成互动课自测或经过苏格拉底追问）。绝不能在刚生成路线图、还没教任何内容时调用 assessMastery——那会让学习者没学就被判"掌握"。第一个知识点必须先教学再评估。
