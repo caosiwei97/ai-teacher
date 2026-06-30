@@ -7,19 +7,23 @@ import {
   type AssessmentCardProps,
 } from "@/components/chat/assessment-card";
 import { ChatArea } from "@/components/chat/chat-area";
+import { ChatInput } from "@/components/chat/chat-input";
 import { QuickQuestion } from "@/components/chat/quick-question";
+import type { TeachingMode } from "@/components/chat/mode-selector";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import type { MessageMetadata, DiagnosticQuestionsData, AnnotationData } from "@/hooks/use-chat-stream";
 import {
   fetchSession,
   fetchSessions,
   getLlmConfigs,
+  getEnvStatus,
+  createSession,
   type LlmConfig,
 } from "@/lib/api-client";
 import { useSession } from "@/contexts/session-context";
 import { SandboxProvider } from "@/contexts/sandbox-context";
 import type { UIMessage } from "ai";
-import { GraduationCap, PanelRightClose, MapPin } from "lucide-react";
+import { GraduationCap, PanelRightClose, MapPin, ArrowRight } from "lucide-react";
 import { ModeTabs, type ActiveMode } from "@/components/layout/mode-tabs";
 
 const USER_ID = "seed-user-ai-teacher";
@@ -32,6 +36,143 @@ const fallbackTopics = [
   { id: "t5", title: "个人投资理财入门" },
   { id: "t6", title: "自媒体运营与个人品牌" },
 ];
+
+// 落地页推荐主题（与 fallbackTopics 同源，LandingView 用）
+const suggestedTopics = fallbackTopics.map((t) => t.title);
+
+// ─── 壳组件：路由入口，按有无 sessionId 分发引导态/聊天态 ───
+export function Component() {
+  const { sessionId } = useParams<{ sessionId: string }>();
+  // /learn 无 id → LandingView（引导态）；/learn/:id → ChatView（聊天态）
+  return sessionId ? <ChatView sessionId={sessionId} /> : <LandingView />;
+}
+
+// ─── LandingView：引导态（无 sessionId），居中输入框 + 引导文字，发消息才建会话 ───
+function LandingView() {
+  const navigate = useNavigate();
+  const { sessions, setSessions } = useSession();
+  const [topic, setTopic] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [leaving, setLeaving] = useState(false); // 过渡态：发消息时淡出引导
+  const [teachingMode, setTeachingMode] = useState<TeachingMode>("warm");
+  const [llmConfigs, setLlmConfigs] = useState<LlmConfig[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | undefined>(undefined);
+  const [hasEnvConfig, setHasEnvConfig] = useState(true);
+
+  useEffect(() => {
+    getLlmConfigs(USER_ID)
+      .then((data) => {
+        setLlmConfigs(data.configs);
+        const def = data.configs.find((c) => c.isDefault) ?? data.configs[0];
+        setSelectedConfigId(def?.id);
+      })
+      .catch(() => setLlmConfigs([]));
+    getEnvStatus()
+      .then((s) => setHasEnvConfig(s.hasDefaultDbConfig || s.hasEnvConfig))
+      .catch(() => setHasEnvConfig(false));
+  }, []);
+
+  // 发消息才建会话：输入首条消息 → POST /api/sessions（topic=未命名对话 + teachingMode）拿 id → 跳转带 firstMessage
+  // 过渡态：先淡出引导（leaving=true），建会话完成后 navigate 到 ChatView（输入框在底部淡入）
+  async function sendMessage(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || creating) return;
+    setCreating(true);
+    setLeaving(true);
+    try {
+      const newSession = await createSession(USER_ID, "未命名对话", teachingMode);
+      setSessions((prev) => [newSession, ...prev]);
+      navigate(`/learn/${newSession.id}`, {
+        state: { firstMessage: trimmed, teachingMode },
+        replace: true,
+      });
+    } catch (err) {
+      console.error("Failed to create session:", err);
+      setCreating(false);
+      setLeaving(false);
+    }
+  }
+
+  const learningSession = sessions.find(
+    (s) => s.status === "active" || s.status === "diagnosing",
+  );
+  const disabled = llmConfigs.length === 0 && !hasEnvConfig;
+
+  return (
+    <div
+      className={`flex h-full flex-col items-center justify-center px-6 py-10 transition-all duration-500 ${leaving ? "opacity-0 translate-y-4" : "opacity-100"}`}
+    >
+      <div className="w-full max-w-2xl">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+            <GraduationCap className="h-7 w-7 text-primary" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            真正掌握，而不只是看过
+          </h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            从零到精通，AI 私教带你学 · 固 · 验，三阶段闭环让知识真正留下
+          </p>
+        </div>
+
+        <div className="mb-4">
+          <ChatInput
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendMessage(topic);
+            }}
+            onStop={() => {}}
+            isLoading={creating}
+            disabled={disabled}
+            teachingMode={teachingMode}
+            onTeachingModeChange={setTeachingMode}
+            currentModel={llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel}
+            llmConfigs={llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault }))}
+            selectedConfigId={selectedConfigId}
+            onModelChange={setSelectedConfigId}
+            frameless
+          />
+        </div>
+
+        <div className="mb-10 flex flex-wrap justify-center gap-2">
+          {suggestedTopics.map((t) => (
+            <button
+              key={t}
+              onClick={() => sendMessage(t)}
+              disabled={creating}
+              className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-secondary hover:text-foreground disabled:opacity-40"
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {learningSession && (
+          <div className="mb-8 flex justify-center">
+            <button
+              onClick={() => navigate(`/learn/${learningSession.id}`, { replace: true })}
+              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            >
+              <span>继续上次学习：{learningSession.topic}</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* 三阶段闭环示意 */}
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span className="rounded-lg bg-card px-3 py-2">🌱 学习</span>
+          <span className="text-muted-foreground/40">→</span>
+          <span className="rounded-lg bg-card px-3 py-2">🔁 复习</span>
+          <span className="text-muted-foreground/40">→</span>
+          <span className="rounded-lg bg-card px-3 py-2">🔥 面试</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface NodeInfo {
   id: string;
@@ -159,12 +300,10 @@ function getDiagnosticQuestionsFromMetadata(metadata: unknown): DiagnosticQuesti
   return undefined;
 }
 
-export function Component() {
-  const params = useParams<{ sessionId: string }>();
+// ─── ChatView：聊天态（有 sessionId），现有 learn 主体逻辑 ───
+function ChatView({ sessionId }: { sessionId: string }) {
   const navigate = useNavigate();
-  const { setSessions, currentSessionId, refreshSessions } = useSession();
-
-  const sessionId = currentSessionId ?? params.sessionId!;
+  const { setSessions, refreshSessions } = useSession();
   const location = useLocation();
 
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
@@ -648,11 +787,6 @@ export function Component() {
     fetchInterviewResult();
   }, [activeMode, sessionId, chat.messages, fetchInterviewResult]);
 
-  function handleTopicClick(topic: string) {
-    optimisticUpdateTopic(topic);
-    chat.submitMessage(topic);
-  }
-
   // 落地页发首条消息后自动接续流：新会话且带 firstMessage 时立即发起 chat 流
   // 首条消息即触发 agent 诊断，messages 瞬间非空，无空态→hero→消息三态跳变
   useEffect(() => {
@@ -889,7 +1023,7 @@ export function Component() {
           </div>
           <button
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/learn")}
             className="mt-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             返回首页
@@ -956,30 +1090,10 @@ export function Component() {
           onChange={handleModeChange}
         />
         {isNewSession ? (
+          // 新会话：不传 welcomeContent（引导文字/标签已在 LandingView 展示，进入聊天态后隐藏）
+          // firstMessage 立即触发 chat 流，messages 瞬间非空；空态时用 ChatArea 默认 fallback 兜底
           <>
-            <ChatArea
-              {...chatAreaProps}
-              welcomeContent={
-                // 精简引导：仅当无 firstMessage 直接进入空会话时显示（落地页已展示 hero，此处不重复）
-                // 正常路径 firstMessage 立即触发 chat 流，messages 瞬间非空，此内容不显示
-                <div className="flex flex-col items-center pt-16 pb-8">
-                  <p className="text-sm text-muted-foreground">输入你想学的主题开始吧</p>
-                  <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
-                  <div className="mt-3 flex flex-wrap justify-center gap-2">
-                    {fallbackTopics.map((topic) => (
-                      <button
-                        key={topic.id}
-                        onClick={() => handleTopicClick(topic.title)}
-                        disabled={chat.isLoading}
-                        className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-secondary hover:text-foreground disabled:opacity-50"
-                      >
-                        {topic.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              }
-            />
+            <ChatArea {...chatAreaProps} />
             <QuickQuestion sessionId={sessionId} />
           </>
         ) : (

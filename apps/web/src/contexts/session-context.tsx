@@ -81,8 +81,8 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
     navigate(`/learn/${id}`, { replace: true });
   }, [navigate]);
 
-  // 「新对话」按钮：0 对话时提示「当前已是新对话」（/ 页即新对话入口，无需跳转）；
-  // 有对话时跳回 / 页，用户在 / 页输入首条消息才建会话（发消息才产生对话 id）
+  // 「新对话」按钮：0 对话时提示「当前已是新对话」（/learn 即新对话入口，无需跳转）；
+  // 有对话时跳回 /learn（无 id 引导态），用户输入首条消息才建会话（发消息才产生对话 id）
   const createNewSession = useCallback(() => {
     if (sessions.length === 0) {
       setNewSessionHint("当前已是新对话");
@@ -90,7 +90,7 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
       return;
     }
     setCurrentSessionId(null);
-    navigate("/", { replace: true });
+    navigate("/learn", { replace: true });
   }, [navigate, sessions.length]);
 
   const archiveSession = useCallback(
@@ -104,9 +104,9 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
           setCurrentSessionId(next.id);
           navigate(`/learn/${next.id}`, { replace: true });
         } else {
-          // 删完所有会话 → 回落地页（/），不创建本地空会话
+          // 删完所有会话 → 回引导态（/learn 无 id），不创建本地空会话
           setCurrentSessionId(null);
-          navigate("/", { replace: true });
+          navigate("/learn", { replace: true });
         }
       }
 
