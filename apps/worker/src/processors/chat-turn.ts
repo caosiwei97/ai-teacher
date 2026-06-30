@@ -96,7 +96,7 @@ async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
       apiKey,
       baseUrl: resolved.config.baseUrl ?? undefined,
     });
-    const { fallbackModelId, fallbackConfig } = await resolveFallbackConfigs(prisma, resolved.config);
+      const { fallbackModelId, fallbackConfig } = await resolveFallbackConfigs(prisma, resolved.config, "seed-user-ai-teacher");
     const job: LlmJobConfig = {
       providerFn,
       sandboxModel: resolved.config.defaultModel,

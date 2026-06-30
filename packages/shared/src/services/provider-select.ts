@@ -49,15 +49,16 @@ export async function resolveProviderConfig(
   return { source: "env-fallback", config: null };
 }
 
-/** 解析 fallback 配置链：返回 fallbackModelId + fallbackConfig（跨 config） */
+/** 解析单层 fallback：返回 fallbackModelId（同 config 换模型）+ fallbackConfig（跨 config，仅解析一层不递归） */
 export async function resolveFallbackConfigs(
   prisma: PrismaClient,
   config: RawLlmConfig,
+  userId: string,
 ): Promise<{ fallbackModelId: string | null; fallbackConfig: RawLlmConfig | null }> {
   let fallbackConfig: RawLlmConfig | null = null;
   if (config.fallbackLlmConfigId) {
     const fc = await prisma.llmConfig.findFirst({
-      where: { id: config.fallbackLlmConfigId },
+      where: { id: config.fallbackLlmConfigId, userId },
       select: { id: true, provider: true, encryptedKey: true, baseUrl: true, defaultModel: true, isDefault: true, fallbackModelId: true, fallbackLlmConfigId: true },
     });
     if (fc) fallbackConfig = fc;
