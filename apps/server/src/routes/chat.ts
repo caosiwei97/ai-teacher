@@ -7,8 +7,6 @@ import { prisma } from "@ai-teacher/db";
 import { chatQueue } from "../services/queue";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
-const DEFAULT_USER_ID = "seed-user-ai-teacher";
-
 
 const chatRequestSchema = z.object({
   sessionId: z.string().min(1),
@@ -21,7 +19,6 @@ const chatRequestSchema = z.object({
     )
     .min(1),
   hidden: z.boolean().optional().default(false),
-  teachingMode: z.enum(["warm", "strict", "interviewer"]).optional(),
   llmConfigId: z.string().optional(),
 });
 
@@ -95,10 +92,10 @@ function subscribeAndStream(c: any, sessionId: string) {
 
 export const chatRoute = new Hono()
   .post("/", zValidator("json", chatRequestSchema), async (c) => {
-    const { sessionId, messages, hidden, teachingMode, llmConfigId } = c.req.valid("json");
+    const { sessionId, messages, hidden, llmConfigId } = c.req.valid("json");
     const userMessage = messages[messages.length - 1].content;
 
-    let session = await prisma.session.findUnique({
+    const session = await prisma.session.findUnique({
       where: { id: sessionId },
       include: {
         roadmap: {
@@ -107,34 +104,10 @@ export const chatRoute = new Hono()
       },
     });
 
-    // Auto-create session if not found (empty conversation flow)
+    // 会话必须由前端「发消息才建会话」路径（POST /api/sessions）预先创建。
+    // 不存在则返回 404，让前端漏建暴露为可排查错误，而非静默兜底创建掩盖 bug。
     if (!session) {
-      const userId = DEFAULT_USER_ID;
-
-      // Ensure user exists (auto-create if needed)
-      await prisma.user.upsert({
-        where: { id: userId },
-        update: {},
-        create: { id: userId, name: "AI Teacher User" },
-      });
-
-      session = await prisma.session.create({
-        data: {
-          id: sessionId,
-          userId,
-          topic: userMessage,
-          teachingMode: teachingMode ?? "warm",
-          status: "active",
-          roadmap: {
-            create: {},
-          },
-        },
-        include: {
-          roadmap: {
-            include: { nodes: { orderBy: { index: "asc" as const } } },
-          },
-        },
-      });
+      return c.json({ error: "Session not found" }, 404);
     }
 
     const message = await prisma.message.create({
@@ -148,7 +121,7 @@ export const chatRoute = new Hono()
       },
     });
 
-    const roadmapNodes = session!.roadmap?.nodes?.map((n) => ({
+    const roadmapNodes = session.roadmap?.nodes?.map((n) => ({
       id: n.id,
       index: n.index,
       title: n.title,
@@ -167,12 +140,12 @@ export const chatRoute = new Hono()
       userContent: userMessage,
       messages,
       hidden: hidden ?? false,
-      topic: session!.topic,
-      teachingMode: session!.teachingMode ?? "warm",
-      activeMode: session!.activeMode,
-      userId: session!.userId,
+      topic: session.topic,
+      teachingMode: session.teachingMode ?? "warm",
+      activeMode: session.activeMode,
+      userId: session.userId,
       roadmapNodes,
-      llmConfigId: llmConfigId ?? session!.llmConfigId,
+      llmConfigId: llmConfigId ?? session.llmConfigId,
     });
 
     return subscribeAndStream(c, sessionId);

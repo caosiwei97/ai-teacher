@@ -16,6 +16,37 @@ export async function fetchSessions(userId: string) {
   }>;
 }
 
+// 创建会话（先建后端再跳转，替代前端生成空 id 的旧机制）
+export async function createSession(userId: string, topic: string) {
+  const res = await fetch("/api/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, topic }),
+  });
+  if (!res.ok) throw new Error("Failed to create session");
+  const data = await res.json() as {
+    session: {
+      id: string;
+      topic: string;
+      status: string;
+      activeMode: "learning" | "review" | "interview";
+      roadmap: { nodes: Array<{ id: string; index: number; status: string }> } | null;
+    };
+  };
+  const nodes = data.session.roadmap?.nodes ?? [];
+  return {
+    id: data.session.id,
+    topic: data.session.topic,
+    status: data.session.status,
+    activeMode: data.session.activeMode,
+    progress: {
+      totalNodes: nodes.length,
+      masteredNodes: nodes.filter((n) => n.status === "mastered").length,
+      currentNodeId: nodes.find((n) => n.status === "in_progress")?.id ?? null,
+    },
+  };
+}
+
 export async function fetchSession(sessionId: string) {
   const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`);
   if (!res.ok) {

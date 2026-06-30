@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Plus, Archive, Settings, MessageSquare } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronLeft, Plus, Archive, Settings, MessageSquare } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Link } from "react-router";
@@ -32,6 +33,7 @@ interface LeftSidebarProps {
   onToggle?: () => void;
   onNewSession?: () => void;
   onArchiveSession?: (id: string) => void;
+  newSessionHint?: string | null;
 }
 
 export function LeftSidebar({
@@ -42,10 +44,14 @@ export function LeftSidebar({
   onToggle,
   onNewSession,
   onArchiveSession,
+  newSessionHint,
 }: LeftSidebarProps) {
-  const newSessions = sessions.filter((s) => s.status === "new");
+  // 分类：学习中（active/diagnosing）/ 已完成（completed）。无数据时也展示分类骨架 + 暂无
   const active = sessions.filter((s) => s.status === "active" || s.status === "diagnosing");
   const completed = sessions.filter((s) => s.status === "completed");
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const toggleGroup = (key: string) =>
+    setCollapsedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   if (collapsed) {
     return (
@@ -126,138 +132,126 @@ export function LeftSidebar({
             <Plus className="h-4 w-4" />
             新对话
           </button>
+          {newSessionHint && (
+            <p className="mt-1.5 px-2 text-center text-[11px] text-sidebar-muted">
+              {newSessionHint}
+            </p>
+          )}
         </div>
       )}
 
       <div className="flex-1 overflow-y-auto px-3 pb-4">
-        {newSessions.length > 0 && (
-          <div className="mb-5">
-            <h3 className="mb-2 px-2 text-[11px] font-medium uppercase tracking-widest text-sidebar-muted">
-              新对话
-            </h3>
-            {newSessions.map((s) => {
-              const isActive = s.id === currentSessionId;
-              const isLastSessionAndNew = sessions.length === 1 && s.status === "new";
-              return (
-                <div key={s.id} className="group relative mb-1">
-                  <button
-                    onClick={() => onSelect(s.id)}
-                    className={cn(
-                      "w-full rounded-lg px-3 py-2.5 text-left transition-all duration-150",
-                      isActive
-                        ? "bg-sidebar-active text-sidebar-accent-foreground border-l-2 border-sidebar-accent"
-                        : "text-sidebar-foreground hover:bg-sidebar-hover",
-                    )}
-                  >
-                    <p className="truncate text-[13px] font-medium leading-snug pr-6">
-                      <span className="mr-1.5">{modeIcon(s.activeMode)}</span>
-                      {s.topic}
-                    </p>
-                  </button>
-                  {onArchiveSession && !isLastSessionAndNew && (
+        {/* 学习中分类（active/diagnosing）：可折叠，空时显示「暂无对话」 */}
+        <div className="mb-5">
+          <button
+            onClick={() => toggleGroup("active")}
+            className="mb-2 flex w-full items-center gap-1 px-2 text-[11px] font-medium uppercase tracking-widest text-sidebar-muted hover:text-sidebar-foreground"
+          >
+            {collapsedGroups.active ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            学习中
+            <span className="ml-auto normal-case tracking-normal opacity-60">{active.length}</span>
+          </button>
+          {!collapsedGroups.active && (
+            active.length > 0 ? (
+              active.map((s) => {
+                const isActive = s.id === currentSessionId;
+                const progress = s.progress.totalNodes > 0
+                  ? Math.round((s.progress.masteredNodes / s.progress.totalNodes) * 100)
+                  : 0;
+                return (
+                  <div key={s.id} className="group relative mb-1">
                     <button
-                      onClick={(e) => { e.stopPropagation(); onArchiveSession(s.id); }}
-                      className="absolute right-2 top-2.5 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                      onClick={() => onSelect(s.id)}
+                      className={cn(
+                        "w-full rounded-lg px-3 py-2.5 text-left transition-all duration-150",
+                        isActive
+                          ? "bg-sidebar-active text-sidebar-accent-foreground border-l-2 border-sidebar-accent"
+                          : "text-sidebar-foreground hover:bg-sidebar-hover",
+                      )}
                     >
-                      <Archive className="h-3.5 w-3.5" />
+                      <p className="truncate text-[13px] font-medium leading-snug pr-6">
+                        <span className="mr-1.5">{modeIcon(s.activeMode)}</span>
+                        {s.topic}
+                      </p>
+                      {s.progress.totalNodes > 0 ? (
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div className="h-1 flex-1 rounded-full bg-sidebar-hover">
+                            <div
+                              className="h-1 rounded-full transition-all"
+                              style={{ width: `${progress}%`, background: modeColorVar(s.activeMode) }}
+                            />
+                          </div>
+                          <span className={cn("text-[10px]", isActive ? "text-sidebar-accent-foreground/70" : "text-sidebar-muted")}>
+                            {s.progress.masteredNodes}/{s.progress.totalNodes}
+                          </span>
+                        </div>
+                      ) : s.status === 'diagnosing' ? (
+                        <span className={cn("mt-1 inline-block text-[10px]", isActive ? "text-sidebar-accent-foreground/70" : "text-sidebar-muted")}>
+                          诊断中…
+                        </span>
+                      ) : null}
                     </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {active.length > 0 && (
-          <div className="mb-5">
-            <h3 className="mb-2 px-2 text-[11px] font-medium uppercase tracking-widest text-sidebar-muted">
-              学习中
-            </h3>
-            {active.map((s) => {
-              const isActive = s.id === currentSessionId;
-              const progress = s.progress.totalNodes > 0
-                ? Math.round((s.progress.masteredNodes / s.progress.totalNodes) * 100)
-                : 0;
-              return (
+                    {onArchiveSession && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onArchiveSession(s.id); }}
+                        className="absolute right-2 top-2.5 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                      >
+                        <Archive className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <p className="px-3 py-2 text-[12px] text-sidebar-muted/60">暂无对话</p>
+            )
+          )}
+        </div>
+
+        {/* 已完成分类（completed）：可折叠，空时显示「暂无对话」 */}
+        <div>
+          <button
+            onClick={() => toggleGroup("completed")}
+            className="mb-2 flex w-full items-center gap-1 px-2 text-[11px] font-medium uppercase tracking-widest text-sidebar-muted hover:text-sidebar-foreground"
+          >
+            {collapsedGroups.completed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            已完成
+            <span className="ml-auto normal-case tracking-normal opacity-60">{completed.length}</span>
+          </button>
+          {!collapsedGroups.completed && (
+            completed.length > 0 ? (
+              completed.map((s) => (
                 <div key={s.id} className="group relative mb-1">
                   <button
                     onClick={() => onSelect(s.id)}
                     className={cn(
-                      "w-full rounded-lg px-3 py-2.5 text-left transition-all duration-150",
-                      isActive
-                        ? "bg-sidebar-active text-sidebar-accent-foreground border-l-2 border-sidebar-accent"
-                        : "text-sidebar-foreground hover:bg-sidebar-hover",
+                      "w-full rounded-lg px-3 py-2 text-left transition-all duration-150",
+                      s.id === currentSessionId
+                        ? "bg-sidebar-active text-sidebar-accent-foreground"
+                        : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground",
                     )}
                   >
-                    <p className="truncate text-[13px] font-medium leading-snug pr-6">
-                      <span className="mr-1.5">{modeIcon(s.activeMode)}</span>
-                      {s.topic}
-                    </p>
-                    {s.progress.totalNodes > 0 ? (
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <div className="h-1 flex-1 rounded-full bg-sidebar-hover">
-                          <div
-                            className="h-1 rounded-full transition-all"
-                            style={{ width: `${progress}%`, background: modeColorVar(s.activeMode) }}
-                          />
-                        </div>
-                        <span className={cn("text-[10px]", isActive ? "text-sidebar-accent-foreground/70" : "text-sidebar-muted")}>
-                          {s.progress.masteredNodes}/{s.progress.totalNodes}
-                        </span>
-                      </div>
-                    ) : s.status === 'diagnosing' ? (
-                      <span className={cn("mt-1 inline-block text-[10px]", isActive ? "text-sidebar-accent-foreground/70" : "text-sidebar-muted")}>
-                        诊断中…
-                      </span>
-                    ) : null}
+                    <div className="flex items-center gap-2 pr-6">
+                      <span className="shrink-0 text-xs">{modeIcon(s.activeMode)}</span>
+                      <p className="truncate text-[13px]">{s.topic}</p>
+                      <span className="ml-auto shrink-0 text-[10px] text-sidebar-muted">✓</span>
+                    </div>
                   </button>
                   {onArchiveSession && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onArchiveSession(s.id); }}
-                      className="absolute right-2 top-2.5 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                      className="absolute right-2 top-2 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                     >
                       <Archive className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {completed.length > 0 && (
-          <div>
-            <h3 className="mb-2 px-2 text-[11px] font-medium uppercase tracking-widest text-sidebar-muted">
-              已完成
-            </h3>
-            {completed.map((s) => (
-              <div key={s.id} className="group relative mb-1">
-                <button
-                  onClick={() => onSelect(s.id)}
-                  className={cn(
-                    "w-full rounded-lg px-3 py-2 text-left transition-all duration-150",
-                    s.id === currentSessionId
-                      ? "bg-sidebar-active text-sidebar-accent-foreground"
-                      : "text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-foreground",
-                  )}
-                >
-                  <div className="flex items-center gap-2 pr-6">
-                    <span className="shrink-0 text-xs">{modeIcon(s.activeMode)}</span>
-                    <p className="truncate text-[13px]">{s.topic}</p>
-                    <span className="ml-auto shrink-0 text-[10px] text-sidebar-muted">✓</span>
-                  </div>
-                </button>
-                {onArchiveSession && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onArchiveSession(s.id); }}
-                    className="absolute right-2 top-2 rounded p-1 text-sidebar-muted opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-                  >
-                    <Archive className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+              ))
+            ) : (
+              <p className="px-3 py-2 text-[12px] text-sidebar-muted/60">暂无对话</p>
+            )
+          )}
+        </div>
       </div>
 
       <div className="border-t border-sidebar-border px-3 py-3">

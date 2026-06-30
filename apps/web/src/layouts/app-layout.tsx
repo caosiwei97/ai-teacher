@@ -3,7 +3,7 @@ import { SessionContextProvider, useSession } from "@/contexts/session-context";
 import { ThreeColumnLayout } from "@/components/layout/three-column";
 
 function AppShell() {
-  const { sessions, currentSessionId, selectSession, createNewSession, archiveSession } = useSession();
+  const { sessions, currentSessionId, selectSession, createNewSession, archiveSession, newSessionHint } = useSession();
 
   return (
     <ThreeColumnLayout
@@ -12,6 +12,7 @@ function AppShell() {
       onSelectSession={selectSession}
       onNewSession={createNewSession}
       onArchiveSession={archiveSession}
+      newSessionHint={newSessionHint}
     >
       <Outlet />
     </ThreeColumnLayout>

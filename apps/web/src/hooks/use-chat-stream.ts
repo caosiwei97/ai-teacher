@@ -11,6 +11,8 @@ interface UseChatStreamOptions {
   onSessionUpdate?: (data: { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string }) => void;
   /** Fires when a node mastery transition is detected (assessMastery triggered roadmap-updated) */
   onMasteryTransition?: (nextNodeTitle?: string) => void;
+  /** Fires when worker generates a session title from the first message */
+  onTitleUpdate?: (title: string) => void;
 }
 
 interface SSEEvent {
@@ -299,6 +301,9 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
               } else if (event.type === "session-updated" && event.data) {
                 const data = event.data as { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string };
                 options?.onSessionUpdate?.(data);
+              } else if (event.type === "title-updated" && event.data) {
+                const data = event.data as { title?: string };
+                if (data.title) options?.onTitleUpdate?.(data.title);
               } else if (event.type === "error") {
                 const errorMsg =
                   typeof event.data === "string"
@@ -507,6 +512,9 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
             } else if (event.type === "session-updated" && event.data) {
               const data = event.data as { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string };
               options?.onSessionUpdate?.(data);
+            } else if (event.type === "title-updated" && event.data) {
+              const data = event.data as { title?: string };
+              if (data.title) options?.onTitleUpdate?.(data.title);
             } else if (event.type === "error") {
               const errorMsg =
                 typeof event.data === "string"

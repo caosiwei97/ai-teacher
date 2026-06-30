@@ -25,25 +25,20 @@ interface SessionContextValue {
   setSessions: React.Dispatch<React.SetStateAction<SessionInfo[]>>;
   currentSessionId: string | null;
   selectSession: (id: string) => void;
-  createNewSession: () => string;
+  createNewSession: () => void;
   archiveSession: (id: string) => void;
   refreshSessions: () => Promise<void>;
   sessionsLoaded: boolean;
+  newSessionHint: string | null;
 }
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined);
-
-function generateUUID(): string {
-  const hex = Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${(parseInt(hex[16], 16) & 0x3 | 0x8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
-}
 
 export function SessionContextProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [sessionsLoaded, setSessionsLoaded] = useState(false);
+  const [newSessionHint, setNewSessionHint] = useState<string | null>(null);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       const match = window.location.pathname.match(/^\/learn\/([^/]+)/);
@@ -86,18 +81,17 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
     navigate(`/learn/${id}`, { replace: true });
   }, [navigate]);
 
+  // 「新对话」按钮：0 对话时提示「当前已是新对话」（/ 页即新对话入口，无需跳转）；
+  // 有对话时跳回 / 页，用户在 / 页输入首条消息才建会话（发消息才产生对话 id）
   const createNewSession = useCallback(() => {
-    const currentSession = sessions.find((s) => s.id === currentSessionId);
-    if (currentSession && currentSession.status === "new") {
-      alert("当前对话已经是新对话");
-      return currentSessionId!;
+    if (sessions.length === 0) {
+      setNewSessionHint("当前已是新对话");
+      window.setTimeout(() => setNewSessionHint(null), 2500);
+      return;
     }
-
-    const newId = generateUUID();
-    setCurrentSessionId(newId);
-    navigate(`/learn/${newId}`, { replace: true });
-    return newId;
-  }, [sessions, currentSessionId, navigate]);
+    setCurrentSessionId(null);
+    navigate("/", { replace: true });
+  }, [navigate, sessions.length]);
 
   const archiveSession = useCallback(
     async (id: string) => {
@@ -136,8 +130,9 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
       archiveSession,
       refreshSessions,
       sessionsLoaded,
+      newSessionHint,
     }),
-    [sessions, currentSessionId, selectSession, createNewSession, archiveSession, refreshSessions, sessionsLoaded],
+    [sessions, currentSessionId, selectSession, createNewSession, archiveSession, refreshSessions, sessionsLoaded, newSessionHint],
   );
 
   return (

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { getEnvStatus } from "@/lib/api-client";
+import { getEnvStatus, createSession } from "@/lib/api-client";
 import { useSession } from "@/contexts/session-context";
-import { GraduationCap, ArrowRight } from "lucide-react";
+import { GraduationCap, ArrowRight, Loader2 } from "lucide-react";
+
+const USER_ID = "seed-user-ai-teacher";
 
 const suggestedTopics = [
   "AI 提示词工程",
@@ -13,18 +15,12 @@ const suggestedTopics = [
   "自媒体运营与个人品牌",
 ];
 
-function generateNewSessionId() {
-  const hex = Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${(parseInt(hex[16], 16) & 0x3 | 0x8).toString(16)}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
-}
-
 export function Component() {
   const navigate = useNavigate();
-  const { sessions } = useSession();
+  const { sessions, setSessions } = useSession();
   const [ready, setReady] = useState<boolean | null>(null);
   const [topic, setTopic] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -37,13 +33,23 @@ export function Component() {
     })();
   }, []);
 
-  function startLearning(topicText: string) {
-    const trimmed = topicText.trim();
-    if (!trimmed) return;
-    navigate(`/learn/${generateNewSessionId()}`, {
-      state: { topic: trimmed },
-      replace: true,
-    });
+  // 发消息才建会话：用户输入首条消息 → POST /api/sessions（topic=未命名对话）拿 id → 跳转带 firstMessage
+  // learn 页接收 firstMessage 立即发起 chat 流（首条即触发诊断），无空态闪烁
+  async function sendMessage(text: string) {
+    const trimmed = text.trim();
+    if (!trimmed || creating) return;
+    setCreating(true);
+    try {
+      const newSession = await createSession(USER_ID, "未命名对话");
+      setSessions((prev) => [newSession, ...prev]);
+      navigate(`/learn/${newSession.id}`, {
+        state: { firstMessage: trimmed },
+        replace: true,
+      });
+    } catch (err) {
+      console.error("Failed to create session:", err);
+      setCreating(false);
+    }
   }
 
   if (ready === null) {
@@ -105,22 +111,22 @@ export function Component() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            startLearning(topic);
+            sendMessage(topic);
           }}
           className="relative mb-4"
         >
           <input
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="输入你想学的主题，例如「React Hooks」"
+            placeholder="输入你想学的，或直接提问，例如「React Hooks」"
             className="w-full rounded-xl border border-border bg-card px-4 py-3.5 pr-12 text-[15px] text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
           <button
             type="submit"
-            disabled={!topic.trim()}
+            disabled={!topic.trim() || creating}
             className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
-            <ArrowRight className="h-4 w-4" />
+            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
           </button>
         </form>
 
@@ -128,8 +134,9 @@ export function Component() {
           {suggestedTopics.map((t) => (
             <button
               key={t}
-              onClick={() => startLearning(t)}
-              className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-secondary hover:text-foreground"
+              onClick={() => sendMessage(t)}
+              disabled={creating}
+              className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-secondary hover:text-foreground disabled:opacity-40"
             >
               {t}
             </button>

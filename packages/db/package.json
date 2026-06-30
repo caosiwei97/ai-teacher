@@ -10,6 +10,7 @@
     "migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
     "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
     "clean": "dotenv -e ../../.env -- tsx prisma/truncate.ts",
+    "cleanup-empty-sessions": "dotenv -e ../../.env -- tsx prisma/cleanup-empty-sessions.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

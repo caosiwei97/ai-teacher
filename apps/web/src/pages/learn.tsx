@@ -197,9 +197,9 @@ export function Component() {
   const [rightTab, setRightTab] = useState<"roadmap" | "code">("roadmap");
   const [activeMode, setActiveMode] = useState<ActiveMode>("learning");
   const location = useLocation();
-  // 落地页输入主题后传入，新会话进入时自动触发诊断流（删起步页后，BUG3 修复）
-  const [startupTopic, setStartupTopic] = useState<string | undefined>(
-    () => (location.state as { topic?: string } | null)?.topic,
+  // 落地页发首条消息后传入：新会话进入时立即发起 chat 流（首条即触发诊断），无空态闪烁
+  const [firstMessage, setFirstMessage] = useState<string | undefined>(
+    () => (location.state as { firstMessage?: string } | null)?.firstMessage,
   );
   const [reviewDueNodes, setReviewDueNodes] = useState<Array<{
     id: string;
@@ -332,6 +332,11 @@ export function Component() {
       setMasteryTransitionPending(true);
       setNextNodeTitle(title);
     },
+    onTitleUpdate: (title) => {
+      setSessions((prev) =>
+        prev.map((s) => (s.id === sessionId ? { ...s, topic: title } : s)),
+      );
+    },
   });
 
   useEffect(() => {
@@ -374,7 +379,7 @@ export function Component() {
       setReviewDueNodes([]);
       setInterviewResult(null);
       setRightTab("roadmap");
-      setStartupTopic(undefined);
+      setFirstMessage(undefined);
     }
     prevSessionRef.current = sessionId;
 
@@ -413,17 +418,16 @@ export function Component() {
               };
               setSessions([virtualSession, ...sessionsList]);
               setNodes(fetchedNodes);
+              const hasVisibleMessages = sessionData.session.messages.some(
+                (m) => (m.role === "learner" || m.role === "tutor") && !m.hidden,
+              );
+              setIsNewSession(!hasVisibleMessages);
             } else {
-              const virtualSession = {
-                id: sessionId,
-                topic: "新对话",
-                status: "new",
-                progress: { totalNodes: 0, masteredNodes: 0, currentNodeId: null },
-              };
-              setSessions([virtualSession, ...sessionsList]);
-              setNodes([]);
+              // session 不存在（DB 也无）—— 改造后落地页已先建，此处为异常路径
+              // 不再创建空占位会话，显示错误提示
+              setPageError("会话不存在，请返回首页重新开始");
+              setSessions(sessionsList);
             }
-            setIsNewSession(true);
             setLoaded(true);
           });
         }
@@ -445,7 +449,11 @@ export function Component() {
           setSessions(sessionsList);
           const loadedNodes = sessionData.session.roadmap?.nodes ?? [];
           setNodes(loadedNodes);
-          setIsNewSession(false);
+          // isNewSession 判定：无可见消息（落地页刚建的空会话）→ true，触发首屏 + 自动诊断
+          const hasVisibleMessages = sessionData.session.messages.some(
+            (m) => (m.role === "learner" || m.role === "tutor") && !m.hidden,
+          );
+          setIsNewSession(!hasVisibleMessages);
           setSelectedConfigId((sessionData.session as Record<string, unknown>).llmConfigId as string | undefined);
           setActiveMode(sessionData.session.activeMode);
 
@@ -643,15 +651,14 @@ export function Component() {
     chat.submitMessage(topic);
   }
 
-  // 落地页输入主题后自动触发诊断流（删起步页后，BUG3 修复）：
-  // 新会话且带 topic 时，自动发首条消息触发 agent 诊断题
+  // 落地页发首条消息后自动接续流：新会话且带 firstMessage 时立即发起 chat 流
+  // 首条消息即触发 agent 诊断，messages 瞬间非空，无空态→hero→消息三态跳变
   useEffect(() => {
-    if (!isNewSession || !startupTopic || chat.isLoading) return;
+    if (!isNewSession || !firstMessage || chat.isLoading) return;
     if (chat.messages.length > 0) return; // 已有消息则不重复触发
-    optimisticUpdateTopic(startupTopic);
-    chat.submitMessage(startupTopic);
-    setStartupTopic(undefined);
-  }, [isNewSession, startupTopic, chat.isLoading, chat.messages.length]);
+    chat.submitMessage(firstMessage);
+    setFirstMessage(undefined);
+  }, [isNewSession, firstMessage, chat.isLoading, chat.messages.length]);
 
   function getLastAssistantMessage() {
     for (let i = chat.messages.length - 1; i >= 0; i--) {
@@ -951,16 +958,10 @@ export function Component() {
             <ChatArea
               {...chatAreaProps}
               welcomeContent={
+                // 精简引导：仅当无 firstMessage 直接进入空会话时显示（落地页已展示 hero，此处不重复）
+                // 正常路径 firstMessage 立即触发 chat 流，messages 瞬间非空，此内容不显示
                 <div className="flex flex-col items-center pt-16 pb-8">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-                    <GraduationCap className="h-7 w-7 text-primary" />
-                  </div>
-                  <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                    真正掌握，而不只是看过
-                  </h1>
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    从零到精通，AI 私教带你学 · 固 · 验，三阶段闭环让知识真正留下
-                  </p>
+                  <p className="text-sm text-muted-foreground">输入你想学的主题开始吧</p>
                   <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
                   <div className="mt-3 flex flex-wrap justify-center gap-2">
                     {fallbackTopics.map((topic) => (
