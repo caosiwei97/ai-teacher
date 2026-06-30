@@ -81,17 +81,18 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
     navigate(`/learn/${id}`, { replace: true });
   }, [navigate]);
 
-  // 「新对话」按钮：0 对话时提示「当前已是新对话」（/learn 即新对话入口，无需跳转）；
-  // 有对话时跳回 /learn（无 id 引导态），用户输入首条消息才建会话（发消息才产生对话 id）
+  // 「新对话」按钮：已在 /learn 引导态且无对话时提示「当前已是新对话」无需跳转；
+  // 其他情况（含在 /settings 等非 learn 路由）跳回 /learn（无 id 引导态），
+  // 用户输入首条消息才建会话（发消息才产生对话 id）
   const createNewSession = useCallback(() => {
-    if (sessions.length === 0) {
+    if (sessions.length === 0 && pathname === "/learn") {
       setNewSessionHint("当前已是新对话");
       window.setTimeout(() => setNewSessionHint(null), 2500);
       return;
     }
     setCurrentSessionId(null);
     navigate("/learn", { replace: true });
-  }, [navigate, sessions.length]);
+  }, [navigate, sessions.length, pathname]);
 
   const archiveSession = useCallback(
     async (id: string) => {

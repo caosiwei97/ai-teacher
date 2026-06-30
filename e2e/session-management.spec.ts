@@ -106,6 +106,20 @@ test.describe("Session Management — Home Page", () => {
     const newBtn = page.locator("button", { hasText: "新对话" });
     await expect(newBtn).toBeVisible();
   });
+
+  test("should jump to /learn when clicking new session from settings", async ({
+    page,
+  }) => {
+    // 从 /settings 页点「新对话」按钮应跳回 /learn 引导态
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { name: "模型设置" })).toBeVisible({ timeout: 10000 });
+
+    const newBtn = page.locator("button", { hasText: "新对话" });
+    await expect(newBtn).toBeVisible();
+    await newBtn.click();
+
+    await expect(page).toHaveURL(/\/learn$/, { timeout: 10000 });
+  });
 });
 
 test.describe("Session Management — Left Sidebar", () => {
