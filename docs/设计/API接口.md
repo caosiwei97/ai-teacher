@@ -41,6 +41,7 @@
 | DELETE | `/api/llm/:id`                          | 删除 LLM 配置                   | ✅   |
 | POST   | `/api/llm/:id/test`                     | 测试 LLM 配置连通性             | ✅   |
 | GET    | `/api/llm/models`                       | 获取 Provider 预设模型列表      | ✅   |
+| POST   | `/api/llm/models/live`                  | 用 API Key 动态拉取可用模型     | ✅   |
 | GET    | `/api/chat/:sessionId/stream`           | SSE 流式重连（断线恢复）        | ✅   |
 | GET    | `/api/llm/env-status`                   | 检查环境默认 LLM 配置状态       | ✅   |
 
@@ -648,7 +649,29 @@ DELETE /api/llm/:id?userId=...
 POST /api/llm/:id/test?userId=...
 ```
 
-使用指定的 LLM 配置发送测试请求，验证 API Key 和端点可用性。返回 `{ success: true }` 或错误信息。
+使用指定的 LLM 配置发送测试请求（`generateText` + `prompt:"Hi"` + `maxOutputTokens:5`），验证 API Key 和端点可用性。
+
+**成功响应**：
+
+```json
+{ "success": true }
+```
+
+**失败响应**（HTTP 仍为 200，业务级失败）：
+
+```json
+{
+  "success": false,
+  "error": "API Key 无效或已过期，请检查密钥",
+  "detail": {
+    "statusCode": 401,
+    "url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "responseBody": "{\"error\":{\"message\":\"...\",\"code\":\"1211\"}}"
+  }
+}
+```
+
+`error` 为中文可读提示，按状态码映射：401/403 → 密钥问题；400 含"模型"→ 模型名错误；404 → Base URL 错误；429 → 限流/额度；5xx → 上游异常；无状态码 → 网络/连接问题。`detail` 透传 `APICallError` 的原始字段，前端展示为主消息 + 可折叠详情。
 
 ### 14.6 获取预设模型列表
 
@@ -669,7 +692,34 @@ GET /api/llm/models?provider=...
 }
 ```
 
-### 14.7 检查环境 LLM 配置状态
+### 14.7 动态拉取可用模型
+
+```
+POST /api/llm/models/live
+```
+
+用用户提供的 API Key 调用供应商的 `/models` 端点，返回该账号实际可用的模型 id 列表（OpenAI 兼容格式）。前端用于配置流程中"选择模型"步骤，替代静态预设列表，确保模型名准确且能跟上供应商新模型。拉取失败时前端回退到预设列表（14.6）。
+
+**请求体**：
+
+```json
+{ "provider": "zhipu", "apiKey": "sk-xxx", "baseUrl": "" }
+```
+
+`baseUrl` 可选，留空时用 `PROVIDER_PRESETS[provider].baseUrl`。
+
+**成功响应**：
+
+```json
+{
+  "success": true,
+  "models": ["glm-4.5", "glm-4.6", "glm-4.7", "glm-5", "glm-5.2"]
+}
+```
+
+**失败响应**（HTTP 200，业务级失败）：含中文 `error` + `detail`（statusCode/url/responseBody），映射规则同 14.5。前端收到失败后回退静态预设列表并展示警告。
+
+### 14.8 检查环境 LLM 配置状态
 
 ```
 GET /api/llm/env-status

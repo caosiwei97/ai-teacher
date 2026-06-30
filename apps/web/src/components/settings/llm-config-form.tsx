@@ -169,6 +169,8 @@ export function LlmConfigForm({ onCancel, onSuccess }: LlmConfigFormProps) {
           <div className="space-y-4">
             <ModelSelector
               provider={provider}
+              apiKey={apiKey}
+              baseUrl={selectedDisplay?.requiresBaseUrl ? baseUrl : undefined}
               value={defaultModel}
               onChange={setDefaultModel}
             />

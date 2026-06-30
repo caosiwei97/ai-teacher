@@ -7,7 +7,7 @@ import {
   PROVIDER_PRESETS,
 } from "@ai-teacher/shared";
 import { encrypt, decrypt, maskApiKey } from "@ai-teacher/shared/services/crypto";
-import { generateText } from "ai";
+import { generateText, APICallError } from "ai";
 import { createProviderForConfig } from "@ai-teacher/shared/services/provider-registry";
 
 const listQuerySchema = z.object({
@@ -29,6 +29,56 @@ const updateSchema = z.object({
 const providerQuerySchema = z.object({
   provider: z.string().min(1),
 });
+
+interface TestErrorDetail {
+  statusCode: number | undefined;
+  url: string | undefined;
+  responseBody: string | undefined;
+}
+
+// 把 LLM 调用异常转成可读中文提示 + 结构化详情，供前端展示
+function formatTestError(err: unknown): { message: string; detail?: TestErrorDetail } {
+  if (APICallError.isInstance(err)) {
+    const detail: TestErrorDetail = {
+      statusCode: err.statusCode,
+      url: err.url,
+      responseBody: err.responseBody,
+    };
+    const status = err.statusCode;
+    const body = (err.responseBody ?? "").toLowerCase();
+
+    // 401/403：鉴权问题
+    if (status === 401 || status === 403) {
+      return { message: "API Key 无效或已过期，请检查密钥", detail };
+    }
+    // 400 且上游报模型相关错误
+    if (status === 400 && (body.includes("model") || body.includes("模型"))) {
+      return { message: "模型不存在，请检查模型名是否正确", detail };
+    }
+    // 404：端点/路由不存在（如供应商不支持 Responses API）
+    if (status === 404) {
+      return { message: "接口不存在（404），请检查 Base URL 是否正确", detail };
+    }
+    // 429：限流
+    if (status === 429) {
+      return { message: "请求过于频繁或额度不足，请稍后再试", detail };
+    }
+    // 5xx：上游服务异常
+    if (status && status >= 500) {
+      return { message: `模型服务异常（${status}），请稍后再试`, detail };
+    }
+    // 其余有状态码的：回退原始 message
+    if (status) {
+      return { message: err.message, detail };
+    }
+    // 无状态码：网络/超时类（fetch 失败、连接拒绝等）
+    return { message: "无法连接服务，请检查 Base URL 或网络", detail };
+  }
+
+  // 非 APICallError：可能是解密失败、provider 构造失败等
+  const message = err instanceof Error ? err.message : "未知错误";
+  return { message };
+}
 
 export const llmConfigRoute = new Hono()
   // GET / — list user's configs (keys masked)
@@ -228,7 +278,66 @@ export const llmConfigRoute = new Hono()
 
       return c.json({ success: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const { message, detail } = formatTestError(err);
+      return c.json({ success: false, error: message, detail });
+    }
+  })
+
+  // 动态拉取供应商账号下可用模型（用 apiKey 调供应商 /models 端点）
+  .post("/models/live", zValidator("json", z.object({
+    provider: z.string().min(1),
+    apiKey: z.string().min(1),
+    baseUrl: z.string().url().optional().or(z.literal("")),
+  })), async (c) => {
+    const { provider, apiKey, baseUrl } = c.req.valid("json");
+
+    const preset = PROVIDER_PRESETS[provider];
+    const baseURL = (baseUrl || preset?.baseUrl || "").replace(/\/$/, "");
+    if (!baseURL) {
+      return c.json({ success: false, error: "无法确定 Base URL，请手动填写" });
+    }
+
+    const url = `${baseURL}/models`;
+    try {
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!res.ok) {
+        const responseBody = await res.text().catch(() => "");
+        const detail: TestErrorDetail = {
+          statusCode: res.status,
+          url,
+          responseBody: responseBody || undefined,
+        };
+        const status = res.status;
+        let message: string;
+        if (status === 401 || status === 403) {
+          message = "API Key 无效或已过期，请检查密钥";
+        } else if (status === 404) {
+          message = "供应商不支持模型列表接口（404），已显示预设模型";
+        } else if (status === 429) {
+          message = "请求过于频繁，请稍后再试";
+        } else if (status >= 500) {
+          message = `模型服务异常（${status}），请稍后再试`;
+        } else {
+          message = `获取模型列表失败（${status}）`;
+        }
+        return c.json({ success: false, error: message, detail });
+      }
+
+      const json = await res.json() as { data?: Array<{ id?: string }> };
+      const models = Array.isArray(json.data)
+        ? json.data.map((m) => m?.id).filter((id): id is string => typeof id === "string")
+        : [];
+
+      return c.json({ success: true, models });
+    } catch (err) {
+      // 网络/超时类错误（fetch 失败、连接拒绝等）
+      const message = err instanceof Error && err.name === "TimeoutError"
+        ? "请求超时，请检查 Base URL 或网络"
+        : "无法连接服务，请检查 Base URL 或网络";
       return c.json({ success: false, error: message });
     }
   })

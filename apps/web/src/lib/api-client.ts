@@ -192,18 +192,46 @@ export async function deleteLlmConfig(id: string, userId: string) {
   return res.json() as Promise<{ success: boolean }>;
 }
 
+export interface TestLlmConfigDetail {
+  statusCode: number | undefined;
+  url: string | undefined;
+  responseBody: string | undefined;
+}
+
 export async function testLlmConfig(id: string, userId: string) {
   const res = await fetch(`${LLM_BASE}/${encodeURIComponent(id)}/test?userId=${encodeURIComponent(userId)}`, {
     method: "POST",
   });
   if (!res.ok) throw new Error("Failed to test LLM config");
-  return res.json() as Promise<{ success: boolean; error?: string }>;
+  return res.json() as Promise<{ success: boolean; error?: string; detail?: TestLlmConfigDetail }>;
 }
 
 export async function getProviderModels(provider: string) {
   const res = await fetch(`${LLM_BASE}/models?provider=${encodeURIComponent(provider)}`);
   if (!res.ok) throw new Error("Failed to fetch provider models");
   return res.json() as Promise<{ provider: string; name: string; models: ModelInfo[] }>;
+}
+
+export interface LiveModelsResponse {
+  success: boolean;
+  models?: string[];
+  error?: string;
+  detail?: TestLlmConfigDetail;
+}
+
+// 用 apiKey 动态拉取供应商账号下可用模型 id 列表
+export async function fetchLiveModels(
+  provider: string,
+  apiKey: string,
+  baseUrl?: string,
+): Promise<LiveModelsResponse> {
+  const res = await fetch(`${LLM_BASE}/models/live`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider, apiKey, baseUrl: baseUrl || "" }),
+  });
+  if (!res.ok) throw new Error("Failed to fetch live models");
+  return res.json() as Promise<LiveModelsResponse>;
 }
 
 export async function getEnvStatus() {

@@ -254,7 +254,9 @@ export function createProviderForConfig(
     default: {
       const baseURL = baseUrl || PROVIDER_BASE_URLS[provider] || undefined;
       const openai = createOpenAI({ apiKey, baseURL });
-      return (modelId: string) => openai(modelId);
+      // 走 OpenAI Chat Completions（/chat/completions），不用默认的 Responses API（/responses）。
+      // 国产 OpenAI 兼容供应商（智谱/通义/Kimi/MiniMax/小米/自定义）普遍只实现了 chat 端点。
+      return (modelId: string) => openai.chat(modelId);
     }
   }
 }

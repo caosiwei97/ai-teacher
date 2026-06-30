@@ -1,43 +1,79 @@
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, Check, Loader2 } from "lucide-react";
+import { ChevronDown, Check, Loader2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getProviderModels, type ModelInfo } from "@/lib/api-client";
+import { getProviderModels, fetchLiveModels, type ModelInfo } from "@/lib/api-client";
+import { PROVIDER_PRESETS } from "@ai-teacher/shared";
 import { TIER_CONFIG } from "@/lib/llm-presets";
 
 interface ModelSelectorProps {
   provider: string;
+  apiKey: string;
+  baseUrl?: string;
   value: string;
   onChange: (modelId: string) => void;
 }
 
-export function ModelSelector({ provider, value, onChange }: ModelSelectorProps) {
+// 用预设元信息（label/tier/price）补充动态拉取的模型 id；匹配不上的给默认值
+function enrichModelIds(provider: string, ids: string[]): ModelInfo[] {
+  const presetModels = PROVIDER_PRESETS[provider]?.models ?? [];
+  const presetMap = new Map(presetModels.map((m) => [m.id, m]));
+  return ids.map((id) =>
+    presetMap.get(id) ?? { id, label: id, tier: "standard" as const, price: "" },
+  );
+}
+
+export function ModelSelector({ provider, apiKey, baseUrl, value, onChange }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [customInput, setCustomInput] = useState(value);
+  // 动态拉取失败时回退静态列表，并展示警告
+  const [fallback, setFallback] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isCustom = provider === "custom";
 
   useEffect(() => {
     if (isCustom) return;
+    if (!apiKey) return;
     let cancelled = false;
     setLoading(true);
-    setError(null);
-    getProviderModels(provider)
+    setFallback(false);
+
+    fetchLiveModels(provider, apiKey, baseUrl)
       .then((res) => {
-        if (!cancelled) setModels(res.models);
+        if (cancelled) return;
+        if (res.success && res.models && res.models.length > 0) {
+          setModels(enrichModelIds(provider, res.models));
+        } else {
+          // 拉取失败或空列表 → 回退静态预设列表
+          return getProviderModels(provider).then((presetRes) => {
+            if (!cancelled) {
+              setModels(presetRes.models);
+              setFallback(true);
+            }
+          });
+        }
       })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "获取模型列表失败");
+      .catch(() => {
+        if (cancelled) return;
+        // 网络异常 → 回退静态预设列表
+        return getProviderModels(provider)
+          .then((presetRes) => {
+            if (!cancelled) {
+              setModels(presetRes.models);
+              setFallback(true);
+            }
+          })
+          .catch(() => {
+            if (!cancelled) setModels([]);
+          });
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [provider, isCustom]);
+  }, [provider, apiKey, baseUrl, isCustom]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -57,11 +93,8 @@ export function ModelSelector({ provider, value, onChange }: ModelSelectorProps)
         <label className="text-xs font-medium text-muted-foreground">模型名称</label>
         <input
           type="text"
-          value={customInput}
-          onChange={(e) => {
-            setCustomInput(e.target.value);
-            onChange(e.target.value);
-          }}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
           placeholder="输入模型 ID，如 gpt-4o"
           className="w-full rounded-lg border border-input-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring"
         />
@@ -73,18 +106,22 @@ export function ModelSelector({ provider, value, onChange }: ModelSelectorProps)
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        加载模型列表…
+        正在获取账号可用模型…
       </div>
     );
-  }
-
-  if (error) {
-    return <p className="text-sm text-destructive">{error}</p>;
   }
 
   return (
     <div className="space-y-2" ref={containerRef}>
       <label className="text-xs font-medium text-muted-foreground">选择模型</label>
+
+      {fallback && (
+        <div className="flex items-center gap-1.5 rounded-md bg-yellow-500/10 px-2 py-1 text-[11px] text-yellow-500">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          未能获取最新模型列表，显示预设模型
+        </div>
+      )}
+
       <div className="relative">
         <button
           onClick={() => setOpen(!open)}
@@ -130,11 +167,16 @@ export function ModelSelector({ provider, value, onChange }: ModelSelectorProps)
                           {tier.label}
                         </span>
                       )}
-                      <span className="text-xs text-muted-foreground">{model.price}</span>
+                      {model.price && (
+                        <span className="text-xs text-muted-foreground">{model.price}</span>
+                      )}
                     </div>
                   </button>
                 );
               })}
+              {models.length === 0 && (
+                <p className="px-3 py-2 text-sm text-muted-foreground">未获取到可用模型</p>
+              )}
             </div>
           </div>
         )}

@@ -8,6 +8,7 @@ import {
   deleteLlmConfig,
   testLlmConfig,
   type LlmConfig,
+  type TestLlmConfigDetail,
 } from "@/lib/api-client";
 import { getProviderDisplay, getColorClasses } from "@/lib/llm-presets";
 import { LlmConfigForm } from "@/components/settings/llm-config-form";
@@ -20,7 +21,7 @@ export function Component() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [testingId, setTestingId] = useState<string | null>(null);
-  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; msg: string }>>({});
+  const [testResults, setTestResults] = useState<Record<string, { ok: boolean; msg: string; detail?: TestLlmConfigDetail }>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadConfigs = useCallback(async () => {
@@ -54,7 +55,11 @@ export function Component() {
       const res = await testLlmConfig(id, USER_ID);
       setTestResults((prev) => ({
         ...prev,
-        [id]: { ok: res.success, msg: res.success ? "连接成功" : res.error ?? "连接失败" },
+        [id]: {
+          ok: res.success,
+          msg: res.success ? "连接成功" : res.error ?? "连接失败",
+          detail: res.success ? undefined : res.detail,
+        },
       }));
     } catch (err) {
       setTestResults((prev) => ({
@@ -171,7 +176,7 @@ export function Component() {
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    <div className="relative flex shrink-0 items-center gap-1.5">
                       {testResult && (
                         <span
                           className={cn(
@@ -188,6 +193,36 @@ export function Component() {
                           )}
                           {testResult.msg}
                         </span>
+                      )}
+
+                      {testResult && !testResult.ok && testResult.detail && (
+                        <details className="group absolute right-0 top-full z-10 mt-1 w-72 rounded-lg border border-border bg-card p-3 text-[11px] shadow-lg">
+                          <summary className="cursor-pointer select-none font-medium text-muted-foreground">
+                            错误详情
+                          </summary>
+                          <div className="mt-2 space-y-1.5">
+                            {testResult.detail.statusCode !== undefined && (
+                              <div className="flex gap-2">
+                                <span className="shrink-0 text-muted-foreground">状态码</span>
+                                <span className="text-foreground">{testResult.detail.statusCode}</span>
+                              </div>
+                            )}
+                            {testResult.detail.url && (
+                              <div className="flex gap-2">
+                                <span className="shrink-0 text-muted-foreground">请求地址</span>
+                                <span className="break-all text-foreground">{testResult.detail.url}</span>
+                              </div>
+                            )}
+                            {testResult.detail.responseBody && (
+                              <div className="gap-2">
+                                <span className="text-muted-foreground">原始响应</span>
+                                <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-2 text-[10px] text-foreground">
+                                  {testResult.detail.responseBody}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        </details>
                       )}
 
                       {!cfg.isDefault && (
