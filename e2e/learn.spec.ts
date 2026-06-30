@@ -82,6 +82,17 @@ test.describe("Learn Page — Chat Input", () => {
     await expect(page.getByTestId("suggest-reply-button")).toBeVisible();
   });
 
+  test("should stack input above composer toolbar", async ({ page }) => {
+    await page.goto("/learn");
+    await expect(page.locator("textarea")).toBeVisible({ timeout: 10000 });
+
+    const textareaBox = await page.locator("textarea").boundingBox();
+    const toolbarBox = await page.getByTestId("chat-composer-toolbar").boundingBox();
+    expect(textareaBox).not.toBeNull();
+    expect(toolbarBox).not.toBeNull();
+    expect(toolbarBox!.y).toBeGreaterThan(textareaBox!.y);
+  });
+
   test("should keep multiline text above the composer toolbar", async ({ page }) => {
     await page.goto(LEARN_PATH);
     const textarea = page.locator("textarea");
@@ -94,6 +105,24 @@ test.describe("Learn Page — Chat Input", () => {
     expect(textareaBox).not.toBeNull();
     expect(toolbarBox).not.toBeNull();
     expect(textareaBox!.y + textareaBox!.height).toBeLessThanOrEqual(toolbarBox!.y + 1);
+  });
+
+  test("should render suggested topics as a three-column card grid on desktop", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/learn");
+    await expect(page.getByTestId("suggested-topic-grid")).toBeVisible({ timeout: 10000 });
+
+    const cards = page.getByTestId("suggested-topic-card");
+    await expect(cards).toHaveCount(6);
+
+    const boxes = await cards.evaluateAll((els) =>
+      els.map((el) => {
+        const rect = el.getBoundingClientRect();
+        return { x: Math.round(rect.x), y: Math.round(rect.y) };
+      }),
+    );
+    const firstRowY = boxes[0].y;
+    expect(boxes.filter((box) => Math.abs(box.y - firstRowY) <= 2)).toHaveLength(3);
   });
 });
 

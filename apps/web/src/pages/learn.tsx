@@ -30,17 +30,14 @@ const USER_ID = "seed-user-ai-teacher";
 const PENDING_FIRST_USER_ID = "pending-first-user";
 const PENDING_FIRST_ASSISTANT_ID = "pending-first-assistant";
 
-const fallbackTopics = [
-  { id: "t1", title: "AI 提示词工程" },
-  { id: "t2", title: "用 LangGraph 搭建 AI Agent" },
-  { id: "t3", title: "科学减脂与身材管理" },
-  { id: "t4", title: "情绪管理与压力释放" },
-  { id: "t5", title: "个人投资理财入门" },
-  { id: "t6", title: "自媒体运营与个人品牌" },
+const suggestedTopics = [
+  { title: "AI 提示词工程", meta: "AI 工具" },
+  { title: "用 LangGraph 搭建 AI Agent", meta: "工程实践" },
+  { title: "科学减脂与身材管理", meta: "健康生活" },
+  { title: "情绪管理与压力释放", meta: "心理成长" },
+  { title: "个人投资理财入门", meta: "财商基础" },
+  { title: "自媒体运营与个人品牌", meta: "内容增长" },
 ];
-
-// 落地页推荐主题（与 fallbackTopics 同源，LandingView 用）
-const suggestedTopics = fallbackTopics.map((t) => t.title);
 
 // ─── 壳组件：路由入口，按有无 sessionId 分发引导态/聊天态 ───
 export function Component() {
@@ -146,15 +143,24 @@ function LandingView() {
           />
         </div>
 
-        <div className="mb-10 flex flex-wrap justify-center gap-2">
+        <div
+          data-testid="suggested-topic-grid"
+          className="mb-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {suggestedTopics.map((t) => (
             <button
-              key={t}
-              onClick={() => sendMessage(t)}
+              key={t.title}
+              onClick={() => sendMessage(t.title)}
               disabled={creating}
-              className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-secondary hover:text-foreground disabled:opacity-40"
+              data-testid="suggested-topic-card"
+              className="group min-h-20 rounded-lg border border-border bg-card/70 px-4 py-3 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:bg-secondary hover:shadow-md disabled:opacity-40"
             >
-              {t}
+              <span className="text-[11px] font-medium text-muted-foreground transition-colors group-hover:text-primary">
+                {t.meta}
+              </span>
+              <span className="mt-1 block text-sm font-medium leading-snug text-foreground">
+                {t.title}
+              </span>
             </button>
           ))}
         </div>

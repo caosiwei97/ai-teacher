@@ -80,101 +80,104 @@ export function ChatInput({
       <form onSubmit={onSubmit} className="mx-auto max-w-3xl">
         <div
           data-testid="chat-composer"
-          className="rounded-[12px] border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input-bg)] transition-[border-color,box-shadow] duration-200 ease-in-out focus-within:border-[var(--color-chat-input-focus)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-ring)_25%,transparent)]"
+          className="rounded-[16px] border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input-bg)] transition-[border-color,box-shadow] duration-200 ease-in-out focus-within:border-[var(--color-chat-input-focus)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-ring)_25%,transparent)]"
         >
-          <div className="flex items-start">
-            {onTeachingModeChange && (
-              <div className="flex shrink-0 items-center pt-4 pl-4">
+          <textarea
+            value={value}
+            onChange={onChange}
+            onKeyDown={handleKeyDown}
+            placeholder={disabled ? "请先配置模型…" : "写下你的思考…"}
+            disabled={disabled}
+            rows={1}
+            className="block w-full resize-none bg-transparent px-5 pt-4 pb-2 text-[16px] leading-relaxed text-[var(--color-chat-input-text)] placeholder:text-[var(--color-chat-input-placeholder)] focus:outline-none focus-visible:shadow-none focus-visible:ring-0"
+            style={{ minHeight: "64px", maxHeight: "280px" }}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 280)}px`;
+            }}
+          />
+          <div
+            data-testid="chat-composer-toolbar"
+            className="flex min-h-13 flex-wrap items-center justify-between gap-2 px-3 pb-3"
+          >
+            <div className="flex min-w-0 flex-wrap items-center gap-1">
+              {onTeachingModeChange && (
                 <ModeSelector value={teachingMode} onChange={onTeachingModeChange} />
-              </div>
-            )}
-            <textarea
-              value={value}
-              onChange={onChange}
-              onKeyDown={handleKeyDown}
-              placeholder={disabled ? "请先配置模型…" : "写下你的思考…"}
-              disabled={disabled}
-              rows={1}
-              className="flex-1 resize-none bg-transparent px-4 pt-4 pb-2 text-[16px] leading-relaxed text-[var(--color-chat-input-text)] placeholder:text-[var(--color-chat-input-placeholder)] focus:outline-none focus-visible:shadow-none focus-visible:ring-0"
-              style={{ minHeight: "56px", maxHeight: "280px" }}
-              onInput={(e) => {
-                const el = e.currentTarget;
-                el.style.height = "auto";
-                el.style.height = `${Math.min(el.scrollHeight, 280)}px`;
-              }}
-            />
-          </div>
-          <div data-testid="chat-composer-toolbar" className="flex min-h-12 items-center justify-end gap-1 px-2 pb-2">
-            <SourceUploadPanel />
-            {currentModel && (
-              <div className="relative">
+              )}
+              <SourceUploadPanel />
+            </div>
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              {currentModel && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => llmConfigs && llmConfigs.length > 1 && setModelOpen(!modelOpen)}
+                    className="flex items-center gap-1 rounded-[8px] px-2 py-1 text-[11px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)]"
+                  >
+                    {currentModel}
+                    {llmConfigs && llmConfigs.length > 1 && <ChevronDown className="h-2.5 w-2.5" />}
+                  </button>
+                  {modelOpen && llmConfigs && llmConfigs.length > 1 && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setModelOpen(false)} />
+                      <div className="absolute right-0 bottom-full z-50 mb-1 rounded-lg border border-border bg-popover p-1 shadow-lg" style={{ minWidth: "160px" }}>
+                        {llmConfigs.map((config) => (
+                          <button
+                            key={config.id}
+                            type="button"
+                            onClick={() => {
+                              onModelChange?.(config.id);
+                              setModelOpen(false);
+                            }}
+                            className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
+                              config.id === selectedConfigId
+                                ? "bg-primary/10 text-primary"
+                                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                            }`}
+                          >
+                            <span className="flex-1 truncate">{config.defaultModel}</span>
+                            {config.isDefault && (
+                              <span className="text-[10px] text-muted-foreground">默认</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+              {shouldShowSuggestion && (
                 <button
                   type="button"
-                  onClick={() => llmConfigs && llmConfigs.length > 1 && setModelOpen(!modelOpen)}
-                  className="flex items-center gap-1 rounded-[8px] px-2 py-1 text-[11px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)]"
+                  onClick={onSuggest}
+                  disabled={isSuggesting || isLoading}
+                  aria-label="推荐回答"
+                  title={isLoading ? "回复生成中" : "推荐回答"}
+                  data-testid="suggest-reply-button"
+                  className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)] disabled:opacity-50"
                 >
-                  {currentModel}
-                  {llmConfigs && llmConfigs.length > 1 && <ChevronDown className="h-2.5 w-2.5" />}
+                  <Lightbulb className="h-4 w-4" />
                 </button>
-                {modelOpen && llmConfigs && llmConfigs.length > 1 && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setModelOpen(false)} />
-                    <div className="absolute bottom-full right-0 z-50 mb-1 rounded-lg border border-border bg-popover p-1 shadow-lg" style={{ minWidth: "160px" }}>
-                      {llmConfigs.map((config) => (
-                        <button
-                          key={config.id}
-                          type="button"
-                          onClick={() => {
-                            onModelChange?.(config.id);
-                            setModelOpen(false);
-                          }}
-                          className={`flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
-                            config.id === selectedConfigId
-                              ? "bg-primary/10 text-primary"
-                              : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                          }`}
-                        >
-                          <span className="flex-1 truncate">{config.defaultModel}</span>
-                          {config.isDefault && (
-                            <span className="text-[10px] text-muted-foreground">默认</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-            {shouldShowSuggestion && (
-              <button
-                type="button"
-                onClick={onSuggest}
-                disabled={isSuggesting || isLoading}
-                aria-label="推荐回答"
-                title={isLoading ? "回复生成中" : "推荐回答"}
-                data-testid="suggest-reply-button"
-                className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)] disabled:opacity-50"
-              >
-                <Lightbulb className="h-4 w-4" />
-              </button>
-            )}
-            {isLoading ? (
-              <button
-                type="button"
-                onClick={onStop}
-                className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
-              >
-                <Square className="h-3.5 w-3.5" />
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!value.trim() || disabled}
-                className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
-              >
-                <ArrowUp className="h-4 w-4" />
-              </button>
-            )}
+              )}
+              {isLoading ? (
+                <button
+                  type="button"
+                  onClick={onStop}
+                  className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-destructive text-destructive-foreground transition-colors hover:bg-destructive/90"
+                >
+                  <Square className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!value.trim() || disabled}
+                  className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
