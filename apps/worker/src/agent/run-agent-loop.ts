@@ -64,6 +64,12 @@ export async function runAgentLoop(
       break;
     }
 
+    const stepT0 = Date.now();
+    await publisher.publish(
+      channel,
+      createSSEEvent(SSEEventType.StepStart, { step, total: maxSteps, t0: stepT0 }),
+    );
+
     let stepText = "";
     let stepHasToolCall = false;
     const stepToolResults: Array<{ toolName: string; result: unknown }> = [];
@@ -95,7 +101,13 @@ export async function runAgentLoop(
 
         const eventType = event.type as string;
 
-        if (eventType === "text-delta" && "text" in event) {
+        if (eventType === "reasoning-delta" && "delta" in event) {
+          const delta = (event as { delta: string }).delta;
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.ReasoningDelta, { step, text: delta }),
+          );
+        } else if (eventType === "text-delta" && "text" in event) {
           const text = (event as { text: string }).text;
           stepText += text;
           await publisher.publish(
@@ -229,6 +241,11 @@ export async function runAgentLoop(
 
     assistantText += stepText;
     allToolResults.push(...stepToolResults);
+
+    await publisher.publish(
+      channel,
+      createSSEEvent(SSEEventType.StepEnd, { step, durationMs: Date.now() - stepT0 }),
+    );
 
     if (circuitBroken) {
       break;
