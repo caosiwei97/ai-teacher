@@ -47,9 +47,16 @@ export interface FinalizeResult {
 
 const clone = (v: unknown) => JSON.parse(JSON.stringify(v));
 
+const DELEGATE_ERROR_MSG =
+  "面试服务未就绪（InterviewResult model 未生成），请运行 pnpm db:generate";
+
 export const InterviewService = {
   /** 取/建 in_progress 面试记录（设定阶段，幂等）。chat-turn 每轮调用注入 prompt */
   async startOrGet(sessionId: string, difficulty: Difficulty = "medium") {
+    if (!prisma.interviewResult) {
+      console.error(DELEGATE_ERROR_MSG);
+      return null;
+    }
     const existing = await prisma.interviewResult.findFirst({
       where: { sessionId, status: "in_progress" },
       orderBy: { createdAt: "desc" },
@@ -62,6 +69,9 @@ export const InterviewService = {
 
   /** 每题即时评分：append questionLog + adjustDifficulty 更新难度/streak（spec §4.1） */
   async scoreAnswer(sessionId: string, input: ScoreAnswerInput): Promise<ScoreAnswerResult> {
+    if (!prisma.interviewResult) {
+      throw new Error(DELEGATE_ERROR_MSG);
+    }
     const interview = await prisma.interviewResult.findFirst({
       where: { sessionId, status: "in_progress" },
       orderBy: { createdAt: "desc" },
@@ -90,6 +100,9 @@ export const InterviewService = {
 
   /** 复盘：computeTotalScore + 薄弱点 + 改进建议，置 completed（spec §4.1 复盘） */
   async finalize(sessionId: string, input: FinalizeInput): Promise<FinalizeResult> {
+    if (!prisma.interviewResult) {
+      throw new Error(DELEGATE_ERROR_MSG);
+    }
     const interview = await prisma.interviewResult.findFirst({
       where: { sessionId, status: "in_progress" },
       orderBy: { createdAt: "desc" },
@@ -119,6 +132,10 @@ export const InterviewService = {
 
   /** 查询最新面试结果（评分卡/复盘，③ UI 用） */
   async getResult(sessionId: string) {
+    if (!prisma.interviewResult) {
+      console.error(DELEGATE_ERROR_MSG);
+      return null;
+    }
     const interview = await prisma.interviewResult.findFirst({
       where: { sessionId },
       orderBy: { createdAt: "desc" },

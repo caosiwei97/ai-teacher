@@ -1,15 +1,25 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-const { mockFindFirst, mockCreate, mockUpdate } = vi.hoisted(() => ({
+const { mockFindFirst, mockCreate, mockUpdate, interviewResultHolder } = vi.hoisted(() => ({
   mockFindFirst: vi.fn(),
   mockCreate: vi.fn(),
   mockUpdate: vi.fn(),
+  interviewResultHolder: { value: undefined as unknown },
 }));
 
+const interviewResultDelegate = { findFirst: mockFindFirst, create: mockCreate, update: mockUpdate };
+
 vi.mock("@ai-teacher/db", () => ({
-  prisma: {
-    interviewResult: { findFirst: mockFindFirst, create: mockCreate, update: mockUpdate },
-  },
+  prisma: new Proxy(
+    {},
+    {
+      get: (_t, prop) => {
+        if (prop !== "interviewResult") return undefined;
+        const v = interviewResultHolder.value;
+        return v === undefined ? interviewResultDelegate : v;
+      },
+    },
+  ),
 }));
 
 import { InterviewService } from "./interview-service";
@@ -19,13 +29,14 @@ describe("InterviewService", () => {
     mockFindFirst.mockReset();
     mockCreate.mockReset();
     mockUpdate.mockReset();
+    interviewResultHolder.value = undefined;
   });
 
   describe("startOrGet", () => {
     it("有 in_progress → 直接返回（幂等）", async () => {
       mockFindFirst.mockResolvedValue({ id: "ir1", sessionId: "s1", status: "in_progress", difficulty: "medium", streak: 0, questionLog: [] });
       const r = await InterviewService.startOrGet("s1");
-      expect(r.id).toBe("ir1");
+      expect(r!.id).toBe("ir1");
       expect(mockCreate).not.toHaveBeenCalled();
     });
 
@@ -34,7 +45,7 @@ describe("InterviewService", () => {
       mockCreate.mockResolvedValue({ id: "ir2", sessionId: "s1", status: "in_progress", difficulty: "medium", streak: 0, questionLog: [] });
       const r = await InterviewService.startOrGet("s1");
       expect(mockCreate).toHaveBeenCalledWith({ data: expect.objectContaining({ sessionId: "s1", status: "in_progress", difficulty: "medium", streak: 0 }) });
-      expect(r.id).toBe("ir2");
+      expect(r!.id).toBe("ir2");
     });
   });
 
@@ -110,5 +121,54 @@ describe("InterviewService", () => {
       mockFindFirst.mockResolvedValue(null);
       expect(await InterviewService.getResult("s1")).toBeNull();
     });
+  });
+});
+
+describe("InterviewService — delegate undefined 防御", () => {
+  beforeEach(() => {
+    mockFindFirst.mockReset();
+    mockCreate.mockReset();
+    mockUpdate.mockReset();
+    interviewResultHolder.value = null;
+  });
+  afterEach(() => {
+    interviewResultHolder.value = undefined;
+  });
+
+  it("getResult：interviewResult delegate 缺失 → 返回 null 不抛错", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const r = await InterviewService.getResult("s1");
+    expect(r).toBeNull();
+    expect(mockFindFirst).not.toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it("startOrGet：interviewResult delegate 缺失 → 返回 null 不抛错", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const r = await InterviewService.startOrGet("s1");
+    expect(r).toBeNull();
+    expect(mockFindFirst).not.toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it("scoreAnswer：interviewResult delegate 缺失 → 抛带提示的错误", async () => {
+    await expect(
+      InterviewService.scoreAnswer("s1", {
+        question: "q", answer: "a", score: 50, isCorrect: false, difficulty: "easy", feedback: "",
+      }),
+    ).rejects.toThrow(/InterviewResult model 未生成.*pnpm db:generate/);
+    expect(mockFindFirst).not.toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("finalize：interviewResult delegate 缺失 → 抛带提示的错误", async () => {
+    await expect(
+      InterviewService.finalize("s1", { improvement: "x", weakPoints: [] }),
+    ).rejects.toThrow(/InterviewResult model 未生成.*pnpm db:generate/);
+    expect(mockFindFirst).not.toHaveBeenCalled();
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 });
