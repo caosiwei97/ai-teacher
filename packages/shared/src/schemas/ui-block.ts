@@ -124,6 +124,38 @@ export const InteractiveExploreItemSchema = z.discriminatedUnion("kind", [
     label: z.string(),
     placeholder: z.string().optional(),
   }),
+  z.object({
+    kind: z.literal("choice"),
+    label: z.string(),
+    options: z.array(z.object({ id: z.string(), text: z.string() })),
+    allowMultiple: z.boolean().default(false),
+  }),
+  z.object({
+    kind: z.literal("matching"),
+    label: z.string(),
+    leftItems: z.array(z.object({ id: z.string(), text: z.string() })),
+    rightItems: z.array(z.object({ id: z.string(), text: z.string() })),
+  }),
+  z.object({
+    kind: z.literal("ordering"),
+    label: z.string(),
+    items: z.array(z.object({ id: z.string(), text: z.string() })),
+  }),
+  z.object({
+    kind: z.literal("fill-blank"),
+    label: z.string(),
+    template: z.string(),
+  }),
+  z.object({
+    kind: z.literal("chart-slider"),
+    label: z.string(),
+    min: z.number(),
+    max: z.number(),
+    step: z.number().default(1),
+    initial: z.number(),
+    chartType: z.enum(["line", "bar"]).default("line"),
+    formula: z.string().optional(),
+  }),
 ]);
 
 export const InteractiveBlockSchema = z.object({

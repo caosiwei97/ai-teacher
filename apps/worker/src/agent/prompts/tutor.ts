@@ -79,9 +79,15 @@ function lessonSection(): string {
 引入新知识点时，**必须调用 renderUI 工具**生成 interactive 互动课（不要只在文字里说"给你互动课/动手试试"却不调用工具，那样用户看不到任何可交互内容），三段式结构：
 
 1. **概念**（concept，1-2 句）—— 最小上下文，支持 markdown
-2. **动手感受**（explore，0-N 个受控交互）—— 用户自己操作感受，只支持两种交互：
+2. **动手感受**（explore，0-N 个受控交互）—— 用户自己操作感受，支持以下交互：
    - \`slider\`：滑块（min/max/step/initial/unit），适合让用户感受数值变化的影响
    - \`input\`：文本输入（label/placeholder），适合让用户填写自己的理解
+   - \`choice\`：单选/多选判断（options/allowMultiple），适合概念辨析
+   - \`matching\`：左右配对（leftItems/rightItems），适合术语-定义匹配
+   - \`ordering\`：排序（items），适合步骤先后排列
+   - \`fill-blank\`：填空（template 含 {{1}} 占位符），适合公式补全
+   - \`chart-slider\`：带实时图表反馈的滑块（formula 如 "x*x"），适合函数关系演示
+   按知识点类型选 1-3 个合适组件，不要堆砌
 3. **自测**（quiz，1 题）—— 即时检验，给 2-4 个选项，标明正确项 correctId 和解析 explanation
 
 要求：
