@@ -78,26 +78,20 @@ function lessonSection(): string {
 
 引入新知识点时，**必须调用 renderUI 工具**生成 interactive 互动课（不要只在文字里说"给你互动课/动手试试"却不调用工具，那样用户看不到任何可交互内容），三段式结构：
 
-1. **概念**（1 句话）—— 最小上下文
-2. **动手感受** —— 可交互区域，用户自己操作感受（按钮/滑块/输入等，用内联 script 实现交互）
-3. **自测**（1 题）—— 即时检验，答对推进、答错给提示
+1. **概念**（concept，1-2 句）—— 最小上下文，支持 markdown
+2. **动手感受**（explore，0-N 个受控交互）—— 用户自己操作感受，只支持两种交互：
+   - \`slider\`：滑块（min/max/step/initial/unit），适合让用户感受数值变化的影响
+   - \`input\`：文本输入（label/placeholder），适合让用户填写自己的理解
+3. **自测**（quiz，1 题）—— 即时检验，给 2-4 个选项，标明正确项 correctId 和解析 explanation
 
 要求：
-- HTML 自包含（内联 CSS + 内联 script），不引用外部资源（外部 script 会被净化移除）
 - 一节互动课讲清一个概念，让用户"自己看懂"而非"被追问懂"
-- 代码类知识点可在"动手感受"区嵌入可运行示例
+- 产物是结构化 JSON，不要生成 HTML 字符串
+- 代码类知识点的"可运行示例"请用沙箱（pushCode），不要塞进 interactive
 - 产物发出后对话退化为答疑 + 追问 + 判定掌握，不重复产物已讲的内容
 
-**HTML 生成硬性规范（违反会导致交互失效/布局错乱，必须遵守）**：
-- **交互绑定**：所有交互（按钮点击、滑块拖动、输入框）必须在 \`<script>\` 内用 \`addEventListener\` 绑定，**严禁用 inline 事件属性**（onclick/oninput/onchange 等）——它们会被净化移除，导致交互失效
-- **引号转义**：HTML 属性一律用双引号（\`id="b"\`）；JS 字符串**一律用反引号**（\`\`）包裹，避免中文标点/引号嵌套冲突导致 SyntaxError（整个 script 块不执行）。尤其 feedback 文案、含引号的中文内容必须用反引号
-  - ❌ 错误（单引号嵌套致 SyntaxError，整个 script 失效）：\`el.innerHTML='❌ 不对，注意"每日300kcal"才是对的'\`
-  - ✅ 正确（反引号包裹，内含双引号/中文标点都安全）：\`el.innerHTML=\`❌ 不对，注意"每日300kcal"才是对的\`\`
-  - 规则：JS 里所有 innerHTML/textContent/含中文标点的字符串，首尾必须用反引号 \`\`，绝不用单引号或双引号
-- **自测选项**：每个选项用 \`<button>\` 标签（不要自创标签），点击逻辑在 script 里用 addEventListener 绑定
-
-**必须实际调用 renderUI 工具**（blocks 数组传入 \`{ type: "interactive", html: "<完整 HTML 字符串>" }\`），不要只在文字里说"给你互动课/动手试试"——不调用工具，用户看不到任何 iframe 内容。html 骨架参考（含按钮+滑块+自测三要素，注意交互全用 addEventListener、字符串全用反引号）：
-\`<!DOCTYPE html><html><body><h3 style="font-size:18px">标题</h3><p style="color:#555">概念一句话</p><div><label>数值：<span id="val">50</span></label><input type="range" id="slider" min="0" max="100" value="50" style="width:100%"></div><div id="quiz"><p>自测题干</p><button id="optA" style="display:block;width:100%;margin:6px 0;padding:12px 16px">选项A</button><button id="optB" style="display:block;width:100%;margin:6px 0;padding:12px 16px">选项B</button><p id="feedback"></p></div><script>document.getElementById('slider').addEventListener('input',function(){document.getElementById('val').textContent=this.value});document.getElementById('optA').addEventListener('click',function(){document.getElementById('feedback').innerHTML=\`❌ 不对，再想想\`});document.getElementById('optB').addEventListener('click',function(){document.getElementById('feedback').innerHTML=\`✅ 正确！\`})</script></body></html>\`，按知识点扩展可视化/计算逻辑`;
+**必须实际调用 renderUI 工具**（blocks 数组传入下述结构），不要只在文字里说"给你互动课/动手试试"——不调用工具，用户看不到任何内容。JSON 骨架参考：
+\`{ "type": "interactive", "title": "复利的力量", "concept": "利滚利：每期收益计入本金继续生息。", "explore": [{ "kind": "slider", "label": "年化收益率", "min": 1, "max": 20, "step": 1, "initial": 5, "unit": "%" }], "quiz": { "question": "同样本金、同样年限，复利比单利收益更高，主要因为？", "options": [{ "id": "a", "text": "每期收益被重新计入本金" }, { "id": "b", "text": "利率本身更高" }], "correctId": "a", "explanation": "复利把每期收益滚入本金，基数逐期增大。" } }\`，按知识点调整概念、explore 交互与自测选项`;
 }
 
 function diagnosisSection(ctx: TutorPromptContext): string | null {

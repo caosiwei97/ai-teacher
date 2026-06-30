@@ -1127,7 +1127,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
   }
 
   function handleInteractiveSubmit(payload: InteractiveSubmitPayload) {
-    if (interactiveResponding || chat.isLoading) return;
+    // 重复提交由卡片自身 submitted 态 + interactiveResponding 双重拦截。
+    // 不再用 chat.isLoading 拦截——它会吞掉首轮合法提交（提交后流未结束前的正常等待被误判）。
+    if (interactiveResponding) return;
     const answer = payload.answer ? `答案：${payload.answer}` : "用户已完成互动课自测";
     const feedback = payload.feedback ? `；互动反馈：${payload.feedback}` : "";
     setInteractiveResponding(true);
@@ -1213,7 +1215,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
   return (
     <SandboxProvider>
     <div ref={containerRef} className="flex h-full min-w-0">
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {showRight && (
           <div className="absolute right-3 top-3 z-10 hidden lg:block">
             {rightCollapsed ? (

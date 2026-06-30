@@ -106,10 +106,37 @@ export const MasteryReportBlockSchema = z.object({
   badges: z.array(z.string()),
 });
 
-// 迭代 050②：互动教学产物（自包含 HTML，前端 iframe 沙箱渲染）
+// 互动教学产物（结构化 A2UI，三段式：概念 / 动手感受 / 自测）
+// 迭代 050② 初版用 LLM 手写整段 HTML + iframe 沙箱渲染；改为结构化以降低生成成本、
+// 让布局前端可控、消除 iframe postMessage 提交竞态（见 ADR）。
+export const InteractiveExploreItemSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("slider"),
+    label: z.string(),
+    min: z.number(),
+    max: z.number(),
+    step: z.number().default(1),
+    initial: z.number(),
+    unit: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("input"),
+    label: z.string(),
+    placeholder: z.string().optional(),
+  }),
+]);
+
 export const InteractiveBlockSchema = z.object({
   type: z.literal("interactive"),
-  html: z.string(),
+  title: z.string(),
+  concept: z.string(),
+  explore: z.array(InteractiveExploreItemSchema).default([]),
+  quiz: z.object({
+    question: z.string(),
+    options: z.array(z.object({ id: z.string(), text: z.string() })),
+    correctId: z.string(),
+    explanation: z.string(),
+  }),
 });
 
 // 迭代 051：复习抽认卡（正面问题 → 翻面答案，提取练习）
@@ -162,6 +189,7 @@ export type HeadingBlock = z.infer<typeof HeadingBlockSchema>;
 export type BadgeBlock = z.infer<typeof BadgeBlockSchema>;
 export type MasteryReportBlock = z.infer<typeof MasteryReportBlockSchema>;
 export type InteractiveBlock = z.infer<typeof InteractiveBlockSchema>;
+export type InteractiveExploreItem = z.infer<typeof InteractiveExploreItemSchema>;
 export type FlashcardBlock = z.infer<typeof FlashcardBlockSchema>;
 export type InterviewScoreBlock = z.infer<typeof InterviewScoreBlockSchema>;
 

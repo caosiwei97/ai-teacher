@@ -161,9 +161,6 @@ function getMockProvider(): (modelId: string) => LanguageModel {
           }
 
           if (userText.includes("[render-interactive]")) {
-            const html =
-              '<div id="quiz"><button id="btn">点我</button><p id="out">未点击</p></div>' +
-              '<script>document.getElementById("btn").addEventListener("click",function(){document.getElementById("out").textContent="已点击"})</script>';
             return {
               stream: simulateReadableStream({
                 chunks: [
@@ -172,7 +169,33 @@ function getMockProvider(): (modelId: string) => LanguageModel {
                     toolCallId: "call-interactive",
                     toolName: "renderUI",
                     input: JSON.stringify({
-                      blocks: [{ type: "interactive", html }],
+                      blocks: [
+                        {
+                          type: "interactive",
+                          title: "互动体验小测",
+                          concept: "拖动滑块感受数值变化，再选一个正确答案。",
+                          explore: [
+                            {
+                              kind: "slider",
+                              label: "数值",
+                              min: 0,
+                              max: 100,
+                              step: 1,
+                              initial: 50,
+                              unit: "",
+                            },
+                          ],
+                          quiz: {
+                            question: "点击按钮后会发生什么？",
+                            options: [
+                              { id: "a", text: "文本变为「已点击」" },
+                              { id: "b", text: "什么也不发生" },
+                            ],
+                            correctId: "a",
+                            explanation: "交互绑定后点击会更新文本。",
+                          },
+                        },
+                      ],
                     }),
                   },
                   {
@@ -346,9 +369,6 @@ function getMockProvider(): (modelId: string) => LanguageModel {
           }
 
           if (userText.includes("[Continue] 开始教学知识点")) {
-            const html =
-              '<div id="quiz"><h3>现金流小测</h3><p>先存钱再消费，会优先锁定结余。</p><button id="optA">先消费再存钱</button><button id="optB">先存钱再消费</button><p id="feedback"></p></div>' +
-              '<script>document.getElementById("optA").addEventListener("click",function(){document.getElementById("feedback").textContent="再想想，结余容易被消费挤掉。"});document.getElementById("optB").addEventListener("click",function(){document.getElementById("feedback").textContent="正确，先锁定结余更稳定。"})</script>';
             return {
               stream: simulateReadableStream({
                 chunks: [
@@ -365,7 +385,23 @@ function getMockProvider(): (modelId: string) => LanguageModel {
                     toolCallId: "call-first-lesson-interactive",
                     toolName: "renderUI",
                     input: JSON.stringify({
-                      blocks: [{ type: "interactive", html }],
+                      blocks: [
+                        {
+                          type: "interactive",
+                          title: "现金流小测",
+                          concept: "先存钱再消费，会优先锁定结余。",
+                          explore: [],
+                          quiz: {
+                            question: "哪种顺序更容易攒下钱？",
+                            options: [
+                              { id: "a", text: "先消费再存钱" },
+                              { id: "b", text: "先存钱再消费" },
+                            ],
+                            correctId: "b",
+                            explanation: "先锁定结余更稳定，结余不易被消费挤掉。",
+                          },
+                        },
+                      ],
                     }),
                   },
                   {

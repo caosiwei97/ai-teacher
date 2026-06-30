@@ -59,7 +59,34 @@ export const renderUITool: ToolDefinition = {
           }),
           z.object({
             type: z.literal("interactive"),
-            html: z.string(),
+            title: z.string(),
+            concept: z.string(),
+            explore: z
+              .array(
+                z.discriminatedUnion("kind", [
+                  z.object({
+                    kind: z.literal("slider"),
+                    label: z.string(),
+                    min: z.number(),
+                    max: z.number(),
+                    step: z.number().default(1),
+                    initial: z.number(),
+                    unit: z.string().optional(),
+                  }),
+                  z.object({
+                    kind: z.literal("input"),
+                    label: z.string(),
+                    placeholder: z.string().optional(),
+                  }),
+                ]),
+              )
+              .default([]),
+            quiz: z.object({
+              question: z.string(),
+              options: z.array(z.object({ id: z.string(), text: z.string() })),
+              correctId: z.string(),
+              explanation: z.string(),
+            }),
           }),
           z.object({
             type: z.literal("flashcard"),
@@ -90,7 +117,7 @@ export const renderUITool: ToolDefinition = {
 - heading: 标题（level 2 或 3，用于分隔内容段落）
 - badge: 徽章标签（success=已掌握, warning=需注意, info=信息，适合展示关键要点）
 - mastery-report: 掌握总结报告（节点掌握后展示总结表格和核心徽章）
-- interactive: 互动教学产物（自包含 HTML，iframe 沙箱渲染，用户可交互操作；用于让概念可看可练）
+- interactive: 互动教学产物（结构化三段式：concept 概念 / explore 动手感受[slider|input] / quiz 自测；让概念可看可练）
 - flashcard: 复习抽认卡（正面问题 front → 翻面答案 back，需带 nodeId；复习模式提取练习用）
 - interviewScore: 面试评分卡（totalScore/difficulty/weakPoints/improvement/questionCount；面试复盘用）
 每次调用可以生成多个 block，它们会按顺序显示在你的回复中。`,

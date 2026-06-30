@@ -1,11 +1,11 @@
 import { test, expect } from "@playwright/test";
 
-// 分类 Q — 互动教学产物（迭代 050②）
+// 分类 Q — 互动教学产物（结构化 A2UI 渲染）
 // mock LLM 检测消息含 [render-interactive] → 返回 renderUI(interactive) tool call →
-// agent loop 执行 renderUI → SSE ui-blocks → 前端 iframe 沙箱渲染 → frameLocator 进 iframe 测交互
+// agent loop 执行 renderUI → SSE ui-blocks → 前端 React 结构化渲染 → 点选项断言即时反馈
 
-test.describe("Interactive Lesson — iframe 沙箱渲染（分类 Q）", () => {
-  test("interactive block 在 iframe 沙箱内可交互（点按钮断言状态变化）", async ({
+test.describe("Interactive Lesson — 结构化 A2UI 渲染（分类 Q）", () => {
+  test("interactive block 结构化渲染可交互（点选项断言即时反馈与提交续接）", async ({
     page,
   }) => {
     test.setTimeout(60000);
@@ -18,16 +18,22 @@ test.describe("Interactive Lesson — iframe 沙箱渲染（分类 Q）", () => 
       el.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
     );
 
-    // iframe 沙箱渲染完成
-    const iframe = page.frameLocator('iframe[title="互动教学产物"]');
+    // 结构化卡片渲染完成
     await expect(page.getByTestId("interactive-lesson-card")).toBeVisible({ timeout: 20000 });
-    await expect(page.getByText("互动练习")).toBeVisible();
+    await expect(page.getByText("互动体验小测")).toBeVisible();
     await expect(page.getByText("等待作答")).toBeVisible();
-    await expect(iframe.locator("#btn")).toBeVisible({ timeout: 20000 });
 
-    // 点按钮 → 断言状态变化（沙箱内脚本执行）
-    await iframe.locator("#btn").click();
-    await expect(iframe.locator("#out")).toHaveText("已点击");
+    // 动手感受：滑块可交互
+    await expect(page.getByTestId("interactive-explore-0")).toBeVisible({ timeout: 20000 });
+    const slider = page.locator('input[type="range"]');
+    await expect(slider).toBeVisible();
+
+    // 自测：点正确选项 → 断言即时反馈
+    await page.getByTestId("interactive-option-a").click();
+    await expect(page.getByTestId("interactive-quiz-feedback")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("答对了")).toBeVisible();
+
+    // 点「完成自测」→ 断言提交态
     await page.getByTestId("interactive-complete-button").click();
     await expect(page.getByTestId("interactive-submit-status")).toBeVisible({ timeout: 10000 });
 
