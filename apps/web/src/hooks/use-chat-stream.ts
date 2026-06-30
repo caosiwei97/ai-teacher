@@ -92,6 +92,22 @@ function updateLoopTrace(
   return updated;
 }
 
+// 把工具名追加到 loopTrace 最近一步的 tools（无 step 时静默）
+function appendToolToLastStep(
+  annotations: AnnotationData[],
+  toolName: string,
+): AnnotationData[] {
+  return updateLoopTrace(annotations, (trace) => {
+    if (trace.steps.length === 0) return trace;
+    const lastIdx = trace.steps.length - 1;
+    const last = trace.steps[lastIdx];
+    const tools = [...(last.tools ?? []), { name: toolName }];
+    const steps = [...trace.steps];
+    steps[lastIdx] = { ...last, tools };
+    return { ...trace, steps };
+  });
+}
+
 function getTextFromParts(parts: UIMessage["parts"]): string {
   if (!parts) return "";
   return parts
@@ -257,7 +273,10 @@ export function useChatStream(
                   parts: newMessages[assistantIdx].parts,
                   metadata: {
                     ...newMessages[assistantIdx].metadata,
-                    annotations: [...existing, { toolName, args: data.args }],
+                    annotations: appendToolToLastStep(
+                      [...existing, { toolName, args: data.args }],
+                      toolName,
+                    ),
                   },
                 };
                 setMessages([...newMessages]);
@@ -724,7 +743,10 @@ export function useChatStream(
                     ...prev[idx],
                     metadata: {
                       ...prev[idx].metadata,
-                      annotations: [...existing, { toolName, args: data.args }],
+                      annotations: appendToolToLastStep(
+                        [...existing, { toolName, args: data.args }],
+                        toolName,
+                      ),
                     },
                   },
                 ];
