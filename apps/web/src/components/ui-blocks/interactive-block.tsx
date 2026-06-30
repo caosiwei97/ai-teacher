@@ -41,11 +41,15 @@ const markdownComponents: Components = {
 };
 
 export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockProps) {
+  // 数据经 SSE 透传未经前端校验，LLM 可能省略空数组字段 → 兜底防御
+  const explore = block.explore ?? [];
+  const quiz = block.quiz ?? { question: "", options: [], correctId: "", explanation: "" };
+
   const [submitted, setSubmitted] = useState(false);
   // explore 交互的本地状态
   const [sliderValues, setSliderValues] = useState<Record<number, number>>(() => {
     const map: Record<number, number> = {};
-    block.explore.forEach((item, i) => {
+    explore.forEach((item, i) => {
       if (item.kind === "slider") map[i] = item.initial;
     });
     return map;
@@ -55,7 +59,7 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [revealed, setRevealed] = useState(false);
 
-  const isCorrect = selectedId === block.quiz.correctId;
+  const isCorrect = selectedId === quiz.correctId;
   const canSubmit = revealed; // 必须先作答再提交
 
   function handleSelectOption(optionId: string) {
@@ -67,11 +71,11 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
   function handleManualSubmit() {
     if (submitted || !revealed) return;
     setSubmitted(true);
-    const selectedOption = block.quiz.options.find((o) => o.id === selectedId);
+    const selectedOption = quiz.options.find((o) => o.id === selectedId);
     onSubmit?.({
       source: "manual",
       answer: selectedOption?.text,
-      feedback: `${isCorrect ? "答对" : "答错"}：${block.quiz.explanation}`,
+      feedback: `${isCorrect ? "答对" : "答错"}：${quiz.explanation}`,
     });
   }
 
@@ -95,9 +99,9 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
         </div>
 
         {/* ② 动手感受 */}
-        {block.explore.length > 0 && (
+        {explore.length > 0 && (
           <div className="space-y-3">
-            {block.explore.map((item, i) => {
+            {explore.map((item, i) => {
               if (item.kind === "slider") {
                 const val = sliderValues[i] ?? item.initial;
                 return (
@@ -146,12 +150,12 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
 
         {/* ③ 自测 */}
         <div data-testid="interactive-quiz">
-          <p className="mb-3 text-sm leading-relaxed text-foreground">{block.quiz.question}</p>
+          <p className="mb-3 text-sm leading-relaxed text-foreground">{quiz.question}</p>
           <div className="space-y-2">
-            {block.quiz.options.map((opt) => {
+            {quiz.options.map((opt) => {
               const isSelected = selectedId === opt.id;
-              const showCorrect = revealed && opt.id === block.quiz.correctId;
-              const showWrong = revealed && isSelected && opt.id !== block.quiz.correctId;
+              const showCorrect = revealed && opt.id === quiz.correctId;
+              const showWrong = revealed && isSelected && opt.id !== quiz.correctId;
               return (
                 <button
                   key={opt.id}
@@ -207,7 +211,7 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
               </p>
               <div className="prose-sm">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                  {block.quiz.explanation}
+                  {quiz.explanation}
                 </ReactMarkdown>
               </div>
             </div>
