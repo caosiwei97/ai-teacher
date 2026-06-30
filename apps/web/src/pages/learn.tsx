@@ -355,6 +355,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
   const [diagnosticAnalyzing, setDiagnosticAnalyzing] = useState(false);
+  const [diagnosticError, setDiagnosticError] = useState<string | null>(null);
   const [firstLessonPreparing, setFirstLessonPreparing] = useState(false);
   const [interactiveResponding, setInteractiveResponding] = useState(false);
 
@@ -962,6 +963,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
   ) {
     setDiagnosticSubmitted(true);
     setDiagnosticAnalyzing(true);
+    setDiagnosticError(null);
 
     const answerLines = answers.map(
       (a) => `${a.questionId}: ${a.optionId} (${a.optionText})`,
@@ -1027,45 +1029,60 @@ function ChatView({ sessionId }: { sessionId: string }) {
               const data = event.data as {
                 toolName?: string;
                 result?: {
+                  success?: boolean;
+                  error?: string;
                   firstNode?: { title?: string };
                   roadmapUpdate?: { nodes?: NodeInfo[] };
                   sessionUpdate?: { masteredNodes?: number; totalNodes?: number };
                 };
               };
               if (data.toolName === "generateRoadmap") {
-                roadmapGenerated = true;
-                firstNodeTitle = data.result?.firstNode?.title ?? firstNodeTitle;
-                if (Array.isArray(data.result?.roadmapUpdate?.nodes)) {
-                  setNodes(data.result.roadmapUpdate.nodes);
+                const result = data.result;
+                if (result && result.success === false) {
+                  setDiagnosticError(result.error ?? "路线图生成失败，请重试");
+                  setDiagnosticAnalyzing(false);
+                  setDiagnosticSubmitted(true);
+                  return;
                 }
-                if (data.result?.sessionUpdate?.totalNodes !== undefined) {
-                  const sessionUpdate = data.result.sessionUpdate;
-                  setSessions((prev) =>
-                    prev.map((s) =>
-                      s.id === sessionId
-                        ? {
-                            ...s,
-                            progress: {
-                              ...s.progress,
-                              totalNodes: sessionUpdate.totalNodes!,
-                              masteredNodes: sessionUpdate.masteredNodes ?? 0,
-                            },
-                          }
-                        : s,
-                    ),
-                  );
+                if (
+                  result?.success !== false &&
+                  Array.isArray(result?.roadmapUpdate?.nodes) &&
+                  result.roadmapUpdate.nodes.length > 0
+                ) {
+                  roadmapGenerated = true;
+                  setNodes(result.roadmapUpdate.nodes);
+                  firstNodeTitle = result.firstNode?.title ?? firstNodeTitle;
+                  if (result.sessionUpdate?.totalNodes !== undefined) {
+                    const sessionUpdate = result.sessionUpdate;
+                    setSessions((prev) =>
+                      prev.map((s) =>
+                        s.id === sessionId
+                          ? {
+                              ...s,
+                              progress: {
+                                ...s.progress,
+                                totalNodes: sessionUpdate.totalNodes!,
+                                masteredNodes: sessionUpdate.masteredNodes ?? 0,
+                              },
+                            }
+                          : s,
+                      ),
+                    );
+                  }
                 }
               }
             }
 
             if (event.type === "roadmap-updated" && event.data) {
-              roadmapGenerated = true;
               const data = event.data as { nodes: NodeInfo[] };
-              setNodes(data.nodes);
-              firstNodeTitle =
-                data.nodes.find((node) => node.status === "in_progress")?.title ??
-                data.nodes[0]?.title ??
-                firstNodeTitle;
+              if (data.nodes && data.nodes.length > 0) {
+                roadmapGenerated = true;
+                setNodes(data.nodes);
+                firstNodeTitle =
+                  data.nodes.find((node) => node.status === "in_progress")?.title ??
+                  data.nodes[0]?.title ??
+                  firstNodeTitle;
+              }
             }
 
             if (event.type === "session-updated" && event.data) {
@@ -1116,7 +1133,20 @@ function ChatView({ sessionId }: { sessionId: string }) {
     fetchSession(sessionId)
       .then((data) => {
         if (data) {
-          setNodes(data.session.roadmap?.nodes ?? []);
+          const fetchedNodes = data.session.roadmap?.nodes ?? [];
+          if (fetchedNodes.length > 0) {
+            setNodes(fetchedNodes);
+          } else if (roadmapGenerated) {
+            setTimeout(() => {
+              fetchSession(sessionId)
+                .then((d) => {
+                  if (d?.session.roadmap?.nodes?.length) {
+                    setNodes(d.session.roadmap.nodes);
+                  }
+                })
+                .catch(console.error);
+            }, 500);
+          }
         }
         return fetchSessions(USER_ID);
       })
@@ -1162,7 +1192,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
     diagnosticAnalyzing,
     teachingMode,
     onTeachingModeChange: setTeachingMode,
-    error: chatError,
+    error: diagnosticError ?? chatError,
     currentModel: llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel,
     llmConfigs: llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault })),
     selectedConfigId,
