@@ -3,6 +3,7 @@ import type { UIBlock } from "@ai-teacher/shared";
 import type { AssessmentCardProps } from "./assessment-card";
 import type { DiagnosticQuestionsData } from "@/hooks/use-chat-stream";
 import { MessageContent } from "@/components/ui-blocks";
+import type { InteractiveSubmitPayload } from "@/components/ui-blocks/interactive-block";
 import { DiagnosticQuizCard } from "./diagnostic-quiz-card";
 
 interface ChatMessageProps {
@@ -13,6 +14,7 @@ interface ChatMessageProps {
   streamingBlocks?: boolean;
   diagnosticQuestions?: DiagnosticQuestionsData;
   onDiagnosticSubmit?: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
+  onInteractiveSubmit?: (payload: InteractiveSubmitPayload) => void;
   diagnosticSubmitted?: boolean;
   diagnosticAnalyzing?: boolean;
 }
@@ -25,6 +27,7 @@ export function ChatMessage({
   streamingBlocks,
   diagnosticQuestions,
   onDiagnosticSubmit,
+  onInteractiveSubmit,
   diagnosticSubmitted,
   diagnosticAnalyzing,
 }: ChatMessageProps) {
@@ -63,7 +66,12 @@ export function ChatMessage({
             }`}
             style={{ animation: 'message-in 300ms cubic-bezier(0.33, 1, 0.68, 1) both' }}
           >
-            <MessageContent content={content} uiBlocks={effectiveBlocks} streamingBlocks={streamingBlocks} />
+            <MessageContent
+              content={content}
+              uiBlocks={effectiveBlocks}
+              streamingBlocks={streamingBlocks}
+              onInteractiveSubmit={onInteractiveSubmit}
+            />
           </div>
         )}
         {!isUser && diagnosticQuestions && onDiagnosticSubmit && (
