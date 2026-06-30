@@ -56,9 +56,7 @@ test.describe("Diagnostic — Chat-Inline Diagnosis", () => {
     const emptyHint = page.locator("text=诊断完成后将生成学习路线");
     await expect(emptyHint).toHaveCount(0);
 
-    const nodeContainer = page.locator("text=学习路线").locator("..");
-    await expect(
-      nodeContainer.locator("p").filter({ hasText: /./ }).first(),
-    ).toBeVisible({ timeout: 10000 });
+    // 路线图节点已渲染（与"路线已生成"文案一致）
+    await expect(page.getByTestId("roadmap-node").first()).toBeVisible({ timeout: 10000 });
   });
 });
