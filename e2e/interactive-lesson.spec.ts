@@ -20,10 +20,18 @@ test.describe("Interactive Lesson — iframe 沙箱渲染（分类 Q）", () => 
 
     // iframe 沙箱渲染完成
     const iframe = page.frameLocator('iframe[title="互动教学产物"]');
+    await expect(page.getByTestId("interactive-lesson-card")).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText("互动练习")).toBeVisible();
+    await expect(page.getByText("等待作答")).toBeVisible();
     await expect(iframe.locator("#btn")).toBeVisible({ timeout: 20000 });
 
     // 点按钮 → 断言状态变化（沙箱内脚本执行）
     await iframe.locator("#btn").click();
     await expect(iframe.locator("#out")).toHaveText("已点击");
+    await page.getByTestId("interactive-complete-button").click();
+    await expect(page.getByTestId("interactive-submit-status")).toBeVisible({ timeout: 10000 });
+
+    // 互动课提交后应自动触发下一轮，而不是停在卡片处
+    await expect(page.getByText("收到你的互动结果，我们继续往下看下一步判断。")).toBeVisible({ timeout: 30000 });
   });
 });

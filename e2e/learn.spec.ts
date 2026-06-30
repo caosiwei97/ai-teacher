@@ -79,7 +79,11 @@ test.describe("Learn Page — Chat Input", () => {
     await expect(loadingTip).toBeVisible({ timeout: 10000 });
     await expect(loadingTip).not.toHaveClass(/border/);
 
+    await expect(page.getByText("路线已生成，正在准备第一节互动练习…")).toBeVisible({ timeout: 60000 });
     await expect(page.getByText("路线已经准备好。")).toBeVisible({ timeout: 60000 });
+    await expect(page.getByTestId("interactive-lesson-card")).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText("互动练习")).toBeVisible();
+    await expect(page.getByText("等待作答")).toBeVisible();
     await expect(page.getByTestId("diagnostic-loading-tip")).toHaveCount(0);
     await expect(page.getByTestId("diagnostic-quiz-card")).toHaveCount(1);
     await expect(page.getByText("很高兴带你进入个人投资理财的世界")).toHaveCount(0);
