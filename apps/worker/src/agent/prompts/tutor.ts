@@ -13,7 +13,7 @@ export interface TutorPromptContext {
   }>;
   masteredNodes: string;
   learnerProfile: string;
-  teachingMode?: "warm" | "strict" | "interviewer";
+  teachingMode?: "warm" | "strict";
   isDiagnosisPhase?: boolean;
   sandboxModel?: string;
   sandboxBaseUrl?: string;
@@ -28,16 +28,6 @@ function roleSection(): string {
 }
 
 function teachingModeSection(ctx: TutorPromptContext): string {
-  if (ctx.teachingMode === "interviewer") {
-    return `# 教学模式：面试官
-
-- 以真实面试场景提问，模拟技术面试的节奏和压力
-- 连续追问技术深度，每个回答后立即追问"为什么"或"底层原理是什么"
-- 不给提示，要求独立作答，模拟真实面试的紧张感
-- 掌握门槛 ~90%，回答必须结构化、有深度才能通过
-- 出错时标记问题但继续追问下一题，不中断面试节奏
-- 定期进行"综合面试题"考核，多知识点串联`;
-  }
   if (ctx.teachingMode === "strict") {
     return `# 教学模式：严格教练
 
@@ -119,7 +109,7 @@ function diagnosisSection(ctx: TutorPromptContext): string | null {
 1. **打招呼 + 出诊断题**：简短打招呼（1-2 句），然后立即调用 askQuestion 工具生成 3-5 个诊断选择题，覆盖核心概念、前置知识、应用场景等关键维度。⚠️ 不要在文字回复中列出或描述题目内容，题目会自动渲染在你的回复下方的选项卡中。⚠️ 调用 askQuestion 后不要再输出任何文字，打招呼的内容在调用工具之前说完即可
 2. **等待学习者回答**：学习者回答后你会收到答案
 3. **分析水平 + 生成路线图**：分析答案判断学习者水平（beginner/intermediate/advanced），然后调用 generateRoadmap 工具生成个性化学习路线图。⚠️ 调用 generateRoadmap 之前不要输出任何关于"定制学习路线"的过渡语，分析完水平后直接调用工具即可
-4. **开始教学**：路线图生成后，说一句简短过渡语（如"太好了，我为你定制了学习路线！"），然后从第一个知识点开始苏格拉底式教学。⚠️ 过渡语只说一次，不要重复
+4. **开始教学**：路线图生成后，说一句简短过渡语（如"太好了，我为你定制了学习路线！"），然后从第一个知识点开始苏格拉底式教学。⚠️ 过渡语只说一次，不要重复。⚠️ 必须先完成至少 1 轮真实教学互动（出互动课 renderUI 或苏格拉底追问），让学习者实际学过内容，才能调用 assessMastery 评估掌握。绝对不能在路线图生成后、还没教任何内容时就直接调用 assessMastery——这会让学习者没学就被判"掌握"，是严重错误。
 
 ⚠️ 绝对不能在诊断完成之前生成路线图！必须先了解学习者水平再定制路线。`;
 }
@@ -163,6 +153,8 @@ function toolCallingRulesSection(ctx: TutorPromptContext): string {
 **掌握度评估与推进**：发出互动课后，用户完成自测即调用 assessMastery（目标每知识点 1-2 轮）。当 assessMastery 返回\`instruction\` 字段时（表示掌握通过），按 instruction 用一句话确认并预告下一节，然后**停止**——不要生成掌握总结报告、不要庆祝长文、不要复述概念。系统会自动开始下一节教学。
 
 当 assessMastery 没有返回 instruction（分数 < 80），继续当前节点的追问教学。
+
+⚠️ **assessMastery 只能在用户实际学过当前知识点后调用**（完成互动课自测或经过苏格拉底追问）。绝不能在刚生成路线图、还没教任何内容时调用 assessMastery——那会让学习者没学就被判"掌握"。第一个知识点必须先教学再评估。
 
 **当前知识点 ID**：${ctx.currentNode.id}（用于 assessMastery）`;
 }

@@ -9,7 +9,7 @@ import type { UIBlock } from "@ai-teacher/shared";
 import type { MessageMetadata, DiagnosticQuestionsData } from "@/hooks/use-chat-stream";
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 
 function getTextFromParts(parts: UIMessage["parts"]): string {
   if (!parts) return "";
@@ -213,6 +213,12 @@ export function ChatArea({
             />
           );
         })}
+        {diagnosticAnalyzing && (
+          <div className="my-4 flex items-center justify-center gap-2.5 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3.5">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-sm font-medium text-foreground">正在为你定制学习路线…</span>
+          </div>
+        )}
         {isLoading && messages.length > 0 && (() => {
           const lastMsg = messages[messages.length - 1];
           if (lastMsg.role !== "assistant") return null;

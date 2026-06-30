@@ -21,7 +21,6 @@ import { SandboxProvider } from "@/contexts/sandbox-context";
 import type { UIMessage } from "ai";
 import { GraduationCap, PanelRightClose, MapPin } from "lucide-react";
 import { ModeTabs, type ActiveMode } from "@/components/layout/mode-tabs";
-import { StartupCard } from "@/components/chat/startup-card";
 
 const USER_ID = "seed-user-ai-teacher";
 
@@ -198,10 +197,10 @@ export function Component() {
   const [rightTab, setRightTab] = useState<"roadmap" | "code">("roadmap");
   const [activeMode, setActiveMode] = useState<ActiveMode>("learning");
   const location = useLocation();
+  // 落地页输入主题后传入，新会话进入时自动触发诊断流（删起步页后，BUG3 修复）
   const [startupTopic, setStartupTopic] = useState<string | undefined>(
     () => (location.state as { topic?: string } | null)?.topic,
   );
-  const [startupSubmitted, setStartupSubmitted] = useState(false);
   const [reviewDueNodes, setReviewDueNodes] = useState<Array<{
     id: string;
     index: number;
@@ -376,7 +375,6 @@ export function Component() {
       setInterviewResult(null);
       setRightTab("roadmap");
       setStartupTopic(undefined);
-      setStartupSubmitted(false);
     }
     prevSessionRef.current = sessionId;
 
@@ -645,22 +643,15 @@ export function Component() {
     chat.submitMessage(topic);
   }
 
-  // 起步页提交/跳过 → 进入对话流（spec §5.3②）
-  function handleStartupSubmit(info: { motivation?: string; level?: string }) {
-    if (!startupTopic) return;
-    setStartupSubmitted(true);
-    setStartupTopic(undefined);
-    optimisticUpdateTopic(startupTopic);
-    const startupInfo = [info.motivation, info.level].filter(Boolean).join("；");
-    chat.submitMessage(startupInfo ? `${startupTopic}（${startupInfo}）` : startupTopic);
-  }
-  function handleStartupSkip() {
-    if (!startupTopic) return;
-    setStartupSubmitted(true);
-    setStartupTopic(undefined);
+  // 落地页输入主题后自动触发诊断流（删起步页后，BUG3 修复）：
+  // 新会话且带 topic 时，自动发首条消息触发 agent 诊断题
+  useEffect(() => {
+    if (!isNewSession || !startupTopic || chat.isLoading) return;
+    if (chat.messages.length > 0) return; // 已有消息则不重复触发
     optimisticUpdateTopic(startupTopic);
     chat.submitMessage(startupTopic);
-  }
+    setStartupTopic(undefined);
+  }, [isNewSession, startupTopic, chat.isLoading, chat.messages.length]);
 
   function getLastAssistantMessage() {
     for (let i = chat.messages.length - 1; i >= 0; i--) {
@@ -960,38 +951,30 @@ export function Component() {
             <ChatArea
               {...chatAreaProps}
               welcomeContent={
-                startupTopic && !startupSubmitted ? (
-                  <StartupCard
-                    topic={startupTopic}
-                    onSubmit={handleStartupSubmit}
-                    onSkip={handleStartupSkip}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center pt-16 pb-8">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-roadmap-fill/10">
-                      <GraduationCap className="h-6 w-6 text-roadmap-fill" />
-                    </div>
-                    <h1 className="mt-4 text-xl font-semibold text-foreground">
-                      你好，我是 AI Teacher
-                    </h1>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      告诉我你对什么感兴趣，从零到精通，我带你
-                    </p>
-                    <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
-                    <div className="mt-3 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
-                      {fallbackTopics.map((topic) => (
-                        <button
-                          key={topic.id}
-                          onClick={() => handleTopicClick(topic.title)}
-                          disabled={chat.isLoading}
-                          className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4 text-left text-foreground transition-all duration-200 hover:bg-secondary hover:border-roadmap-fill/20 hover:shadow-lg hover:shadow-roadmap-fill/5 disabled:opacity-50"
-                        >
-                          <span className="text-sm leading-snug">{topic.title}</span>
-                        </button>
-                      ))}
-                    </div>
+                <div className="flex flex-col items-center pt-16 pb-8">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                    <GraduationCap className="h-7 w-7 text-primary" />
                   </div>
-                )
+                  <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                    真正掌握，而不只是看过
+                  </h1>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    从零到精通，AI 私教带你学 · 固 · 验，三阶段闭环让知识真正留下
+                  </p>
+                  <p className="mt-8 text-xs text-muted-foreground">或者试试这些</p>
+                  <div className="mt-3 flex flex-wrap justify-center gap-2">
+                    {fallbackTopics.map((topic) => (
+                      <button
+                        key={topic.id}
+                        onClick={() => handleTopicClick(topic.title)}
+                        disabled={chat.isLoading}
+                        className="rounded-full border border-border bg-card px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-secondary hover:text-foreground disabled:opacity-50"
+                      >
+                        {topic.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               }
             />
             <QuickQuestion sessionId={sessionId} />

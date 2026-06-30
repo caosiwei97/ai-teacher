@@ -33,14 +33,6 @@ describe("buildTutorSystemPrompt", () => {
     expect(prompt).not.toContain("温暖私教");
   });
 
-  it("teachingMode=interviewer：面试官", () => {
-    const prompt = buildTutorSystemPrompt({
-      ...baseCtx,
-      teachingMode: "interviewer",
-    });
-    expect(prompt).toContain("面试官");
-  });
-
   it("isDiagnosisPhase=true：包含诊断阶段 section", () => {
     const prompt = buildTutorSystemPrompt({ ...baseCtx, isDiagnosisPhase: true });
     expect(prompt).toContain("# 诊断阶段");

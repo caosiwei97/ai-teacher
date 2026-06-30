@@ -95,9 +95,9 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
 
     const newId = generateUUID();
     setCurrentSessionId(newId);
-    window.history.replaceState(null, "", `/learn/${newId}`);
+    navigate(`/learn/${newId}`, { replace: true });
     return newId;
-  }, [sessions, currentSessionId]);
+  }, [sessions, currentSessionId, navigate]);
 
   const archiveSession = useCallback(
     async (id: string) => {
@@ -108,18 +108,11 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
         if (remaining.length > 0) {
           const next = remaining[0];
           setCurrentSessionId(next.id);
-          window.history.replaceState(null, "", `/learn/${next.id}`);
+          navigate(`/learn/${next.id}`, { replace: true });
         } else {
-          const newId = generateUUID();
-          const newSession: SessionInfo = {
-            id: newId,
-            topic: "新对话",
-            status: "new",
-            progress: { totalNodes: 0, masteredNodes: 0, currentNodeId: null },
-          };
-          setSessions([newSession]);
-          setCurrentSessionId(newId);
-          window.history.replaceState(null, "", `/learn/${newId}`);
+          // 删完所有会话 → 回落地页（/），不创建本地空会话
+          setCurrentSessionId(null);
+          navigate("/", { replace: true });
         }
       }
 
@@ -130,7 +123,7 @@ export function SessionContextProvider({ children }: { children: ReactNode }) {
         refreshSessions();
       }
     },
-    [sessions, currentSessionId, refreshSessions],
+    [sessions, currentSessionId, navigate, refreshSessions],
   );
 
   const value = useMemo(

@@ -34,9 +34,9 @@ test.describe("Home Page — 落地页", () => {
   });
 
   test("should show welcome content for new session without topic state", async ({ page }) => {
-    // 直接 goto 不存在 session（无 topic state）→ 欢迎页（非起步页）
+    // 直接 goto 不存在 session（无 topic state）→ 落地页式首屏（BUG2：统一首屏文案）
     await page.goto("/learn/e2e-test-new-session-welcome");
-    await expect(page.getByText("你好，我是 AI Teacher")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("真正掌握，而不只是看过")).toBeVisible({ timeout: 10000 });
     await expect(page.getByText("或者试试这些")).toBeVisible();
   });
 });
