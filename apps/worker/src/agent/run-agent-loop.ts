@@ -101,8 +101,8 @@ export async function runAgentLoop(
 
         const eventType = event.type as string;
 
-        if (eventType === "reasoning-delta" && "delta" in event) {
-          const delta = (event as { delta: string }).delta;
+        if (eventType === "reasoning-delta" && "text" in event) {
+          const delta = (event as { text: string }).text;
           await publisher.publish(
             channel,
             createSSEEvent(SSEEventType.ReasoningDelta, { step, text: delta }),
