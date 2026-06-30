@@ -438,6 +438,16 @@ export function createChatTurnWorker(
           maxSteps: 7,
           timeoutMs: STREAM_TIMEOUT_MS,
           abortSignal: abortController.signal,
+          fallbackModel: llmJobConfig.fallbackModelId
+            ? providerFn(llmJobConfig.fallbackModelId)
+            : undefined,
+          fallbackProviderModel: llmJobConfig.fallbackProviderFn
+            ? {
+                model: llmJobConfig.fallbackProviderFn(
+                  llmJobConfig.fallbackModel ?? "deepseek-v4-flash",
+                ),
+              }
+            : undefined,
         });
 
         // Post-process: async compaction if needed
