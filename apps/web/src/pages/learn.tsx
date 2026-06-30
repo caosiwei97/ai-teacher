@@ -1207,6 +1207,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
     disabled: llmConfigs.length === 0 && !hasEnvConfig,
     masteryTransitionPending,
     nextNodeTitle,
+    tokenUsage: chat.tokenUsage,
+    contextInfo: chat.contextInfo,
   };
 
   const showRight = nodes.length > 0 || codePanel;

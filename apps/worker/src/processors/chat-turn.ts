@@ -425,6 +425,17 @@ export function createChatTurnWorker(
           messages.map((m) => ({ role: m.role, content: m.content })),
         );
 
+        await publisher.publish(
+          channel,
+          createSSEEvent(SSEEventType.ContextInfo, {
+            data: {
+              tokenCount: prepared.tokenCount,
+              budget: 6000,
+              needsCompaction: prepared.needsCompaction,
+            },
+          }),
+        );
+
         const modelName = llmJobConfig.sandboxModel ?? "deepseek-v4-flash";
         const model = providerFn(modelName);
 

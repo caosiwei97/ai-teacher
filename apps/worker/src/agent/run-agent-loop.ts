@@ -83,6 +83,14 @@ export async function runAgentLoop(
       tools,
       stopWhen: stepCountIs(1),
       abortSignal: opts.abortSignal,
+      onFinish: async ({ totalUsage }) => {
+        if (totalUsage) {
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.Usage, { data: { usage: totalUsage } }),
+          );
+        }
+      },
     });
 
     try {
@@ -339,6 +347,12 @@ async function degradeStep(opts: {
         createSSEEvent(SSEEventType.TextDelta, { content: gen.text }),
       );
     }
+    if (gen.usage) {
+      await publisher.publish(
+        channel,
+        createSSEEvent(SSEEventType.Usage, { data: { usage: gen.usage } }),
+      );
+    }
     const toolResults = gen.toolResults.map((tr) => ({
       toolName: tr.toolName,
       result: tr.output,
@@ -397,6 +411,12 @@ async function degradeStep(opts: {
         await publisher.publish(
           channel,
           createSSEEvent(SSEEventType.TextDelta, { content: gen.text }),
+        );
+      }
+      if (gen.usage) {
+        await publisher.publish(
+          channel,
+          createSSEEvent(SSEEventType.Usage, { data: { usage: gen.usage } }),
         );
       }
       const toolResults = gen.toolResults.map((tr) => ({

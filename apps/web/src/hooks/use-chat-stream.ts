@@ -74,6 +74,49 @@ export interface MessageMetadata {
   annotations?: AnnotationData[];
 }
 
+export interface TokenUsage {
+  input: number;
+  output: number;
+  total: number;
+  cacheRead: number;
+  cacheWrite: number;
+  reasoning: number;
+  sessionTotal: number;
+}
+
+export interface ContextInfo {
+  tokenCount: number;
+  budget: number;
+  needsCompaction: boolean;
+}
+
+const INITIAL_TOKEN_USAGE: TokenUsage = {
+  input: 0,
+  output: 0,
+  total: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+  reasoning: 0,
+  sessionTotal: 0,
+};
+
+function mergeUsage(prev: TokenUsage, u: Record<string, unknown>): TokenUsage {
+  const inputDetails = u.inputTokenDetails as Record<string, unknown> | undefined;
+  const outputDetails = u.outputTokenDetails as
+    | Record<string, unknown>
+    | undefined;
+  const total = (u.totalTokens as number) ?? prev.total;
+  return {
+    input: (u.inputTokens as number) ?? prev.input,
+    output: (u.outputTokens as number) ?? prev.output,
+    total,
+    cacheRead: inputDetails?.cacheReadTokens as number ?? prev.cacheRead,
+    cacheWrite: inputDetails?.cacheWriteTokens as number ?? prev.cacheWrite,
+    reasoning: outputDetails?.reasoningTokens as number ?? prev.reasoning,
+    sessionTotal: prev.sessionTotal + (total ?? 0),
+  };
+}
+
 // 单条 annotation 里承载 loopTrace（单对象，非数组）。updater 对该对象做就地变更，
 // 若不存在则新建。返回新的 annotations 数组（不可变更新）。
 function updateLoopTrace(
@@ -123,6 +166,8 @@ export function useChatStream(
   const [messages, setMessages] = useState<UIMessage<MessageMetadata>[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState<TokenUsage>(INITIAL_TOKEN_USAGE);
+  const [contextInfo, setContextInfo] = useState<ContextInfo | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cleanup: abort any in-flight SSE stream when component unmounts
@@ -586,6 +631,15 @@ export function useChatStream(
                   },
                 };
                 setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.Usage && event.data) {
+                const u = (
+                  event.data as { usage?: Record<string, unknown> }
+                )?.usage;
+                if (u) setTokenUsage((prev) => mergeUsage(prev, u));
+              } else if (event.type === SSEEventType.ContextInfo && event.data) {
+                setContextInfo(
+                  event.data as ContextInfo,
+                );
               } else if (event.type === SSEEventType.Error) {
                 const errorMsg =
                   typeof event.data === "string"
@@ -1051,6 +1105,13 @@ export function useChatStream(
                   },
                 ];
               });
+            } else if (event.type === SSEEventType.Usage && event.data) {
+              const u = (
+                event.data as { usage?: Record<string, unknown> }
+              )?.usage;
+              if (u) setTokenUsage((prev) => mergeUsage(prev, u));
+            } else if (event.type === SSEEventType.ContextInfo && event.data) {
+              setContextInfo(event.data as ContextInfo);
             } else if (event.type === SSEEventType.Error) {
               const errorMsg =
                 typeof event.data === "string"
@@ -1086,5 +1147,7 @@ export function useChatStream(
     stop,
     setMessages,
     resumeStream,
+    tokenUsage,
+    contextInfo,
   };
 }
