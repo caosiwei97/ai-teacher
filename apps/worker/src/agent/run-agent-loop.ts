@@ -299,14 +299,6 @@ async function degradeStep(opts: {
 
   // ① 非流式 generateText（主 model）
   try {
-    const gen = await generateText({
-      model: opts.mainModel,
-      system: opts.system,
-      messages: opts.messages,
-      tools: opts.tools,
-      stopWhen: stepCountIs(1),
-      abortSignal: opts.abortSignal,
-    });
     await publisher.publish(
       channel,
       createSSEEvent(SSEEventType.Failover, {
@@ -316,6 +308,14 @@ async function degradeStep(opts: {
         step,
       }),
     );
+    const gen = await generateText({
+      model: opts.mainModel,
+      system: opts.system,
+      messages: opts.messages,
+      tools: opts.tools,
+      stopWhen: stepCountIs(1),
+      abortSignal: opts.abortSignal,
+    });
     if (gen.text) {
       await publisher.publish(
         channel,
@@ -354,19 +354,11 @@ async function degradeStep(opts: {
     // 非流式也失败，继续降级到 fallback model
   }
 
-  // ② fallback model（流式）
+  // ② fallback model（非流式 generateText）
   const fallbackModel =
     opts.fallbackModel ?? opts.fallbackProviderModel?.model;
   if (fallbackModel) {
     try {
-      const gen = await generateText({
-        model: fallbackModel,
-        system: opts.system,
-        messages: opts.messages,
-        tools: opts.tools,
-        stopWhen: stepCountIs(1),
-        abortSignal: opts.abortSignal,
-      });
       await publisher.publish(
         channel,
         createSSEEvent(SSEEventType.Failover, {
@@ -376,6 +368,14 @@ async function degradeStep(opts: {
           step,
         }),
       );
+      const gen = await generateText({
+        model: fallbackModel,
+        system: opts.system,
+        messages: opts.messages,
+        tools: opts.tools,
+        stopWhen: stepCountIs(1),
+        abortSignal: opts.abortSignal,
+      });
       if (gen.text) {
         await publisher.publish(
           channel,
