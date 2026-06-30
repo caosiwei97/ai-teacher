@@ -33,7 +33,6 @@ interface LeftSidebarProps {
   onToggle?: () => void;
   onNewSession?: () => void;
   onArchiveSession?: (id: string) => void;
-  newSessionHint?: string | null;
 }
 
 export function LeftSidebar({
@@ -44,7 +43,6 @@ export function LeftSidebar({
   onToggle,
   onNewSession,
   onArchiveSession,
-  newSessionHint,
 }: LeftSidebarProps) {
   // 分类：学习中（active/diagnosing）/ 已完成（completed）。无数据时也展示分类骨架 + 暂无
   const active = sessions.filter((s) => s.status === "active" || s.status === "diagnosing");
@@ -132,11 +130,6 @@ export function LeftSidebar({
             <Plus className="h-4 w-4" />
             新对话
           </button>
-          {newSessionHint && (
-            <p className="mt-1.5 px-2 text-center text-[11px] text-sidebar-muted">
-              {newSessionHint}
-            </p>
-          )}
         </div>
       )}
 
@@ -145,9 +138,9 @@ export function LeftSidebar({
         <div className="mb-5">
           <button
             onClick={() => toggleGroup("active")}
-            className="mb-2 flex w-full items-center gap-1 px-2 text-[11px] font-medium uppercase tracking-widest text-sidebar-muted hover:text-sidebar-foreground"
+            className="mb-2 flex w-full items-center gap-1 px-2 text-[13px] font-medium text-sidebar-muted hover:text-sidebar-foreground"
           >
-            {collapsedGroups.active ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {collapsedGroups.active ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             学习中
             <span className="ml-auto normal-case tracking-normal opacity-60">{active.length}</span>
           </button>
@@ -212,9 +205,9 @@ export function LeftSidebar({
         <div>
           <button
             onClick={() => toggleGroup("completed")}
-            className="mb-2 flex w-full items-center gap-1 px-2 text-[11px] font-medium uppercase tracking-widest text-sidebar-muted hover:text-sidebar-foreground"
+            className="mb-2 flex w-full items-center gap-1 px-2 text-[13px] font-medium text-sidebar-muted hover:text-sidebar-foreground"
           >
-            {collapsedGroups.completed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {collapsedGroups.completed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             已完成
             <span className="ml-auto normal-case tracking-normal opacity-60">{completed.length}</span>
           </button>
