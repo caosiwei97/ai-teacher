@@ -21,11 +21,12 @@ export async function createSession(
   userId: string,
   topic: string,
   teachingMode?: "warm" | "strict",
+  llmConfigId?: string,
 ) {
   const res = await fetch("/api/sessions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, topic, teachingMode }),
+    body: JSON.stringify({ userId, topic, teachingMode, llmConfigId }),
   });
   if (!res.ok) throw new Error("Failed to create session");
   const data = await res.json() as {

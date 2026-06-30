@@ -270,7 +270,7 @@ export function ChatArea({
         <div ref={bottomRef} />
         </div>
       </div>
-      <div className="mx-auto w-full max-w-3xl px-5">
+      <div className="mx-auto w-full max-w-3xl px-5 pb-5">
         {error && (
           <div className="py-2">
             <p className="text-xs text-destructive">{error}</p>
@@ -294,6 +294,8 @@ export function ChatArea({
           llmConfigs={llmConfigs}
           selectedConfigId={selectedConfigId}
           onModelChange={onModelChange}
+          frameless
+          showSuggestButton
         />
       </div>
     </div>

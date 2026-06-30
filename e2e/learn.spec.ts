@@ -49,12 +49,51 @@ test.describe("Learn Page — Roadmap", () => {
 });
 
 test.describe("Learn Page — Chat Input", () => {
+  test("should transition from topic card into chat with first learning request", async ({ page }) => {
+    test.setTimeout(60000);
+
+    await page.goto("/learn");
+    await page.locator("button", { hasText: "个人投资理财入门" }).click();
+
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 30000 });
+    await expect(page.getByText("请教我学习《个人投资理财入门》。")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("开始你的学习之旅吧")).toHaveCount(0);
+  });
+
   test("should display textarea with placeholder", async ({ page }) => {
     await page.goto(LEARN_PATH);
 
     const textarea = page.locator("textarea");
     await expect(textarea).toBeVisible();
     await expect(textarea).toHaveAttribute("placeholder", "写下你的思考…");
+  });
+
+  test("should show the same composer controls and suggestion only in chat view", async ({ page }) => {
+    await page.goto("/learn");
+    await expect(page.locator("textarea")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("温暖私教")).toBeVisible();
+    await expect(page.getByTitle("学习资料")).toBeVisible();
+    await expect(page.getByTestId("suggest-reply-button")).toHaveCount(0);
+
+    await page.goto(LEARN_PATH);
+    await expect(page.locator("textarea")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("温暖私教")).toBeVisible();
+    await expect(page.getByTitle("学习资料")).toBeVisible();
+    await expect(page.getByTestId("suggest-reply-button")).toBeVisible();
+  });
+
+  test("should keep multiline text above the composer toolbar", async ({ page }) => {
+    await page.goto(LEARN_PATH);
+    const textarea = page.locator("textarea");
+    await expect(textarea).toBeVisible({ timeout: 10000 });
+
+    await textarea.fill(Array.from({ length: 12 }, (_, i) => `第 ${i + 1} 行输入内容`).join("\n"));
+
+    const textareaBox = await textarea.boundingBox();
+    const toolbarBox = await page.getByTestId("chat-composer-toolbar").boundingBox();
+    expect(textareaBox).not.toBeNull();
+    expect(toolbarBox).not.toBeNull();
+    expect(textareaBox!.y + textareaBox!.height).toBeLessThanOrEqual(toolbarBox!.y + 1);
   });
 });
 

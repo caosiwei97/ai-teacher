@@ -330,6 +330,20 @@
   }
 }
 
+::view-transition-old(chat-input-shell),
+::view-transition-new(chat-input-shell) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  height: 100%;
+  overflow: clip;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: ease-out;
+}
+
 @layer base {
   *,
   ::after,

@@ -78,19 +78,19 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
   );
 
   const handleSubmit = useCallback(
-    async (e?: React.FormEvent, overrideText?: string) => {
+    async (e?: React.FormEvent, overrideText?: string, optimisticIds?: { userId?: string; assistantId?: string }) => {
       e?.preventDefault();
       const text = overrideText ?? input;
       if (!text.trim() || isLoading) return;
 
       const userMessage: UIMessage<MessageMetadata> = {
-        id: `user-${Date.now()}`,
+        id: optimisticIds?.userId ?? `user-${Date.now()}`,
         role: "user",
         parts: [{ type: "text" as const, text: text.trim() }],
       };
 
       const assistantMessage: UIMessage<MessageMetadata> = {
-        id: `assistant-${Date.now()}`,
+        id: optimisticIds?.assistantId ?? `assistant-${Date.now()}`,
         role: "assistant",
         parts: [{ type: "text" as const, text: "" }],
         metadata: { annotations: [] },
@@ -340,8 +340,8 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
   }, []);
 
   const submitMessage = useCallback(
-    (text: string) => {
-      handleSubmit(undefined, text);
+    (text: string, optimisticIds?: { userId?: string; assistantId?: string }) => {
+      handleSubmit(undefined, text, optimisticIds);
     },
     [handleSubmit],
   );

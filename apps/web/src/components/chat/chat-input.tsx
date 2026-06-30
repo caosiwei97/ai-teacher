@@ -31,6 +31,8 @@ interface ChatInputProps {
   onModelChange?: (configId: string) => void;
   /** 无边框模式：落地页等非底部栏场景用，去掉 border-t + p-5 外框 */
   frameless?: boolean;
+  /** 建议回复按钮只在具体会话页出现；落地页复用输入框但不展示 */
+  showSuggestButton?: boolean;
 }
 
 export function ChatInput({
@@ -52,8 +54,10 @@ export function ChatInput({
   selectedConfigId,
   onModelChange,
   frameless,
+  showSuggestButton,
 }: ChatInputProps) {
   const [modelOpen, setModelOpen] = useState(false);
+  const shouldShowSuggestion = showSuggestButton && onSuggest;
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.nativeEvent.isComposing || e.key !== "Enter" || e.shiftKey) return;
@@ -74,7 +78,10 @@ export function ChatInput({
         </div>
       )}
       <form onSubmit={onSubmit} className="mx-auto max-w-3xl">
-        <div className="relative rounded-[12px] border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input-bg)] transition-[border-color,box-shadow] duration-200 ease-in-out focus-within:border-[var(--color-chat-input-focus)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-ring)_25%,transparent)]">
+        <div
+          data-testid="chat-composer"
+          className="rounded-[12px] border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input-bg)] transition-[border-color,box-shadow] duration-200 ease-in-out focus-within:border-[var(--color-chat-input-focus)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-ring)_25%,transparent)]"
+        >
           <div className="flex items-start">
             {onTeachingModeChange && (
               <div className="flex shrink-0 items-center pt-4 pl-4">
@@ -88,7 +95,7 @@ export function ChatInput({
               placeholder={disabled ? "请先配置模型…" : "写下你的思考…"}
               disabled={disabled}
               rows={1}
-              className="flex-1 resize-none bg-transparent px-4 pt-4 pb-12 pr-12 text-[16px] leading-relaxed text-[var(--color-chat-input-text)] placeholder:text-[var(--color-chat-input-placeholder)] focus:outline-none focus-visible:shadow-none focus-visible:ring-0"
+              className="flex-1 resize-none bg-transparent px-4 pt-4 pb-2 text-[16px] leading-relaxed text-[var(--color-chat-input-text)] placeholder:text-[var(--color-chat-input-placeholder)] focus:outline-none focus-visible:shadow-none focus-visible:ring-0"
               style={{ minHeight: "56px", maxHeight: "280px" }}
               onInput={(e) => {
                 const el = e.currentTarget;
@@ -97,7 +104,7 @@ export function ChatInput({
               }}
             />
           </div>
-          <div className="absolute bottom-2 right-2 flex items-center gap-1">
+          <div data-testid="chat-composer-toolbar" className="flex min-h-12 items-center justify-end gap-1 px-2 pb-2">
             <SourceUploadPanel />
             {currentModel && (
               <div className="relative">
@@ -138,11 +145,14 @@ export function ChatInput({
                 )}
               </div>
             )}
-            {onSuggest && !isLoading && (
+            {shouldShowSuggestion && (
               <button
                 type="button"
                 onClick={onSuggest}
-                disabled={isSuggesting}
+                disabled={isSuggesting || isLoading}
+                aria-label="推荐回答"
+                title={isLoading ? "回复生成中" : "推荐回答"}
+                data-testid="suggest-reply-button"
                 className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)] disabled:opacity-50"
               >
                 <Lightbulb className="h-4 w-4" />

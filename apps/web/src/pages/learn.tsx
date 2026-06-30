@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import { RightSidebar } from "@/components/layout/right-sidebar";
 import { ResizableDivider } from "@/components/layout/resizable-divider";
@@ -27,6 +27,8 @@ import { GraduationCap, PanelRightClose, MapPin, ArrowRight } from "lucide-react
 import { ModeTabs, type ActiveMode } from "@/components/layout/mode-tabs";
 
 const USER_ID = "seed-user-ai-teacher";
+const PENDING_FIRST_USER_ID = "pending-first-user";
+const PENDING_FIRST_ASSISTANT_ID = "pending-first-assistant";
 
 const fallbackTopics = [
   { id: "t1", title: "AI 提示词工程" },
@@ -76,29 +78,27 @@ function LandingView() {
     if (/《.+》/.test(text) || /^(请教|请教我|学习|我想学)/.test(text)) {
       return text;
     }
-    return `请教我学习《${text}》`;
+    return `请教我学习《${text}》。`;
   }
 
   // 发消息才建会话：输入首条消息 → POST /api/sessions（topic=未命名对话 + teachingMode）拿 id → 跳转带 firstMessage
-  // View Transitions API：同 view-transition-name 元素（ChatInput）跨路由自动位移插值，输入框从居中下沉到底部
-  // 旧浏览器降级为直接 navigate（无动画但功能正常）
+  // React Router viewTransition：同 view-transition-name 元素（ChatInput）跨路由自动位移插值，输入框从居中下沉到底部。
   async function sendMessage(text: string) {
     const trimmed = text.trim();
     if (!trimmed || creating) return;
     setCreating(true);
     const formatted = formatFirstMessage(trimmed);
     try {
-      const newSession = await createSession(USER_ID, "未命名对话", teachingMode);
+      const newSession = await createSession(USER_ID, "未命名对话", teachingMode, selectedConfigId);
       setSessions((prev) => [newSession, ...prev]);
       const target = `/learn/${newSession.id}`;
-      const navigateOpts = { state: { firstMessage: formatted, teachingMode }, replace: true };
-      if (typeof document !== "undefined" && document.startViewTransition) {
-        const t = document.startViewTransition(() => navigate(target, navigateOpts));
-        t.finished.finally(() => setCreating(false));
-      } else {
-        navigate(target, navigateOpts);
-        setCreating(false);
-      }
+      navigate(target, {
+        state: { firstMessage: formatted, teachingMode, llmConfigId: selectedConfigId },
+        replace: true,
+        viewTransition: true,
+        flushSync: true,
+      });
+      setCreating(false);
     } catch (err) {
       console.error("Failed to create session:", err);
       setCreating(false);
@@ -112,7 +112,7 @@ function LandingView() {
 
   return (
     <div className="flex h-full flex-col items-center justify-center px-6 py-10">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-3xl">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
             <GraduationCap className="h-7 w-7 text-primary" />
@@ -336,7 +336,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
   const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
 
   const [llmConfigs, setLlmConfigs] = useState<LlmConfig[]>([]);
-  const [selectedConfigId, setSelectedConfigId] = useState<string | undefined>(undefined);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | undefined>(
+    () => (location.state as { llmConfigId?: string } | null)?.llmConfigId,
+  );
   const [hasEnvConfig, setHasEnvConfig] = useState(true);
 
   const [codePanel, setCodePanel] = useState<{
@@ -355,6 +357,25 @@ function ChatView({ sessionId }: { sessionId: string }) {
   // 首条消息待发送标志：抑制 ChatArea 空态 fallback，避免「开始你的学习之旅吧」闪烁
   const [pendingFirstMessage, setPendingFirstMessage] = useState(
     () => !!(location.state as { firstMessage?: string } | null)?.firstMessage,
+  );
+  const pendingFirstMessages = useMemo<UIMessage<MessageMetadata>[]>(
+    () =>
+      pendingFirstMessage && firstMessage
+        ? [
+            {
+              id: PENDING_FIRST_USER_ID,
+              role: "user",
+              parts: [{ type: "text" as const, text: firstMessage }],
+            },
+            {
+              id: PENDING_FIRST_ASSISTANT_ID,
+              role: "assistant",
+              parts: [{ type: "text" as const, text: "" }],
+              metadata: { annotations: [] },
+            },
+          ]
+        : [],
+    [firstMessage, pendingFirstMessage],
   );
   const [reviewDueNodes, setReviewDueNodes] = useState<Array<{
     id: string;
@@ -578,6 +599,10 @@ function ChatView({ sessionId }: { sessionId: string }) {
                 (m) => (m.role === "learner" || m.role === "tutor") && !m.hidden,
               );
               setIsNewSession(!hasVisibleMessages);
+              if (hasVisibleMessages) {
+                setPendingFirstMessage(false);
+                setFirstMessage(undefined);
+              }
             } else {
               // session 不存在（DB 也无）—— 改造后落地页已先建，此处为异常路径
               // 不再创建空占位会话，显示错误提示
@@ -638,7 +663,13 @@ function ChatView({ sessionId }: { sessionId: string }) {
                 metadata: annotations.length > 0 ? { annotations } : undefined,
               } satisfies UIMessage<MessageMetadata>;
             });
-          chat.setMessages(historyMessages);
+          if (historyMessages.length > 0 || !pendingFirstMessage) {
+            chat.setMessages(historyMessages);
+          }
+          if (historyMessages.length > 0) {
+            setPendingFirstMessage(false);
+            setFirstMessage(undefined);
+          }
 
           const hasActiveProcessing = sessionData.session.messages.some(
             (m) => m.status === "sending" || m.status === "processing"
@@ -806,8 +837,15 @@ function ChatView({ sessionId }: { sessionId: string }) {
   // submitMessage 同步 setMessages（user+assistant），messages 立即非空，空态 fallback 不触发
   useEffect(() => {
     if (!isNewSession || !firstMessage || chat.isLoading) return;
-    if (chat.messages.length > 0) return; // 已有消息则不重复触发
-    chat.submitMessage(firstMessage);
+    if (chat.messages.length > 0) {
+      setFirstMessage(undefined);
+      setPendingFirstMessage(false);
+      return;
+    }
+    chat.submitMessage(firstMessage, {
+      userId: PENDING_FIRST_USER_ID,
+      assistantId: PENDING_FIRST_ASSISTANT_ID,
+    });
     setFirstMessage(undefined);
     setPendingFirstMessage(false);
   }, [isNewSession, firstMessage, chat.isLoading, chat.messages.length]);
@@ -1009,9 +1047,36 @@ function ChatView({ sessionId }: { sessionId: string }) {
       .catch(console.error);
   }
 
+  const chatAreaProps = {
+    messages: pendingFirstMessage ? pendingFirstMessages : chat.messages,
+    input: chat.input,
+    isLoading: pendingFirstMessage || chat.isLoading,
+    onInputChange: chat.handleInputChange,
+    onSubmit: handleSubmit,
+    onStop: chat.stop,
+    isSuggesting,
+    suggestion,
+    onSuggest: handleSuggest,
+    onApplySuggestion: handleApplySuggestion,
+    onDismissSuggestion: handleDismissSuggestion,
+    onDiagnosticSubmit: handleDiagnosticSubmit,
+    diagnosticSubmitted,
+    diagnosticAnalyzing,
+    teachingMode,
+    onTeachingModeChange: setTeachingMode,
+    error: chatError,
+    currentModel: llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel,
+    llmConfigs: llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault })),
+    selectedConfigId,
+    onModelChange: setSelectedConfigId,
+    disabled: llmConfigs.length === 0 && !hasEnvConfig,
+    masteryTransitionPending,
+    nextNodeTitle,
+  };
+
   const showRight = nodes.length > 0 || codePanel;
 
-  if (!loaded) {
+  if (!loaded && !pendingFirstMessage) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -1048,33 +1113,6 @@ function ChatView({ sessionId }: { sessionId: string }) {
       </div>
     );
   }
-
-  const chatAreaProps = {
-    messages: chat.messages,
-    input: chat.input,
-    isLoading: chat.isLoading,
-    onInputChange: chat.handleInputChange,
-    onSubmit: handleSubmit,
-    onStop: chat.stop,
-    isSuggesting,
-    suggestion,
-    onSuggest: handleSuggest,
-    onApplySuggestion: handleApplySuggestion,
-    onDismissSuggestion: handleDismissSuggestion,
-    onDiagnosticSubmit: handleDiagnosticSubmit,
-    diagnosticSubmitted,
-    diagnosticAnalyzing,
-    teachingMode,
-    onTeachingModeChange: setTeachingMode,
-    error: chatError,
-    currentModel: llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel,
-    llmConfigs: llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault })),
-    selectedConfigId,
-    onModelChange: setSelectedConfigId,
-    disabled: llmConfigs.length === 0 && !hasEnvConfig,
-    masteryTransitionPending,
-    nextNodeTitle,
-  };
 
   return (
     <SandboxProvider>
