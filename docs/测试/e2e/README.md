@@ -9,29 +9,31 @@
 
 ## 测试矩阵总览
 
-| 分类     | 名称               | 测试文件                             | 用例数 | P0     | P1     | P2    |
-| -------- | ------------------ | ------------------------------------ | ------ | ------ | ------ | ----- |
-| A        | 新会话与诊断       | `home.spec.ts`, `diagnostic.spec.ts` | 5      | 4      | 1      | 0     |
-| B        | 路线图与学习流程   | `learn.spec.ts`                      | 4      | 4      | 0      | 0     |
-| C        | 苏格拉底式教学循环 | `chat.spec.ts`, `learn.spec.ts`      | 5      | 4      | 1      | 0     |
-| D        | 评估与门控         | `mastery.spec.ts`                    | 3      | 2      | 1      | 0     |
-| E        | 会话管理           | `session-management.spec.ts`         | 6      | 3      | 2      | 1     |
-| F        | 输入区功能         | `quick-features.spec.ts`             | 5      | 1      | 3      | 1     |
-| G        | 右侧栏交互         | `learn.spec.ts`                      | 6      | 1      | 4      | 1     |
-| H        | 设置与账户         | `settings.spec.ts`                   | 5      | 0      | 2      | 3     |
-| I        | 布局与导航         | `learn.spec.ts`                      | 5      | 2      | 2      | 1     |
-| J        | 流式响应与性能     | `chat.spec.ts`                       | 2      | 2      | 0      | 0     |
-| K        | 学习资料           | 待创建                               | 2      | 2      | 0      | 0     |
-| L        | 消息操作           | 待创建                               | 2      | 0      | 2      | 0     |
-| M        | 沙箱与 IDE         | `sandbox-ide.spec.ts`                | —      | —      | —      | —     |
-| N        | 推荐话题           | `suggested-topics.spec.ts`           | —      | —      | —      | —     |
-| O        | 会话详情           | `session-detail.spec.ts`             | —      | —      | —      | —     |
-| P        | LLM 配置           | `llm-config.spec.ts`                 | —      | —      | —      | —     |
-| Q        | 互动教学产物       | `interactive-lesson.spec.ts`         | 1      | 1      | 0      | 0     |
-| R        | 复习模式           | `review.spec.ts`                     | 3      | 3      | 0      | 0     |
-| S        | 面试模式           | `interview.spec.ts`                  | 2      | 2      | 0      | 0     |
-| T        | 模式切换与渐进解锁 | `mode-switch.spec.ts`                | 6      | 3      | 3      | 0     |
-| **合计** |                    |                                      | **56** | **28** | **22** | **7** |
+| 分类     | 名称               | 测试文件                             | 用例数 | P0  | P1  | P2  |
+| -------- | ------------------ | ------------------------------------ | ------ | --- | --- | --- |
+| A        | 新会话与诊断       | `home.spec.ts`, `diagnostic.spec.ts` | 7      | 4   | 1   | 0   |
+| B        | 路线图与学习流程   | `learn.spec.ts`                      | 4      | 4   | 0   | 0   |
+| C        | 苏格拉底式教学循环 | `chat.spec.ts`, `learn.spec.ts`      | 5      | 4   | 1   | 0   |
+| D        | 评估与门控         | `mastery.spec.ts`                    | 3      | 2   | 1   | 0   |
+| E        | 会话管理           | `session-management.spec.ts`         | 6      | 3   | 2   | 1   |
+| F        | 输入区功能         | `quick-features.spec.ts`             | 5      | 1   | 3   | 1   |
+| G        | 右侧栏交互         | `learn.spec.ts`                      | 6      | 1   | 4   | 1   |
+| H        | 设置与账户         | `settings.spec.ts`                   | 5      | 0   | 2   | 3   |
+| I        | 布局与导航         | `learn.spec.ts`                      | 5      | 2   | 2   | 1   |
+| J        | 流式响应与性能     | `chat.spec.ts`                       | 2      | 2   | 0   | 0   |
+| K        | 学习资料           | `sources.spec.ts`                    | 1      | 1   | 0   | 0   |
+| L        | 消息操作           | 待创建                               | 2      | 0   | 2   | 0   |
+| M        | 沙箱与 IDE         | `sandbox-ide.spec.ts`                | 3      | —   | —   | —   |
+| N        | 推荐话题           | `suggested-topics.spec.ts`           | 2      | —   | —   | —   |
+| O        | 会话详情           | `session-detail.spec.ts`             | 4      | —   | —   | —   |
+| P        | LLM 配置           | `llm-config.spec.ts`                 | 10     | —   | —   | —   |
+| Q        | 互动教学产物       | `interactive-lesson.spec.ts`         | 1      | 1   | 0   | 0   |
+| R        | 复习模式           | `review.spec.ts`                     | 3      | 3   | 0   | 0   |
+| S        | 面试模式           | `interview.spec.ts`                  | 2      | 2   | 0   | 0   |
+| T        | 模式切换与渐进解锁 | `mode-switch.spec.ts`                | 6      | 3   | 3   | 0   |
+| **合计** |                    |                                      | **69** | —   | —   | —   |
+
+> 用例数按测试文件去重统计（实际 `pnpm test:e2e` 跑出 69 个）。上表「用例数」按分类列示，部分文件跨多个分类（如 `learn.spec.ts` 同时属 B/C/G/I），分类相加会大于 69。P0/P1/P2 优先级仅对核心教学流程分类（A-J, Q-T）标注，独立测试文件（M-P）未分级。
 
 ### A. 新会话与诊断 (New Session & Diagnostic)
 
