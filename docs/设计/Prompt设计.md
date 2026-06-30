@@ -109,18 +109,17 @@ interface TutorPromptContext {
 
 # 互动课产出（形态 A）
 
-引入新知识点时，**必须调用 renderUI 工具**生成 interactive 互动课（blocks 传 `{ type: "interactive", html: "<完整 HTML>" }`，不要只在文字里说"给你互动课"——不调工具用户看不到 iframe），三段式：①概念（1 句）②动手感受（可交互，内联 script）③自测（1 题）。HTML 自包含（内联 CSS+script），不引用外部资源（外部 script 会被净化移除）。产物发出后对话退化为答疑+追问+判定掌握，不重复产物内容。
+引入新知识点时，**必须调用 renderUI 工具**生成 interactive 互动课（blocks 传结构化 JSON，不要只在文字里说"给你互动课"——不调工具用户看不到任何内容），三段式：①概念（concept，1-2 句，支持 markdown）②动手感受（explore，0-N 个受控交互，只支持 slider/input 两种）③自测（quiz，1 题，标明正确项 correctId 和解析 explanation）。产物发出后对话退化为答疑+追问+判定掌握，不重复产物内容。
 
-**HTML 生成硬性规范**（违反会导致交互失效/布局错乱）：
+要求：
 
-- **交互绑定**：所有交互（按钮点击、滑块拖动、输入框）必须在 `<script>` 内用 `addEventListener` 绑定，**严禁 inline 事件属性**（onclick/oninput 等）——会被净化移除导致交互失效
-- **引号转义**：HTML 属性用双引号；JS 字符串**一律用反引号**包裹，避免中文标点/引号嵌套冲突导致 SyntaxError（整个 script 块不执行）
-  - ❌ 错误（单引号嵌套致 SyntaxError，整个 script 失效）：`el.innerHTML='❌ 不对，注意"每日300kcal"才是对的'`
-  - ✅ 正确（反引号包裹，内含双引号/中文标点都安全）：``el.innerHTML=`❌ 不对，注意"每日300kcal"才是对的` ``
-  - 规则：JS 里所有 innerHTML/textContent/含中文标点的字符串，首尾必须用反引号，绝不用单引号或双引号
-- **自测选项**：每项用 `<button>` 标签，点击逻辑在 script 里用 addEventListener 绑定
+- 产物是结构化 JSON，不要生成 HTML 字符串
+- 代码类知识点的"可运行示例"请用沙箱（pushCode），不要塞进 interactive
+- 一节互动课讲清一个概念，让用户"自己看懂"而非"被追问懂"
 
-html 骨架参考（含按钮+滑块+自测三要素，交互全用 addEventListener、字符串全用反引号）：`<!DOCTYPE html><html><body><h3>标题</h3><p>概念一句话</p><div><label>数值：<span id="val">50</span></label><input type="range" id="slider" min="0" max="100" value="50"></div><div><p>自测题干</p><button id="optA">选项A</button><button id="optB">选项B</button><p id="feedback"></p></div><script>document.getElementById('slider').addEventListener('input',function(){document.getElementById('val').textContent=this.value});document.getElementById('optA').addEventListener('click',function(){document.getElementById('feedback').innerHTML=`❌ 不对`});document.getElementById('optB').addEventListener('click',function(){document.getElementById('feedback').innerHTML=`✅ 正确`})</script></body></html>`，按知识点扩展。
+JSON 骨架参考：`{ "type": "interactive", "title": "复利的力量", "concept": "利滚利：每期收益计入本金继续生息。", "explore": [{ "kind": "slider", "label": "年化收益率", "min": 1, "max": 20, "step": 1, "initial": 5, "unit": "%" }], "quiz": { "question": "同样本金、同样年限，复利比单利收益更高，主要因为？", "options": [{ "id": "a", "text": "每期收益被重新计入本金" }, { "id": "b", "text": "利率本身更高" }], "correctId": "a", "explanation": "复利把每期收益滚入本金，基数逐期增大。" } }`，按知识点调整概念、explore 交互与自测选项。
+
+> 历史背景：迭代 050② 初版让 LLM 手写整段自包含 HTML + iframe 沙箱渲染；改为结构化 A2UI 以降低生成成本（token 少、流式提前可见）、让布局前端可控、消除 iframe postMessage 提交竞态（见决策记录 ADR）。
 
 # 工具调用规则
 
@@ -405,7 +404,7 @@ Prompt 核心片段：
       // heading: { level: 2|3, text: string }
       // badge: { items: { text, variant: "success"|"warning"|"info" }[] }
       // mastery-report: { nodeId, nodeName, score, summary, table: { columns, rows }, badges: string[] }
-      // interactive: { html: string } — 自包含 HTML，iframe 沙箱渲染（迭代 050②）
+      // interactive: { title, concept, explore: [{kind:"slider"|"input",...}], quiz: {question, options:[{id,text}], correctId, explanation} } — 结构化三段式互动课（迭代 050②，后改结构化 A2UI）
       // flashcard: { nodeId, front, back } — 复习抽认卡，正面问题→翻面答案（迭代 051②）
       // interviewScore: { totalScore, difficulty, weakPoints, improvement, questionCount } — 面试评分卡（迭代 052②）
     }]
@@ -416,17 +415,17 @@ Prompt 核心片段：
 
 **Block 类型说明**：
 
-| 类型             | 用途                         | 关键字段                                                                 |
-| ---------------- | ---------------------------- | ------------------------------------------------------------------------ |
-| `table`          | 表格，适合对比属性、罗列要点 | `headers`, `rows`                                                        |
-| `callout`        | 提示卡，强调核心概念或陷阱   | `variant`: tip/warning/key, `content`                                    |
-| `comparison`     | 对比卡，两种方案横向比较     | `items`: [{label, left, right}]                                          |
-| `heading`        | 标题，分隔内容段落           | `level`: 2/3, `text`                                                     |
-| `badge`          | 徽章标签，展示关键要点       | `items`: [{text, variant}]                                               |
-| `mastery-report` | 掌握总结报告（迭代 029）     | `nodeId`, `nodeName`, `score`, `summary`, `table`, `badges`              |
-| `interactive`    | 互动教学产物（迭代 050②）    | `html`（自包含 HTML，iframe 沙箱渲染）                                   |
-| `flashcard`      | 复习抽认卡（迭代 051②）      | `nodeId`, `front`, `back`（正面问题→翻面答案）                           |
-| `interviewScore` | 面试评分卡（迭代 052②）      | `totalScore`, `difficulty`, `weakPoints`, `improvement`, `questionCount` |
+| 类型             | 用途                         | 关键字段                                                                                                         |
+| ---------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `table`          | 表格，适合对比属性、罗列要点 | `headers`, `rows`                                                                                                |
+| `callout`        | 提示卡，强调核心概念或陷阱   | `variant`: tip/warning/key, `content`                                                                            |
+| `comparison`     | 对比卡，两种方案横向比较     | `items`: [{label, left, right}]                                                                                  |
+| `heading`        | 标题，分隔内容段落           | `level`: 2/3, `text`                                                                                             |
+| `badge`          | 徽章标签，展示关键要点       | `items`: [{text, variant}]                                                                                       |
+| `mastery-report` | 掌握总结报告（迭代 029）     | `nodeId`, `nodeName`, `score`, `summary`, `table`, `badges`                                                      |
+| `interactive`    | 互动教学产物（迭代 050②）    | `title`, `concept`, `explore`:[{kind:"slider"\|"input",...}], `quiz`:{question, options, correctId, explanation} |
+| `flashcard`      | 复习抽认卡（迭代 051②）      | `nodeId`, `front`, `back`（正面问题→翻面答案）                                                                   |
+| `interviewScore` | 面试评分卡（迭代 052②）      | `totalScore`, `difficulty`, `weakPoints`, `improvement`, `questionCount`                                         |
 
 **Prompt 片段**（注入 system prompt）：
 
@@ -438,7 +437,7 @@ Prompt 核心片段：
 - heading: 标题（h2/h3，分隔内容段落）
 - badge: 徽章标签（success/warning/info，展示关键要点）
 - mastery-report: 掌握总结报告（节点掌握后自动生成）
-- interactive: 互动教学产物（自包含 HTML，iframe 沙箱渲染，用户可交互；让概念可看可练）
+- interactive: 互动教学产物（结构化三段式：concept 概念 / explore 动手感受[slider|input] / quiz 自测；让概念可看可练）
 - flashcard: 复习抽认卡（正面问题 front → 翻面答案 back，需带 nodeId；复习模式提取练习用）
 - interviewScore: 面试评分卡（totalScore/difficulty/weakPoints/improvement/questionCount；面试复盘用）
 每次调用可以生成多个 block，它们会按顺序显示在你的回复中。
