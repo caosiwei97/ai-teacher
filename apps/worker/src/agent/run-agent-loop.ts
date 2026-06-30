@@ -165,6 +165,11 @@ export async function runAgentLoop(
     assistantText += stepText;
     allToolResults.push(...stepToolResults);
 
+    if (opts.abortSignal?.aborted) {
+      stopReason = "aborted";
+      break;
+    }
+
     if (!stepHasToolCall) {
       stopReason = "no-tool-call";
       break;

@@ -185,8 +185,6 @@ export function createChatTurnWorker(
           /* ignore malformed control messages */
         }
       });
-      await controlSubscriber.subscribe(controlChannel);
-
       console.log(
         `[chat-turn] processing job ${job.id} for session ${sessionId}`,
       );
@@ -197,6 +195,7 @@ export function createChatTurnWorker(
       });
 
       try {
+        await controlSubscriber.subscribe(controlChannel);
         const hasPayloadData =
           job.data.topic !== undefined && job.data.userId !== undefined;
 
