@@ -42,14 +42,22 @@ test.describe("Mode Switch — 模式切换与渐进解锁（分类 T）", () =>
     await expect(tabs.locator("button", { hasText: "面试" })).not.toBeDisabled();
   });
 
-  test("渐进解锁：0 知识点时复习/面试 Tab 灰锁", async ({ page }) => {
-    // 新建会话（无 roadmap，0 mastered）→ 复习/面试灰锁
-    await page.goto("/learn/e2e-test-mode-switch-empty");
+  test("渐进解锁：0 知识点时复习/面试 Tab 灰锁", async ({ page, request }) => {
+    // 通过 API 创建真实会话（0 mastered）→ 复习/面试灰锁
+    // 改造后落地页是唯一新建入口，直接 goto 不存在 id 会显示错误，故用 API 建会话
+    const res = await request.post("/api/sessions", {
+      data: { userId: "seed-user-ai-teacher", topic: "E2E 灰锁测试" },
+    });
+    const { session } = await res.json();
+    await page.goto(`/learn/${session.id}`);
     await page.waitForSelector("textarea");
 
     const tabs = page.getByTestId("mode-tabs");
     await expect(tabs.locator("button", { hasText: "复习" })).toBeDisabled();
     await expect(tabs.locator("button", { hasText: "面试" })).toBeDisabled();
+
+    // cleanup：归档本次创建的会话，避免污染后续测试
+    await request.delete(`/api/sessions/${session.id}`);
   });
 
   test("响应式：lg(1280) 顶部 Tab + 输入区可见", async ({ page }) => {

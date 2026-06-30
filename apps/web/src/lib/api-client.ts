@@ -16,6 +16,41 @@ export async function fetchSessions(userId: string) {
   }>;
 }
 
+// 创建会话（发消息才建会话：用户在 / 页输入首条消息发送时才创建）
+export async function createSession(
+  userId: string,
+  topic: string,
+  teachingMode?: "warm" | "strict",
+) {
+  const res = await fetch("/api/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, topic, teachingMode }),
+  });
+  if (!res.ok) throw new Error("Failed to create session");
+  const data = await res.json() as {
+    session: {
+      id: string;
+      topic: string;
+      status: string;
+      activeMode: "learning" | "review" | "interview";
+      roadmap: { nodes: Array<{ id: string; index: number; status: string }> } | null;
+    };
+  };
+  const nodes = data.session.roadmap?.nodes ?? [];
+  return {
+    id: data.session.id,
+    topic: data.session.topic,
+    status: data.session.status,
+    activeMode: data.session.activeMode,
+    progress: {
+      totalNodes: nodes.length,
+      masteredNodes: nodes.filter((n) => n.status === "mastered").length,
+      currentNodeId: nodes.find((n) => n.status === "in_progress")?.id ?? null,
+    },
+  };
+}
+
 export async function fetchSession(sessionId: string) {
   const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`);
   if (!res.ok) {

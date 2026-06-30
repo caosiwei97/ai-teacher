@@ -2,7 +2,7 @@ import { Worker as BullWorker } from "bullmq";
 import Redis from "ioredis";
 import { prisma } from "@ai-teacher/db";
 import { StructuredSummarySchema } from "@ai-teacher/shared";
-import { tool as aiTool, type Tool } from "ai";
+import { tool as aiTool, generateText, type Tool } from "ai";
 import { runAgentLoop } from "../agent/run-agent-loop";
 import { tutorToolDefinitions, reviewToolDefinitions, interviewToolDefinitions } from "../agent/tools/create-tools";
 import { createDelegateTaskTool } from "../agent/tools/delegate-task";
@@ -90,6 +90,28 @@ async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
   }
 
   return { providerFn: getFallbackProvider() };
+}
+
+// 首条消息后异步生成 ≤10 字标题：调一次轻量模型，失败保留「未命名对话」不阻断主流程
+async function generateSessionTitle(
+  providerFn: LlmJobConfig["providerFn"],
+  sandboxModel: string | undefined,
+  firstMessage: string,
+): Promise<string | null> {
+  try {
+    const model = providerFn(sandboxModel ?? "deepseek-v4-flash");
+    const { text } = await generateText({
+      model,
+      system:
+        "根据用户的学习主题或首条消息，生成一个不超过 10 个汉字的简洁标题。只输出标题本身，不要引号、不要标点、不要解释。",
+      prompt: firstMessage,
+    });
+    const title = text.trim().replace(/["""''。.!！？?]/g, "").slice(0, 10);
+    return title || null;
+  } catch (err) {
+    console.error("[chat-turn] title generation failed:", err);
+    return null;
+  }
 }
 
 function buildToolsRecord(
@@ -382,6 +404,26 @@ export function createChatTurnWorker(
           where: { id: messageId },
           data: { status: "completed" },
         });
+
+        // 首条消息后异步生成标题：新会话首轮（isDiagnosisPhase && 无节点 && topic 仍为未命名）
+        // 调一次轻量模型生成 ≤10 字标题 → 更新 session.topic → 推 title-updated 事件让前端左栏更新
+        if (isDiagnosisPhase && !hasNodes && topic === "未命名对话") {
+          const title = await generateSessionTitle(
+            providerFn,
+            llmJobConfig.sandboxModel,
+            job.data.userContent,
+          );
+          if (title) {
+            await prisma.session.update({
+              where: { id: sessionId },
+              data: { topic: title },
+            });
+            await publisher.publish(
+              channel,
+              JSON.stringify({ type: "title-updated", data: { title } }),
+            );
+          }
+        }
 
         await publisher.publish(channel, JSON.stringify({ type: "done" }));
 

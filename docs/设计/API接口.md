@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v1.2
-> 更新日期：2026-05-23
-> 状态：已对齐实际实现（含多 Provider、自动创建会话、env-status 端点）
+> 版本：v1.3
+> 更新日期：2026-06-30
+> 状态：已对齐实际实现（含多 Provider、发消息才建会话、title-updated 事件、env-status 端点）
 
 ---
 
@@ -105,6 +105,8 @@ POST /api/sessions
 - `GET /api/sessions` 自动排除 `archived` 状态的会话
 - 按会话 `updatedAt` 降序排列
 - 响应包含 `source`（关联资料）、`llmConfigId`、`activeMode`（学/固/验模式，迭代 053②）、`progress`（`{ totalNodes, masteredNodes, currentNodeId, currentNodeTitle }`）字段
+- **会话创建时机**：前端「发消息才建会话」——用户在 `/` 落地页输入首条消息发送时才调用本接口创建会话，`topic` 初始传 `"未命名对话"`；会话创建与首条消息发送是两步（先 POST 拿 id → 跳转 `/learn/:id` → 用首条消息发起 chat 流），不再在落地页输入主题时即建会话
+- **标题生成**：首条消息处理完成后由 Worker 异步生成 ≤10 字标题覆盖 `topic`（详见 §6「首条消息异步生成标题」），前端通过 `title-updated` SSE 事件更新左栏
 
 ---
 
@@ -211,7 +213,6 @@ POST /api/chat
     { "role": "user", "content": "最新消息" }
   ],
   "hidden": "boolean (可选，默认 false，诊断消息不显示在聊天中)",
-  "teachingMode": "warm | strict | interviewer (可选，覆盖会话默认教学模式)",
   "llmConfigId": "string (可选，使用指定的用户 LLM 配置)"
 }
 ```
@@ -236,6 +237,7 @@ data: {"type":"<event-type>","content":...,"data":...}
 | `ask-question`    | 聊天内诊断题       | `{ data: { questions, question, nodeId } }`                          |
 | `roadmap-updated` | 路线图节点状态变更 | `{ data: { nodes: RoadmapNode[] } }`                                 |
 | `session-updated` | 会话状态变更       | `{ data: { masteredNodes?, totalNodes?, title?, learningStatus? } }` |
+| `title-updated`   | 会话标题生成完成   | `{ data: { title: string } }`                                        |
 | `error`           | 错误               | `{ data: { message } }`                                              |
 
 ### 后端副作用（异步持久化）
@@ -247,15 +249,13 @@ data: {"type":"<event-type>","content":...,"data":...}
 3. 如果掌握度 ≥ 80% → 自动将下一个 `not-started` 节点设为 `in-progress`
 4. 如果有 `generateAssessment` → 保存评估卡片到消息 metadata
 
-### 自动创建会话
+### 会话存在性校验
 
-如果请求中的 `sessionId` 对应的会话不存在，系统会自动创建新会话：
+`sessionId` 对应的会话必须由前端通过 `POST /api/sessions` 预先创建（「发消息才建会话」机制：用户在 `/` 落地页输入首条消息发送时才创建会话）。若会话不存在，返回 `404 { error: "Session not found" }`，**不再自动兜底创建**——暴露前端漏建为可排查错误，而非静默掩盖。
 
-- `topic` = 用户消息内容
-- `teachingMode` = 请求参数或 `"warm"`
-- 同时创建空的 Roadmap
+### 首条消息异步生成标题
 
-这一行为允许前端跳过显式的 `POST /api/sessions` 调用，直接发送消息即可开始学习。
+新会话的首条消息处理完成后（`isDiagnosisPhase && 无 roadmap 节点 && topic === "未命名对话"`），Worker 额外调一次轻量模型（`generateText`，默认 `deepseek-v4-flash`）根据首条消息生成 ≤10 字标题，更新 `session.topic` 并推送 `title-updated` SSE 事件，前端左栏据此更新标题。标题生成失败则保留「未命名对话」，不阻断主流程。
 
 ---
 
