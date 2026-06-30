@@ -1,10 +1,18 @@
 import { Worker as BullWorker } from "bullmq";
 import Redis from "ioredis";
 import { prisma } from "@ai-teacher/db";
-import { StructuredSummarySchema } from "@ai-teacher/shared";
+import {
+  StructuredSummarySchema,
+  createSSEEvent,
+  SSEEventType,
+} from "@ai-teacher/shared";
 import { tool as aiTool, generateText, type Tool } from "ai";
 import { runAgentLoop } from "../agent/run-agent-loop";
-import { tutorToolDefinitions, reviewToolDefinitions, interviewToolDefinitions } from "../agent/tools/create-tools";
+import {
+  tutorToolDefinitions,
+  reviewToolDefinitions,
+  interviewToolDefinitions,
+} from "../agent/tools/create-tools";
 import { createDelegateTaskTool } from "../agent/tools/delegate-task";
 import { subagentConfigs } from "../agent/subagents";
 import { MessageService } from "../agent/services/message-service";
@@ -20,7 +28,7 @@ import {
   getFallbackProvider,
 } from "@ai-teacher/shared/services/provider-registry";
 import { decrypt } from "@ai-teacher/shared/services/crypto";
-import { resolveProviderConfig } from "@ai-teacher/shared/services/provider-select";
+import { resolveProviderConfig, resolveFallbackConfigs } from "@ai-teacher/shared/services/provider-select";
 import type { ToolDefinition, ToolExecutionContext } from "../agent/types";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:26379";
@@ -58,9 +66,14 @@ function createPublisher(): Redis {
 }
 
 interface LlmJobConfig {
-  providerFn: (modelId: string) => ReturnType<ReturnType<typeof createProviderForConfig>>;
+  providerFn: (
+    modelId: string,
+  ) => ReturnType<ReturnType<typeof createProviderForConfig>>;
   sandboxModel?: string;
   sandboxBaseUrl?: string;
+  fallbackModelId?: string;
+  fallbackProviderFn?: (modelId: string) => ReturnType<ReturnType<typeof createProviderForConfig>>;
+  fallbackModel?: string;
 }
 
 async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
@@ -78,15 +91,28 @@ async function getProviderForJob(llmConfigId?: string): Promise<LlmJobConfig> {
 
   if (resolved.config) {
     const apiKey = decrypt(resolved.config.encryptedKey);
-    return {
-      providerFn: createProviderForConfig({
-        provider: resolved.config.provider,
-        apiKey,
-        baseUrl: resolved.config.baseUrl ?? undefined,
-      }),
+    const providerFn = createProviderForConfig({
+      provider: resolved.config.provider,
+      apiKey,
+      baseUrl: resolved.config.baseUrl ?? undefined,
+    });
+      const { fallbackModelId, fallbackConfig } = await resolveFallbackConfigs(prisma, resolved.config, "seed-user-ai-teacher");
+    const job: LlmJobConfig = {
+      providerFn,
       sandboxModel: resolved.config.defaultModel,
       sandboxBaseUrl: resolved.config.baseUrl ?? undefined,
+      fallbackModelId: fallbackModelId ?? undefined,
     };
+    if (fallbackConfig) {
+      const fbApiKey = decrypt(fallbackConfig.encryptedKey);
+      job.fallbackProviderFn = createProviderForConfig({
+        provider: fallbackConfig.provider,
+        apiKey: fbApiKey,
+        baseUrl: fallbackConfig.baseUrl ?? undefined,
+      });
+      job.fallbackModel = fallbackConfig.defaultModel;
+    }
+    return job;
   }
 
   return { providerFn: getFallbackProvider() };
@@ -106,7 +132,10 @@ async function generateSessionTitle(
         "根据用户的学习主题或首条消息，生成一个不超过 10 个汉字的简洁标题。只输出标题本身，不要引号、不要标点、不要解释。",
       prompt: firstMessage,
     });
-    const title = text.trim().replace(/["""''。.!！？?]/g, "").slice(0, 10);
+    const title = text
+      .trim()
+      .replace(/["""''。.!！？?]/g, "")
+      .slice(0, 10);
     return title || null;
   } catch (err) {
     console.error("[chat-turn] title generation failed:", err);
@@ -154,6 +183,24 @@ export function createChatTurnWorker(
       const { messageId, sessionId, messages } = job.data;
       const channel = `chat:${sessionId}`;
 
+      const abortController = new AbortController();
+      const controlSubscriber = new Redis(REDIS_URL, {
+        maxRetriesPerRequest: null,
+      });
+      const controlChannel = `chat:${sessionId}:control`;
+      controlSubscriber.on("message", (_ch, payload) => {
+        try {
+          const msg = JSON.parse(payload);
+          if (msg.type === "abort") {
+            console.log(
+              `[chat-turn] abort signal for session ${sessionId}`,
+            );
+            abortController.abort();
+          }
+        } catch {
+          /* ignore malformed control messages */
+        }
+      });
       console.log(
         `[chat-turn] processing job ${job.id} for session ${sessionId}`,
       );
@@ -164,6 +211,7 @@ export function createChatTurnWorker(
       });
 
       try {
+        await controlSubscriber.subscribe(controlChannel);
         const hasPayloadData =
           job.data.topic !== undefined && job.data.userId !== undefined;
 
@@ -238,8 +286,7 @@ export function createChatTurnWorker(
         const masteredNodes = hasNodes
           ? roadmapNodes
               .filter(
-                (node) =>
-                  node.status === "mastered" || node.masteryScore >= 80,
+                (node) => node.status === "mastered" || node.masteryScore >= 80,
               )
               .map((node) => node.title)
           : [];
@@ -314,7 +361,11 @@ export function createChatTurnWorker(
                   title: currentNode.title,
                   description: currentNode.description,
                 }
-              : { id: "pending", title: topic, description: "等待诊断后生成学习路线" },
+              : {
+                  id: "pending",
+                  title: topic,
+                  description: "等待诊断后生成学习路线",
+                },
             allNodes: hasNodes
               ? roadmapNodes.map((n) => ({
                   id: n.id,
@@ -332,7 +383,10 @@ export function createChatTurnWorker(
           });
           const delegateTaskDef = createDelegateTaskTool(
             subagentConfigs,
-            { get: (name: string) => allToolDefs.find((t) => t.name === name), getAll: () => allToolDefs },
+            {
+              get: (name: string) => allToolDefs.find((t) => t.name === name),
+              getAll: () => allToolDefs,
+            },
             providerFn,
           );
           allToolDefs = [...tutorToolDefinitions, delegateTaskDef];
@@ -371,6 +425,17 @@ export function createChatTurnWorker(
           messages.map((m) => ({ role: m.role, content: m.content })),
         );
 
+        await publisher.publish(
+          channel,
+          createSSEEvent(SSEEventType.ContextInfo, {
+            data: {
+              tokenCount: prepared.tokenCount,
+              budget: 6000,
+              needsCompaction: prepared.needsCompaction,
+            },
+          }),
+        );
+
         const modelName = llmJobConfig.sandboxModel ?? "deepseek-v4-flash";
         const model = providerFn(modelName);
 
@@ -383,6 +448,17 @@ export function createChatTurnWorker(
           channel,
           maxSteps: 7,
           timeoutMs: STREAM_TIMEOUT_MS,
+          abortSignal: abortController.signal,
+          fallbackModel: llmJobConfig.fallbackModelId
+            ? providerFn(llmJobConfig.fallbackModelId)
+            : undefined,
+          fallbackProviderModel: llmJobConfig.fallbackProviderFn
+            ? {
+                model: llmJobConfig.fallbackProviderFn(
+                  llmJobConfig.fallbackModel ?? "deepseek-v4-flash",
+                ),
+              }
+            : undefined,
         });
 
         // Post-process: async compaction if needed
@@ -401,7 +477,9 @@ export function createChatTurnWorker(
           {
             hidden:
               (job.data.hidden ?? false) &&
-              loopResult.toolResults.some((tr) => tr.toolName === "generateRoadmap"),
+              loopResult.toolResults.some(
+                (tr) => tr.toolName === "generateRoadmap",
+              ),
           },
         );
 
@@ -425,12 +503,19 @@ export function createChatTurnWorker(
             });
             await publisher.publish(
               channel,
-              JSON.stringify({ type: "title-updated", data: { title } }),
+              createSSEEvent(SSEEventType.TitleUpdated, { data: { title } }),
             );
           }
         }
 
-        await publisher.publish(channel, JSON.stringify({ type: "done" }));
+        if (loopResult.stopReason === "aborted") {
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.Done, { reason: "aborted" }),
+          );
+        } else {
+          await publisher.publish(channel, createSSEEvent(SSEEventType.Done));
+        }
 
         console.log(
           `[chat-turn] completed job ${job.id} for session ${sessionId} (${loopResult.steps} steps, stop: ${loopResult.stopReason})`,
@@ -453,10 +538,13 @@ export function createChatTurnWorker(
           : errorMessage;
         await publisher.publish(
           channel,
-          JSON.stringify({ type: "error", message: userMessage }),
+          createSSEEvent(SSEEventType.Error, { data: { message: userMessage } }),
         );
 
         throw error;
+      } finally {
+        controlSubscriber.unsubscribe(controlChannel);
+        controlSubscriber.quit();
       }
     },
     {

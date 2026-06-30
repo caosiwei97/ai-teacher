@@ -37,6 +37,7 @@ export function RoadmapNode({ title, status, masteryScore, isLast }: RoadmapNode
       </div>
 
       <div
+        data-testid="roadmap-node"
         className={`flex-1 pb-4 pt-0.5 ${
           status === "in_progress" ? "-mt-px" : ""
         }`}

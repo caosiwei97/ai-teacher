@@ -26,6 +26,7 @@ const chatRequestSchema = z.object({
 function subscribeAndStream(c: any, sessionId: string) {
   return streamSSE(c, async (stream) => {
     const subscriber = new Redis(REDIS_URL);
+    const controlPublisher = new Redis(REDIS_URL);
     const channel = `chat:${sessionId}`;
 
     const incoming: Array<{ ch: string; payload: string }> = [];
@@ -44,6 +45,13 @@ function subscribeAndStream(c: any, sessionId: string) {
       closed = true;
       subscriber.off("message", onMessage);
       subscriber.disconnect();
+      controlPublisher
+        .publish(
+          `chat:${sessionId}:control`,
+          JSON.stringify({ type: "abort" }),
+        )
+        .catch(() => {});
+      controlPublisher.quit();
       wake?.();
     });
 
@@ -149,6 +157,16 @@ export const chatRoute = new Hono()
     });
 
     return subscribeAndStream(c, sessionId);
+  })
+  .post("/:sessionId/abort", async (c) => {
+    const sessionId = c.req.param("sessionId");
+    const publisher = new Redis(REDIS_URL);
+    await publisher.publish(
+      `chat:${sessionId}:control`,
+      JSON.stringify({ type: "abort" }),
+    );
+    publisher.quit();
+    return c.json({ ok: true });
   })
   .get("/:sessionId/stream", async (c) => {
     const sessionId = c.req.param("sessionId");

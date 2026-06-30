@@ -4,6 +4,11 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CodeBlock } from "@/components/chat/code-block";
 import { ArrowRight, Check, Loader2, X } from "lucide-react";
+import { ChoiceExplore } from "./explore/choice";
+import { MatchingExplore } from "./explore/matching";
+import { OrderingExplore } from "./explore/ordering";
+import { FillBlankExplore } from "./explore/fill-blank";
+import { ChartSliderExplore } from "./explore/chart-slider";
 
 // 互动教学产物渲染器（结构化三段式：概念 / 动手感受 / 自测）。
 // 改造自原 iframe+HTML 方案：LLM 只生成结构化 JSON，前端 React 渲染，
@@ -17,7 +22,7 @@ interface InteractiveBlockProps {
 export interface InteractiveSubmitPayload {
   answer?: string;
   feedback?: string;
-  source: "iframe" | "manual";
+  source: "manual";
 }
 
 // markdown 渲染配置（复用 callout-block 模式）
@@ -128,22 +133,59 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
                   </div>
                 );
               }
-              // input
-              return (
-                <div key={i} data-testid={`interactive-explore-${i}`}>
-                  <label className="mb-1.5 block text-xs text-muted-foreground">{item.label}</label>
-                  <input
-                    type="text"
-                    value={inputValues[i] ?? ""}
-                    placeholder={item.placeholder}
-                    onChange={(e) =>
-                      setInputValues((prev) => ({ ...prev, [i]: e.target.value }))
-                    }
-                    readOnly={submitted}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-roadmap-fill focus:outline-none"
-                  />
-                </div>
-              );
+              if (item.kind === "input") {
+                return (
+                  <div key={i} data-testid={`interactive-explore-${i}`}>
+                    <label className="mb-1.5 block text-xs text-muted-foreground">{item.label}</label>
+                    <input
+                      type="text"
+                      value={inputValues[i] ?? ""}
+                      placeholder={item.placeholder}
+                      onChange={(e) =>
+                        setInputValues((prev) => ({ ...prev, [i]: e.target.value }))
+                      }
+                      readOnly={submitted}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-roadmap-fill focus:outline-none"
+                    />
+                  </div>
+                );
+              }
+              if (item.kind === "choice") {
+                return (
+                  <div key={i} data-testid={`interactive-explore-${i}`}>
+                    <ChoiceExplore label={item.label} options={item.options} allowMultiple={item.allowMultiple} disabled={submitted} />
+                  </div>
+                );
+              }
+              if (item.kind === "matching") {
+                return (
+                  <div key={i} data-testid={`interactive-explore-${i}`}>
+                    <MatchingExplore label={item.label} leftItems={item.leftItems} rightItems={item.rightItems} disabled={submitted} />
+                  </div>
+                );
+              }
+              if (item.kind === "ordering") {
+                return (
+                  <div key={i} data-testid={`interactive-explore-${i}`}>
+                    <OrderingExplore label={item.label} items={item.items} disabled={submitted} />
+                  </div>
+                );
+              }
+              if (item.kind === "fill-blank") {
+                return (
+                  <div key={i} data-testid={`interactive-explore-${i}`}>
+                    <FillBlankExplore label={item.label} template={item.template} disabled={submitted} />
+                  </div>
+                );
+              }
+              if (item.kind === "chart-slider") {
+                return (
+                  <div key={i} data-testid={`interactive-explore-${i}`}>
+                    <ChartSliderExplore label={item.label} min={item.min} max={item.max} step={item.step} initial={item.initial} chartType={item.chartType} formula={item.formula} disabled={submitted} />
+                  </div>
+                );
+              }
+              return null;
             })}
           </div>
         )}

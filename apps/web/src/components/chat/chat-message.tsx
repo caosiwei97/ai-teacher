@@ -1,10 +1,11 @@
 
 import type { UIBlock } from "@ai-teacher/shared";
 import type { AssessmentCardProps } from "./assessment-card";
-import type { DiagnosticQuestionsData } from "@/hooks/use-chat-stream";
+import type { DiagnosticQuestionsData, LoopTrace } from "@/hooks/use-chat-stream";
 import { MessageContent } from "@/components/ui-blocks";
 import type { InteractiveSubmitPayload } from "@/components/ui-blocks/interactive-block";
 import { DiagnosticQuizCard } from "./diagnostic-quiz-card";
+import { LoopTracePanel } from "./loop-trace-panel";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -17,6 +18,7 @@ interface ChatMessageProps {
   onInteractiveSubmit?: (payload: InteractiveSubmitPayload) => void;
   diagnosticSubmitted?: boolean;
   diagnosticAnalyzing?: boolean;
+  loopTrace?: LoopTrace;
 }
 
 export function ChatMessage({
@@ -30,6 +32,7 @@ export function ChatMessage({
   onInteractiveSubmit,
   diagnosticSubmitted,
   diagnosticAnalyzing,
+  loopTrace,
 }: ChatMessageProps) {
   const isUser = role === "user";
   const hasContent = content.trim().length > 0;
@@ -82,6 +85,9 @@ export function ChatMessage({
             submitted={diagnosticSubmitted}
             analyzing={diagnosticAnalyzing}
           />
+        )}
+        {!isUser && loopTrace && loopTrace.steps.length > 0 && (
+          <LoopTracePanel trace={loopTrace} />
         )}
       </div>
     </div>

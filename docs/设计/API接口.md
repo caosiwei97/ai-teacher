@@ -8,42 +8,43 @@
 
 ## 接口概览
 
-| 方法   | 路径                                    | 说明                            | 状态 |
-| ------ | --------------------------------------- | ------------------------------- | ---- |
-| POST   | `/api/sessions`                         | 创建学习会话                    | ✅   |
-| GET    | `/api/sessions`                         | 获取会话列表（排除已归档）      | ✅   |
-| GET    | `/api/sessions/:id`                     | 获取会话详情                    | ✅   |
-| PATCH  | `/api/sessions/:id`                     | 更新会话状态/模式               | ✅   |
-| DELETE | `/api/sessions/:id`                     | 归档会话                        | ✅   |
-| POST   | `/api/chat`                             | 流式对话（SSE，经 Hono Server） | ✅   |
-| POST   | `/api/sessions/:id/diagnostic`          | 生成诊断题                      | ✅   |
-| POST   | `/api/sessions/:id/diagnostic/evaluate` | 评估诊断答案                    | ✅   |
-| GET    | `/api/sessions/:id/review/due`          | 今日到期复习清单（迭代 051②）   | ✅   |
-| POST   | `/api/sessions/:id/review/result`       | 提交复习结果（更新记忆强度）    | ✅   |
-| GET    | `/api/sessions/:id/review/summary`      | 薄弱点汇总（错题本）            | ✅   |
-| GET    | `/api/sessions/:id/interview/result`    | 面试结果（评分卡/复盘，052②）   | ✅   |
-| POST   | `/api/quick-question`                   | 快问（选中文字提问）            | ✅   |
-| POST   | `/api/suggest-reply`                    | AI 建议回复                     | ✅   |
-| GET    | `/api/suggested-topics`                 | 获取推荐学习话题                | ✅   |
-| POST   | `/api/sandbox/execute`                  | 代码执行（OpenSandbox）         | ✅   |
-| GET    | `/api/sandbox/files/search`             | 沙箱文件搜索                    | ✅   |
-| GET    | `/api/sandbox/files/content`            | 获取文件内容                    | ✅   |
-| GET    | `/api/sandbox/files/download`           | 下载文件（原始内容）            | ✅   |
-| POST   | `/api/sandbox/files/upload`             | 上传/保存文件                   | ✅   |
-| DELETE | `/api/sandbox/files`                    | 删除文件                        | ✅   |
-| POST   | `/api/sandbox/directories`              | 创建目录                        | ✅   |
-| DELETE | `/api/sandbox/directories`              | 删除目录                        | ✅   |
-| POST   | `/api/sandbox/pty`                      | 创建 PTY 终端会话               | ✅   |
-| GET    | `/api/sandbox/pty/:sessionId/ws`        | PTY WebSocket 代理              | ✅   |
-| POST   | `/api/llm`                              | 创建 LLM 配置                   | ✅   |
-| GET    | `/api/llm`                              | 获取用户 LLM 配置列表           | ✅   |
-| PATCH  | `/api/llm/:id`                          | 更新 LLM 配置                   | ✅   |
-| DELETE | `/api/llm/:id`                          | 删除 LLM 配置                   | ✅   |
-| POST   | `/api/llm/:id/test`                     | 测试 LLM 配置连通性             | ✅   |
-| GET    | `/api/llm/models`                       | 获取 Provider 预设模型列表      | ✅   |
-| POST   | `/api/llm/models/live`                  | 用 API Key 动态拉取可用模型     | ✅   |
-| GET    | `/api/chat/:sessionId/stream`           | SSE 流式重连（断线恢复）        | ✅   |
-| GET    | `/api/llm/env-status`                   | 检查环境默认 LLM 配置状态       | ✅   |
+| 方法   | 路径                                    | 说明                                 | 状态 |
+| ------ | --------------------------------------- | ------------------------------------ | ---- |
+| POST   | `/api/sessions`                         | 创建学习会话                         | ✅   |
+| GET    | `/api/sessions`                         | 获取会话列表（排除已归档）           | ✅   |
+| GET    | `/api/sessions/:id`                     | 获取会话详情                         | ✅   |
+| PATCH  | `/api/sessions/:id`                     | 更新会话状态/模式                    | ✅   |
+| DELETE | `/api/sessions/:id`                     | 归档会话                             | ✅   |
+| POST   | `/api/chat`                             | 流式对话（SSE，经 Hono Server）      | ✅   |
+| POST   | `/api/chat/:sessionId/abort`            | 中止进行中的对话（通知 worker 终止） | ✅   |
+| POST   | `/api/sessions/:id/diagnostic`          | 生成诊断题                           | ✅   |
+| POST   | `/api/sessions/:id/diagnostic/evaluate` | 评估诊断答案                         | ✅   |
+| GET    | `/api/sessions/:id/review/due`          | 今日到期复习清单（迭代 051②）        | ✅   |
+| POST   | `/api/sessions/:id/review/result`       | 提交复习结果（更新记忆强度）         | ✅   |
+| GET    | `/api/sessions/:id/review/summary`      | 薄弱点汇总（错题本）                 | ✅   |
+| GET    | `/api/sessions/:id/interview/result`    | 面试结果（评分卡/复盘，052②）        | ✅   |
+| POST   | `/api/quick-question`                   | 快问（选中文字提问）                 | ✅   |
+| POST   | `/api/suggest-reply`                    | AI 建议回复                          | ✅   |
+| GET    | `/api/suggested-topics`                 | 获取推荐学习话题                     | ✅   |
+| POST   | `/api/sandbox/execute`                  | 代码执行（OpenSandbox）              | ✅   |
+| GET    | `/api/sandbox/files/search`             | 沙箱文件搜索                         | ✅   |
+| GET    | `/api/sandbox/files/content`            | 获取文件内容                         | ✅   |
+| GET    | `/api/sandbox/files/download`           | 下载文件（原始内容）                 | ✅   |
+| POST   | `/api/sandbox/files/upload`             | 上传/保存文件                        | ✅   |
+| DELETE | `/api/sandbox/files`                    | 删除文件                             | ✅   |
+| POST   | `/api/sandbox/directories`              | 创建目录                             | ✅   |
+| DELETE | `/api/sandbox/directories`              | 删除目录                             | ✅   |
+| POST   | `/api/sandbox/pty`                      | 创建 PTY 终端会话                    | ✅   |
+| GET    | `/api/sandbox/pty/:sessionId/ws`        | PTY WebSocket 代理                   | ✅   |
+| POST   | `/api/llm`                              | 创建 LLM 配置                        | ✅   |
+| GET    | `/api/llm`                              | 获取用户 LLM 配置列表                | ✅   |
+| PATCH  | `/api/llm/:id`                          | 更新 LLM 配置                        | ✅   |
+| DELETE | `/api/llm/:id`                          | 删除 LLM 配置                        | ✅   |
+| POST   | `/api/llm/:id/test`                     | 测试 LLM 配置连通性                  | ✅   |
+| GET    | `/api/llm/models`                       | 获取 Provider 预设模型列表           | ✅   |
+| POST   | `/api/llm/models/live`                  | 用 API Key 动态拉取可用模型          | ✅   |
+| GET    | `/api/chat/:sessionId/stream`           | SSE 流式重连（断线恢复）             | ✅   |
+| GET    | `/api/llm/env-status`                   | 检查环境默认 LLM 配置状态            | ✅   |
 
 > **架构说明**：API 路由全部在独立 Hono Server（apps/server，端口 38422）中实现。前端通过 Vite dev server proxy（开发环境）或 `VITE_API_URL` 直接请求 Hono Server。
 
@@ -598,6 +599,24 @@ GET /api/chat/:sessionId/stream
 - 如果会话已有正在执行的 Agent 任务，会接续收到后续 SSE 事件
 - 前端通过 Hono Server 的 SSE 流式重连端点恢复连接
 
+### 13.3 中止对话
+
+```
+POST /api/chat/:sessionId/abort
+```
+
+#### 响应 `200`
+
+```json
+{ "ok": true }
+```
+
+#### 说明
+
+- 前端 `stop()` 时调用，向 Redis control channel `chat:{sessionId}:control` 发布 `{type:"abort"}`
+- worker 订阅该 channel，收到后触发 `AbortController.abort()`，runAgentLoop 在循环顶部 + fullStream 内检查 `abortSignal.aborted` 中断，`streamText` 也传入 abortSignal 中断 HTTP 流
+- 中止后 worker 发 `{type:"done", reason:"aborted"}`，避免 job 继续跑完浪费资源（修复原 stop() 仅断开 SSE 读取、worker 仍跑完的问题）
+
 ---
 
 ## 14. LLM 配置管理（完整）
@@ -625,7 +644,9 @@ POST /api/llm?userId=...
   "baseUrl": "string (可选，自定义 API 端点)",
   "defaultModel": "string (必填)",
   "label": "string (可选，配置显示名称)",
-  "isDefault": "boolean (可选，设为默认配置)"
+  "isDefault": "boolean (可选，设为默认配置)",
+  "fallbackModelId": "string (可选，同配置内降级模型 ID)",
+  "fallbackLlmConfigId": "string (可选，跨配置降级的 LlmConfig ID)"
 }
 ```
 

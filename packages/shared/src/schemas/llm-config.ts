@@ -15,6 +15,8 @@ export const CreateLlmConfigSchema = z.object({
   label: z.string().optional(),
   isDefault: z.boolean().optional(),
   source: ConfigSource.optional(),
+  fallbackModelId: z.string().optional(),
+  fallbackLlmConfigId: z.string().optional(),
 });
 
 export type LlmConfigResponse = {
@@ -27,6 +29,8 @@ export type LlmConfigResponse = {
   label: string | null;
   isDefault: boolean;
   source: "user" | "env";
+  fallbackModelId: string | null;
+  fallbackLlmConfigId: string | null;
   createdAt: string;
   updatedAt: string;
 };

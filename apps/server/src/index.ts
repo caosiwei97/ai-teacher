@@ -96,6 +96,11 @@ server.on("upgrade", async (req, socket, head) => {
   }
 });
 
+if (!(prisma as unknown as Record<string, unknown>).interviewResult) {
+  console.error("[startup] prisma.interviewResult 未就绪。请运行 `pnpm db:generate` 后重启。");
+  process.exit(1);
+}
+
 server.listen(port, async () => {
   registerShutdownHook();
   const cleaned = await cleanupOrphanSandboxes();

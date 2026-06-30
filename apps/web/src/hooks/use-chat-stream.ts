@@ -1,6 +1,6 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { UIMessage } from "ai";
+import { parseSSEEvent, SSEEventType, type SSEEvent } from "@ai-teacher/shared";
 
 interface UseChatStreamOptions {
   teachingMode?: "warm" | "strict";
@@ -8,17 +8,16 @@ interface UseChatStreamOptions {
   onFinish?: () => void;
   onError?: (error: string) => void;
   onRoadmapUpdate?: (nodes: unknown[]) => void;
-  onSessionUpdate?: (data: { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string }) => void;
+  onSessionUpdate?: (data: {
+    masteredNodes?: number;
+    totalNodes?: number;
+    title?: string;
+    learningStatus?: string;
+  }) => void;
   /** Fires when a node mastery transition is detected (assessMastery triggered roadmap-updated) */
   onMasteryTransition?: (nextNodeTitle?: string) => void;
   /** Fires when worker generates a session title from the first message */
   onTitleUpdate?: (title: string) => void;
-}
-
-interface SSEEvent {
-  type: string;
-  content?: string;
-  data?: unknown;
 }
 
 interface SubmitOptions {
@@ -38,6 +37,21 @@ export interface DiagnosticQuestionsData {
   nodeId: string;
 }
 
+export interface LoopTraceStep {
+  step: number;
+  total: number;
+  t0: number;
+  durationMs?: number;
+  reasoning?: string;
+  tools?: Array<{ name: string }>;
+}
+
+export interface LoopTrace {
+  steps: LoopTraceStep[];
+  failovers?: Array<{ from: string; to: string; reason: string; step: number }>;
+  loopWarnings?: Array<{ type: string; toolName: string; step: number }>;
+}
+
 export interface AnnotationData {
   toolName?: string;
   args?: unknown;
@@ -47,11 +61,94 @@ export interface AnnotationData {
   codePush?: { code: string; language: string; instruction?: string };
   diagnosticQuestions?: DiagnosticQuestionsData;
   roadmapUpdate?: { nodes: unknown[] };
-  sessionUpdate?: { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string };
+  sessionUpdate?: {
+    masteredNodes?: number;
+    totalNodes?: number;
+    title?: string;
+    learningStatus?: string;
+  };
+  loopTrace?: LoopTrace;
 }
 
 export interface MessageMetadata {
   annotations?: AnnotationData[];
+}
+
+export interface TokenUsage {
+  input: number;
+  output: number;
+  total: number;
+  cacheRead: number;
+  cacheWrite: number;
+  reasoning: number;
+  sessionTotal: number;
+}
+
+export interface ContextInfo {
+  tokenCount: number;
+  budget: number;
+  needsCompaction: boolean;
+}
+
+const INITIAL_TOKEN_USAGE: TokenUsage = {
+  input: 0,
+  output: 0,
+  total: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+  reasoning: 0,
+  sessionTotal: 0,
+};
+
+function mergeUsage(prev: TokenUsage, u: Record<string, unknown>): TokenUsage {
+  const inputDetails = u.inputTokenDetails as Record<string, unknown> | undefined;
+  const outputDetails = u.outputTokenDetails as
+    | Record<string, unknown>
+    | undefined;
+  const total = (u.totalTokens as number) ?? prev.total;
+  return {
+    input: (u.inputTokens as number) ?? prev.input,
+    output: (u.outputTokens as number) ?? prev.output,
+    total,
+    cacheRead: inputDetails?.cacheReadTokens as number ?? prev.cacheRead,
+    cacheWrite: inputDetails?.cacheWriteTokens as number ?? prev.cacheWrite,
+    reasoning: outputDetails?.reasoningTokens as number ?? prev.reasoning,
+    sessionTotal: prev.sessionTotal + (total ?? 0),
+  };
+}
+
+// 单条 annotation 里承载 loopTrace（单对象，非数组）。updater 对该对象做就地变更，
+// 若不存在则新建。返回新的 annotations 数组（不可变更新）。
+function updateLoopTrace(
+  annotations: AnnotationData[],
+  updater: (trace: LoopTrace) => LoopTrace,
+): AnnotationData[] {
+  const idx = annotations.findIndex((a) => a && "loopTrace" in a && a.loopTrace);
+  if (idx === -1) {
+    const fresh: LoopTrace = { steps: [] };
+    const next = updater(fresh);
+    return [...annotations, { loopTrace: next }];
+  }
+  const updated = [...annotations];
+  const current = (annotations[idx].loopTrace as LoopTrace) ?? { steps: [] };
+  updated[idx] = { ...annotations[idx], loopTrace: updater(current) };
+  return updated;
+}
+
+// 把工具名追加到 loopTrace 最近一步的 tools（无 step 时静默）
+function appendToolToLastStep(
+  annotations: AnnotationData[],
+  toolName: string,
+): AnnotationData[] {
+  return updateLoopTrace(annotations, (trace) => {
+    if (trace.steps.length === 0) return trace;
+    const lastIdx = trace.steps.length - 1;
+    const last = trace.steps[lastIdx];
+    const tools = [...(last.tools ?? []), { name: toolName }];
+    const steps = [...trace.steps];
+    steps[lastIdx] = { ...last, tools };
+    return { ...trace, steps };
+  });
 }
 
 function getTextFromParts(parts: UIMessage["parts"]): string {
@@ -62,10 +159,15 @@ function getTextFromParts(parts: UIMessage["parts"]): string {
     .join("");
 }
 
-export function useChatStream(sessionId: string, options?: UseChatStreamOptions) {
+export function useChatStream(
+  sessionId: string,
+  options?: UseChatStreamOptions,
+) {
   const [messages, setMessages] = useState<UIMessage<MessageMetadata>[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState<TokenUsage>(INITIAL_TOKEN_USAGE);
+  const [contextInfo, setContextInfo] = useState<ContextInfo | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cleanup: abort any in-flight SSE stream when component unmounts
@@ -77,7 +179,11 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
   }, []);
 
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
+    (
+      e:
+        | React.ChangeEvent<HTMLInputElement>
+        | React.ChangeEvent<HTMLTextAreaElement>,
+    ) => {
       setInput(e.target.value);
     },
     [],
@@ -130,18 +236,20 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             sessionId,
-            messages:
-              submitOptions?.requestMessages ??
-              [
-                ...messages.map((m) => ({
-                  role: m.role,
-                  content: getTextFromParts(m.parts),
-                })),
-                { role: "user" as const, content: text.trim() },
-              ],
+            messages: submitOptions?.requestMessages ?? [
+              ...messages.map((m) => ({
+                role: m.role,
+                content: getTextFromParts(m.parts),
+              })),
+              { role: "user" as const, content: text.trim() },
+            ],
             ...(submitOptions?.hidden ? { hidden: true } : {}),
-            ...(options?.teachingMode ? { teachingMode: options.teachingMode } : {}),
-            ...(options?.llmConfigId ? { llmConfigId: options.llmConfigId } : {}),
+            ...(options?.teachingMode
+              ? { teachingMode: options.teachingMode }
+              : {}),
+            ...(options?.llmConfigId
+              ? { llmConfigId: options.llmConfigId }
+              : {}),
           }),
           signal: controller.signal,
         });
@@ -154,9 +262,9 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
         if (!reader) throw new Error("No stream body");
 
         const decoder = new TextDecoder();
-      let buffer = "";
-      let textFrozen = false;
-      let masteryDetected = false;
+        let buffer = "";
+        let textFrozen = false;
+        let masteryDetected = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -176,43 +284,56 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
               const jsonStr = line.slice(6);
               if (jsonStr === "[DONE]") continue;
 
-              let event: SSEEvent;
+              let event: SSEEvent | null;
               try {
-                event = JSON.parse(jsonStr);
+                event = parseSSEEvent(JSON.parse(jsonStr));
               } catch {
                 continue;
               }
+              if (!event) continue;
 
               const assistantIdx = newMessages.length - 1;
 
-              if (event.type === "text-delta" && typeof event.content === "string") {
+              if (
+                event.type === SSEEventType.TextDelta &&
+                typeof event.content === "string"
+              ) {
                 if (textFrozen) continue;
-                const prevText = getTextFromParts(newMessages[assistantIdx].parts);
+                const prevText = getTextFromParts(
+                  newMessages[assistantIdx].parts,
+                );
                 const updatedText = prevText + event.content;
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
                   parts: [{ type: "text" as const, text: updatedText }],
                 };
                 setMessages([...newMessages]);
-              } else if (event.type === "tool-call" && event.data) {
+              } else if (event.type === SSEEventType.ToolCall && event.data) {
                 const data = event.data as Record<string, unknown>;
-                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
                 const toolName = String(data.toolName);
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
                   parts: newMessages[assistantIdx].parts,
                   metadata: {
                     ...newMessages[assistantIdx].metadata,
-                    annotations: [...existing, { toolName, args: data.args }],
+                    annotations: appendToolToLastStep(
+                      [...existing, { toolName, args: data.args }],
+                      toolName,
+                    ),
                   },
                 };
                 setMessages([...newMessages]);
-              } else if (event.type === "tool-result" && event.data) {
+              } else if (event.type === SSEEventType.ToolResult && event.data) {
                 const data = event.data as Record<string, unknown>;
-                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
                 const toolName = String(data.toolName);
                 if (toolName === "assessMastery") {
-                  const result = data.result as Record<string, unknown> | undefined;
+                  const result = data.result as
+                    | Record<string, unknown>
+                    | undefined;
                   if (result?.roadmapUpdate) {
                     masteryDetected = true;
                   }
@@ -222,27 +343,43 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   parts: newMessages[assistantIdx].parts,
                   metadata: {
                     ...newMessages[assistantIdx].metadata,
-                    annotations: [...existing, { toolName, result: data.result }],
+                    annotations: [
+                      ...existing,
+                      { toolName, result: data.result },
+                    ],
                   },
                 };
                 setMessages([...newMessages]);
-              } else if (event.type === "ui-stream-start") {
-                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+              } else if (event.type === SSEEventType.UiStreamStart) {
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
                   parts: newMessages[assistantIdx].parts,
                   metadata: {
                     ...newMessages[assistantIdx].metadata,
-                    annotations: [...existing, { streamingBlocks: true, uiBlocks: [] }],
+                    annotations: [
+                      ...existing,
+                      { streamingBlocks: true, uiBlocks: [] },
+                    ],
                   },
                 };
                 setMessages([...newMessages]);
-              } else if (event.type === "ui-block-delta" && event.data) {
+              } else if (
+                event.type === SSEEventType.UiBlockDelta &&
+                event.data
+              ) {
                 const data = event.data as { block: unknown; index: number };
-                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
                 let streamIdx = -1;
                 for (let j = existing.length - 1; j >= 0; j--) {
-                  if ((existing[j] as AnnotationData).streamingBlocks === true) { streamIdx = j; break; }
+                  if (
+                    (existing[j] as AnnotationData).streamingBlocks === true
+                  ) {
+                    streamIdx = j;
+                    break;
+                  }
                 }
                 if (streamIdx !== -1) {
                   const streamAnno = existing[streamIdx] as AnnotationData;
@@ -252,16 +389,25 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   newMessages[assistantIdx] = {
                     ...newMessages[assistantIdx],
                     parts: newMessages[assistantIdx].parts,
-                    metadata: { ...newMessages[assistantIdx].metadata, annotations: updated },
+                    metadata: {
+                      ...newMessages[assistantIdx].metadata,
+                      annotations: updated,
+                    },
                   };
                   setMessages([...newMessages]);
                 }
-              } else if (event.type === "ui-blocks" && event.data) {
+              } else if (event.type === SSEEventType.UiBlocks && event.data) {
                 const data = event.data as { uiBlocks: unknown[] };
-                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
                 let streamIdx = -1;
                 for (let j = existing.length - 1; j >= 0; j--) {
-                  if ((existing[j] as AnnotationData).streamingBlocks === true) { streamIdx = j; break; }
+                  if (
+                    (existing[j] as AnnotationData).streamingBlocks === true
+                  ) {
+                    streamIdx = j;
+                    break;
+                  }
                 }
                 if (streamIdx !== -1) {
                   const updated = [...existing];
@@ -269,7 +415,10 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   newMessages[assistantIdx] = {
                     ...newMessages[assistantIdx],
                     parts: newMessages[assistantIdx].parts,
-                    metadata: { ...newMessages[assistantIdx].metadata, annotations: updated },
+                    metadata: {
+                      ...newMessages[assistantIdx].metadata,
+                      annotations: updated,
+                    },
                   };
                 } else {
                   newMessages[assistantIdx] = {
@@ -282,9 +431,14 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   };
                 }
                 setMessages([...newMessages]);
-              } else if (event.type === "code-push" && event.data) {
-                const data = event.data as { code: string; language: string; instruction?: string };
-                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+              } else if (event.type === SSEEventType.CodePush && event.data) {
+                const data = event.data as {
+                  code: string;
+                  language: string;
+                  instruction?: string;
+                };
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
                   parts: newMessages[assistantIdx].parts,
@@ -294,45 +448,204 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                   },
                 };
                 setMessages([...newMessages]);
-              } else if (event.type === "ask-question" && event.data) {
+              } else if (
+                event.type === SSEEventType.AskQuestion &&
+                event.data
+              ) {
                 textFrozen = true;
-                const data = event.data as { questions: unknown[]; question: string; nodeId: string };
-                const existing = newMessages[assistantIdx].metadata?.annotations ?? [];
+                const data = event.data as {
+                  questions: unknown[];
+                  question: string;
+                  nodeId: string;
+                };
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
                   parts: newMessages[assistantIdx].parts,
                   metadata: {
                     ...newMessages[assistantIdx].metadata,
-                    annotations: [...existing, {
-                      diagnosticQuestions: {
-                        questions: data.questions as DiagnosticQuestionsData["questions"],
-                        question: data.question,
-                        nodeId: data.nodeId,
+                    annotations: [
+                      ...existing,
+                      {
+                        diagnosticQuestions: {
+                          questions:
+                            data.questions as DiagnosticQuestionsData["questions"],
+                          question: data.question,
+                          nodeId: data.nodeId,
+                        },
                       },
-                    }],
+                    ],
                   },
                 };
                 setMessages([...newMessages]);
-              } else if (event.type === "roadmap-updated" && event.data) {
+              } else if (
+                event.type === SSEEventType.RoadmapUpdated &&
+                event.data
+              ) {
                 const data = event.data as { nodes: unknown[] };
                 options?.onRoadmapUpdate?.(data.nodes);
                 if (masteryDetected) {
-                  const nodesArr = data.nodes as Array<{ status: string; title: string }>;
-                  const nextInProgress = nodesArr.find(n => n.status === "in_progress");
+                  const nodesArr = data.nodes as Array<{
+                    status: string;
+                    title: string;
+                  }>;
+                  const nextInProgress = nodesArr.find(
+                    (n) => n.status === "in_progress",
+                  );
                   options?.onMasteryTransition?.(nextInProgress?.title);
                   masteryDetected = false;
                 }
-              } else if (event.type === "session-updated" && event.data) {
-                const data = event.data as { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string };
+              } else if (
+                event.type === SSEEventType.SessionUpdated &&
+                event.data
+              ) {
+                const data = event.data as {
+                  masteredNodes?: number;
+                  totalNodes?: number;
+                  title?: string;
+                  learningStatus?: string;
+                };
                 options?.onSessionUpdate?.(data);
-              } else if (event.type === "title-updated" && event.data) {
+              } else if (
+                event.type === SSEEventType.TitleUpdated &&
+                event.data
+              ) {
                 const data = event.data as { title?: string };
                 if (data.title) options?.onTitleUpdate?.(data.title);
-              } else if (event.type === "error") {
+              } else if (event.type === SSEEventType.StepStart && event.data) {
+                const data = event.data as { step: number; total: number };
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      steps: [
+                        ...trace.steps,
+                        {
+                          step: Number(data.step),
+                          total: Number(data.total),
+                          t0: Date.now(),
+                        },
+                      ],
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.StepEnd && event.data) {
+                const data = event.data as { step: number; durationMs?: number };
+                const stepNum = Number(data.step);
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      steps: trace.steps.map((s) =>
+                        s.step === stepNum
+                          ? { ...s, durationMs: data.durationMs ?? (Date.now() - s.t0) }
+                          : s,
+                      ),
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.ReasoningDelta && event.data) {
+                const data = event.data as { step: number; text: string };
+                const stepNum = Number(data.step);
+                const delta = String(data.text ?? "");
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      steps: trace.steps.map((s) =>
+                        s.step === stepNum
+                          ? { ...s, reasoning: (s.reasoning ?? "") + delta }
+                          : s,
+                      ),
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.Failover && event.data) {
+                const data = event.data as {
+                  from: string;
+                  to: string;
+                  reason: string;
+                  step: number;
+                };
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      failovers: [
+                        ...(trace.failovers ?? []),
+                        {
+                          from: String(data.from),
+                          to: String(data.to),
+                          reason: String(data.reason ?? ""),
+                          step: Number(data.step),
+                        },
+                      ],
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.LoopWarning && event.data) {
+                const data = event.data as { type: string; toolName: string; step: number };
+                const existing =
+                  newMessages[assistantIdx].metadata?.annotations ?? [];
+                newMessages[assistantIdx] = {
+                  ...newMessages[assistantIdx],
+                  parts: newMessages[assistantIdx].parts,
+                  metadata: {
+                    ...newMessages[assistantIdx].metadata,
+                    annotations: updateLoopTrace(existing, (trace) => ({
+                      ...trace,
+                      loopWarnings: [
+                        ...(trace.loopWarnings ?? []),
+                        {
+                          type: String(data.type ?? ""),
+                          toolName: String(data.toolName ?? ""),
+                          step: Number(data.step),
+                        },
+                      ],
+                    })),
+                  },
+                };
+                setMessages([...newMessages]);
+              } else if (event.type === SSEEventType.Usage && event.data) {
+                const u = (
+                  event.data as { usage?: Record<string, unknown> }
+                )?.usage;
+                if (u) setTokenUsage((prev) => mergeUsage(prev, u));
+              } else if (event.type === SSEEventType.ContextInfo && event.data) {
+                setContextInfo(
+                  event.data as ContextInfo,
+                );
+              } else if (event.type === SSEEventType.Error) {
                 const errorMsg =
                   typeof event.data === "string"
                     ? event.data
-                    : (event.data as Record<string, unknown>)?.message ?? "AI 服务异常，请稍后重试";
+                    : ((event.data as Record<string, unknown>)?.message ??
+                      "AI 服务异常，请稍后重试");
                 console.error("SSE error:", errorMsg);
                 options?.onError?.(String(errorMsg));
               }
@@ -358,13 +671,21 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
     [input, isLoading, messages, sessionId, options],
   );
 
-  const stop = useCallback(() => {
+  const stop = useCallback(async () => {
     abortControllerRef.current?.abort();
     setIsLoading(false);
-  }, []);
+    try {
+      await fetch(`/api/chat/${sessionId}/abort`, { method: "POST" });
+    } catch {
+      /* ignore — best-effort abort notification */
+    }
+  }, [sessionId]);
 
   const submitMessage = useCallback(
-    (text: string, optimisticIds?: { userId?: string; assistantId?: string }) => {
+    (
+      text: string,
+      optimisticIds?: { userId?: string; assistantId?: string },
+    ) => {
       handleSubmit(undefined, text, optimisticIds);
     },
     [handleSubmit],
@@ -403,17 +724,20 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
         return;
       }
 
-      setMessages(prev => {
+      setMessages((prev) => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant" && !getTextFromParts(last.parts)) {
           return prev;
         }
-        return [...prev, {
-          id: `assistant-resume-${Date.now()}`,
-          role: "assistant" as const,
-          parts: [{ type: "text" as const, text: "" }],
-          metadata: { annotations: [] },
-        }];
+        return [
+          ...prev,
+          {
+            id: `assistant-resume-${Date.now()}`,
+            role: "assistant" as const,
+            parts: [{ type: "text" as const, text: "" }],
+            metadata: { annotations: [] },
+          },
+        ];
       });
 
       const reader = sseRes.body?.getReader();
@@ -437,62 +761,101 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
             const jsonStr = line.slice(6);
             if (jsonStr === "[DONE]") continue;
 
-            let event: SSEEvent;
+            let event: SSEEvent | null;
             try {
-              event = JSON.parse(jsonStr);
+              event = parseSSEEvent(JSON.parse(jsonStr));
             } catch {
               continue;
             }
+            if (!event) continue;
 
-            if (event.type === "text-delta" && typeof event.content === "string") {
+            if (
+              event.type === SSEEventType.TextDelta &&
+              typeof event.content === "string"
+            ) {
               const delta = event.content;
-              setMessages(prev => {
+              setMessages((prev) => {
                 const idx = prev.length - 1;
                 const prevText = getTextFromParts(prev[idx].parts);
                 return [
                   ...prev.slice(0, idx),
-                  { ...prev[idx], parts: [{ type: "text" as const, text: prevText + delta }] },
+                  {
+                    ...prev[idx],
+                    parts: [{ type: "text" as const, text: prevText + delta }],
+                  },
                 ];
               });
-            } else if (event.type === "tool-call" && event.data) {
+            } else if (event.type === SSEEventType.ToolCall && event.data) {
               const data = event.data as Record<string, unknown>;
               const toolName = String(data.toolName);
-              setMessages(prev => {
+              setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
                 return [
                   ...prev.slice(0, idx),
-                  { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: [...existing, { toolName, args: data.args }] } },
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: appendToolToLastStep(
+                        [...existing, { toolName, args: data.args }],
+                        toolName,
+                      ),
+                    },
+                  },
                 ];
               });
-            } else if (event.type === "tool-result" && event.data) {
+            } else if (event.type === SSEEventType.ToolResult && event.data) {
               const data = event.data as Record<string, unknown>;
               const toolName = String(data.toolName);
-              setMessages(prev => {
+              setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
                 return [
                   ...prev.slice(0, idx),
-                  { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: [...existing, { toolName, result: data.result }] } },
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: [
+                        ...existing,
+                        { toolName, result: data.result },
+                      ],
+                    },
+                  },
                 ];
               });
-            } else if (event.type === "ui-stream-start") {
-              setMessages(prev => {
+            } else if (event.type === SSEEventType.UiStreamStart) {
+              setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
                 return [
                   ...prev.slice(0, idx),
-                  { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: [...existing, { streamingBlocks: true, uiBlocks: [] }] } },
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: [
+                        ...existing,
+                        { streamingBlocks: true, uiBlocks: [] },
+                      ],
+                    },
+                  },
                 ];
               });
-            } else if (event.type === "ui-block-delta" && event.data) {
+            } else if (event.type === SSEEventType.UiBlockDelta && event.data) {
               const data = event.data as { block: unknown; index: number };
-              setMessages(prev => {
+              setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
                 let streamIdx = -1;
                 for (let j = existing.length - 1; j >= 0; j--) {
-                  if ((existing[j] as AnnotationData).streamingBlocks === true) { streamIdx = j; break; }
+                  if (
+                    (existing[j] as AnnotationData).streamingBlocks === true
+                  ) {
+                    streamIdx = j;
+                    break;
+                  }
                 }
                 if (streamIdx === -1) return prev;
                 const streamAnno = existing[streamIdx] as AnnotationData;
@@ -501,65 +864,260 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
                 updated[streamIdx] = { ...streamAnno, uiBlocks: blocks };
                 return [
                   ...prev.slice(0, idx),
-                  { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: updated } },
+                  {
+                    ...prev[idx],
+                    metadata: { ...prev[idx].metadata, annotations: updated },
+                  },
                 ];
               });
-            } else if (event.type === "ui-blocks" && event.data) {
+            } else if (event.type === SSEEventType.UiBlocks && event.data) {
               const data = event.data as { uiBlocks: unknown[] };
-              setMessages(prev => {
+              setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
                 let streamIdx = -1;
                 for (let j = existing.length - 1; j >= 0; j--) {
-                  if ((existing[j] as AnnotationData).streamingBlocks === true) { streamIdx = j; break; }
+                  if (
+                    (existing[j] as AnnotationData).streamingBlocks === true
+                  ) {
+                    streamIdx = j;
+                    break;
+                  }
                 }
                 if (streamIdx !== -1) {
                   const updated = [...existing];
                   updated[streamIdx] = { uiBlocks: data.uiBlocks };
                   return [
                     ...prev.slice(0, idx),
-                    { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: updated } },
+                    {
+                      ...prev[idx],
+                      metadata: { ...prev[idx].metadata, annotations: updated },
+                    },
                   ];
                 }
                 return [
                   ...prev.slice(0, idx),
-                  { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: [...existing, { uiBlocks: data.uiBlocks }] } },
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: [...existing, { uiBlocks: data.uiBlocks }],
+                    },
+                  },
                 ];
               });
-            } else if (event.type === "code-push" && event.data) {
-              const data = event.data as { code: string; language: string; instruction?: string };
-              setMessages(prev => {
+            } else if (event.type === SSEEventType.CodePush && event.data) {
+              const data = event.data as {
+                code: string;
+                language: string;
+                instruction?: string;
+              };
+              setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
                 return [
                   ...prev.slice(0, idx),
-                  { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: [...existing, { codePush: data }] } },
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: [...existing, { codePush: data }],
+                    },
+                  },
                 ];
               });
-            } else if (event.type === "ask-question" && event.data) {
-              const data = event.data as { questions: unknown[]; question: string; nodeId: string };
-              setMessages(prev => {
+            } else if (event.type === SSEEventType.AskQuestion && event.data) {
+              const data = event.data as {
+                questions: unknown[];
+                question: string;
+                nodeId: string;
+              };
+              setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
                 return [
                   ...prev.slice(0, idx),
-                  { ...prev[idx], metadata: { ...prev[idx].metadata, annotations: [...existing, { diagnosticQuestions: { questions: data.questions as DiagnosticQuestionsData["questions"], question: data.question, nodeId: data.nodeId } }] } },
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: [
+                        ...existing,
+                        {
+                          diagnosticQuestions: {
+                            questions:
+                              data.questions as DiagnosticQuestionsData["questions"],
+                            question: data.question,
+                            nodeId: data.nodeId,
+                          },
+                        },
+                      ],
+                    },
+                  },
                 ];
               });
-            } else if (event.type === "roadmap-updated" && event.data) {
+            } else if (
+              event.type === SSEEventType.RoadmapUpdated &&
+              event.data
+            ) {
               const data = event.data as { nodes: unknown[] };
               options?.onRoadmapUpdate?.(data.nodes);
-            } else if (event.type === "session-updated" && event.data) {
-              const data = event.data as { masteredNodes?: number; totalNodes?: number; title?: string; learningStatus?: string };
+            } else if (
+              event.type === SSEEventType.SessionUpdated &&
+              event.data
+            ) {
+              const data = event.data as {
+                masteredNodes?: number;
+                totalNodes?: number;
+                title?: string;
+                learningStatus?: string;
+              };
               options?.onSessionUpdate?.(data);
-            } else if (event.type === "title-updated" && event.data) {
+            } else if (event.type === SSEEventType.TitleUpdated && event.data) {
               const data = event.data as { title?: string };
               if (data.title) options?.onTitleUpdate?.(data.title);
-            } else if (event.type === "error") {
+            } else if (event.type === SSEEventType.StepStart && event.data) {
+              const data = event.data as { step: number; total: number };
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        steps: [
+                          ...trace.steps,
+                          { step: Number(data.step), total: Number(data.total), t0: Date.now() },
+                        ],
+                      })),
+                    },
+                  },
+                ];
+              });
+            } else if (event.type === SSEEventType.StepEnd && event.data) {
+              const data = event.data as { step: number; durationMs?: number };
+              const stepNum = Number(data.step);
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        steps: trace.steps.map((s) =>
+                          s.step === stepNum
+                            ? { ...s, durationMs: data.durationMs ?? (Date.now() - s.t0) }
+                            : s,
+                        ),
+                      })),
+                    },
+                  },
+                ];
+              });
+            } else if (event.type === SSEEventType.ReasoningDelta && event.data) {
+              const data = event.data as { step: number; text: string };
+              const stepNum = Number(data.step);
+              const delta = String(data.text ?? "");
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        steps: trace.steps.map((s) =>
+                          s.step === stepNum
+                            ? { ...s, reasoning: (s.reasoning ?? "") + delta }
+                            : s,
+                        ),
+                      })),
+                    },
+                  },
+                ];
+              });
+            } else if (event.type === SSEEventType.Failover && event.data) {
+              const data = event.data as {
+                from: string;
+                to: string;
+                reason: string;
+                step: number;
+              };
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        failovers: [
+                          ...(trace.failovers ?? []),
+                          {
+                            from: String(data.from),
+                            to: String(data.to),
+                            reason: String(data.reason ?? ""),
+                            step: Number(data.step),
+                          },
+                        ],
+                      })),
+                    },
+                  },
+                ];
+              });
+            } else if (event.type === SSEEventType.LoopWarning && event.data) {
+              const data = event.data as { type: string; toolName: string; step: number };
+              setMessages((prev) => {
+                const idx = prev.length - 1;
+                const existing = prev[idx].metadata?.annotations ?? [];
+                return [
+                  ...prev.slice(0, idx),
+                  {
+                    ...prev[idx],
+                    metadata: {
+                      ...prev[idx].metadata,
+                      annotations: updateLoopTrace(existing, (trace) => ({
+                        ...trace,
+                        loopWarnings: [
+                          ...(trace.loopWarnings ?? []),
+                          {
+                            type: String(data.type ?? ""),
+                            toolName: String(data.toolName ?? ""),
+                            step: Number(data.step),
+                          },
+                        ],
+                      })),
+                    },
+                  },
+                ];
+              });
+            } else if (event.type === SSEEventType.Usage && event.data) {
+              const u = (
+                event.data as { usage?: Record<string, unknown> }
+              )?.usage;
+              if (u) setTokenUsage((prev) => mergeUsage(prev, u));
+            } else if (event.type === SSEEventType.ContextInfo && event.data) {
+              setContextInfo(event.data as ContextInfo);
+            } else if (event.type === SSEEventType.Error) {
               const errorMsg =
                 typeof event.data === "string"
                   ? event.data
-                  : (event.data as Record<string, unknown>)?.message ?? "AI 服务异常，请稍后重试";
+                  : ((event.data as Record<string, unknown>)?.message ??
+                    "AI 服务异常，请稍后重试");
               options?.onError?.(String(errorMsg));
             }
           }
@@ -578,5 +1136,18 @@ export function useChatStream(sessionId: string, options?: UseChatStreamOptions)
     }
   }, [isLoading, sessionId, options]);
 
-  return { messages, input, isLoading, handleInputChange, handleSubmit, submitMessage, submitHiddenMessage, stop, setMessages, resumeStream };
+  return {
+    messages,
+    input,
+    isLoading,
+    handleInputChange,
+    handleSubmit,
+    submitMessage,
+    submitHiddenMessage,
+    stop,
+    setMessages,
+    resumeStream,
+    tokenUsage,
+    contextInfo,
+  };
 }

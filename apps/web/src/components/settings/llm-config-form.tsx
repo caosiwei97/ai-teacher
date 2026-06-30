@@ -27,6 +27,8 @@ export function LlmConfigForm({ onCancel, onSuccess }: LlmConfigFormProps) {
   const [baseUrl, setBaseUrl] = useState("");
   const [defaultModel, setDefaultModel] = useState("");
   const [label, setLabel] = useState("");
+  const [fallbackModelId, setFallbackModelId] = useState("");
+  const [fallbackLlmConfigId, setFallbackLlmConfigId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -53,6 +55,8 @@ export function LlmConfigForm({ onCancel, onSuccess }: LlmConfigFormProps) {
         defaultModel,
         label: label || undefined,
         isDefault: false,
+        fallbackModelId: fallbackModelId || undefined,
+        fallbackLlmConfigId: fallbackLlmConfigId || undefined,
       });
       onSuccess();
     } catch (err) {
@@ -174,6 +178,26 @@ export function LlmConfigForm({ onCancel, onSuccess }: LlmConfigFormProps) {
               value={defaultModel}
               onChange={setDefaultModel}
             />
+
+            <div className="space-y-2 border-t border-border pt-4">
+              <label className="text-xs font-medium text-muted-foreground">备用模型 ID（可选，主模型失败时降级）</label>
+              <input
+                className="w-full rounded-lg border border-input-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring"
+                value={fallbackModelId}
+                onChange={(e) => setFallbackModelId(e.target.value)}
+                placeholder="如 deepseek-v4-flash"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground">备用配置 ID（可选，跨配置降级时使用）</label>
+              <input
+                className="w-full rounded-lg border border-input-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-ring"
+                value={fallbackLlmConfigId}
+                onChange={(e) => setFallbackLlmConfigId(e.target.value)}
+                placeholder="如留空则仅同配置内降级"
+              />
+            </div>
           </div>
         )}
       </div>

@@ -8,3 +8,4 @@ export * from "./schemas/llm-config.js";
 export * from "./schemas/source.js";
 export * from "./schemas/review.js";
 export * from "./schemas/interview.js";
+export * from "./schemas/sse-event.js";

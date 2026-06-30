@@ -31,4 +31,32 @@ test.describe("Diagnostic — Chat-Inline Diagnosis", () => {
       page.locator("textarea"),
     ).toBeVisible({ timeout: 10000 });
   });
+
+  test("路线已生成文案与右侧路线图渲染一致", async ({ page }) => {
+    test.setTimeout(90000);
+
+    await page.goto("/learn");
+    await page.locator("button", { hasText: "个人投资理财入门" }).click();
+
+    await expect(page).toHaveURL(/\/learn\//, { timeout: 30000 });
+    await expect(page.getByTestId("diagnostic-quiz-card")).toBeVisible({ timeout: 30000 });
+
+    await page.getByTestId("diagnostic-option-d1-b").click();
+    await page.getByTestId("diagnostic-option-d2-b").click();
+    await page.getByTestId("diagnostic-option-d3-a").click();
+    await expect(page.getByTestId("diagnostic-submit-button")).toBeEnabled();
+    await page.getByTestId("diagnostic-submit-button").click();
+
+    const preparingText = page.getByText("路线已生成，正在准备第一节互动练习…");
+    await expect(preparingText).toBeVisible({ timeout: 60000 });
+
+    const roadmapHeader = page.locator("text=学习路线");
+    await expect(roadmapHeader.first()).toBeVisible({ timeout: 10000 });
+
+    const emptyHint = page.locator("text=诊断完成后将生成学习路线");
+    await expect(emptyHint).toHaveCount(0);
+
+    // 路线图节点已渲染（与"路线已生成"文案一致）
+    await expect(page.getByTestId("roadmap-node").first()).toBeVisible({ timeout: 10000 });
+  });
 });

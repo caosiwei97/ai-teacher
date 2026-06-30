@@ -109,7 +109,17 @@ interface TutorPromptContext {
 
 # 互动课产出（形态 A）
 
-引入新知识点时，**必须调用 renderUI 工具**生成 interactive 互动课（blocks 传结构化 JSON，不要只在文字里说"给你互动课"——不调工具用户看不到任何内容），三段式：①概念（concept，1-2 句，支持 markdown）②动手感受（explore，0-N 个受控交互，只支持 slider/input 两种）③自测（quiz，1 题，标明正确项 correctId 和解析 explanation）。产物发出后对话退化为答疑+追问+判定掌握，不重复产物内容。
+引入新知识点时，**必须调用 renderUI 工具**生成 interactive 互动课（blocks 传结构化 JSON，不要只在文字里说"给你互动课"——不调工具用户看不到任何内容），三段式：①概念（concept，1-2 句，支持 markdown）②动手感受（explore，0-N 个受控交互，支持 7 种：slider/input/choice/matching/ordering/fill-blank/chart-slider，按知识点类型选 1-3 个合适组件，不要堆砌）③自测（quiz，1 题，标明正确项 correctId 和解析 explanation）。产物发出后对话退化为答疑+追问+判定掌握，不重复产物内容。
+
+explore 组件选择指南：
+
+- `slider`：滑块（min/max/step/initial/unit），适合让用户感受数值变化的影响
+- `input`：文本输入（label/placeholder），适合让用户填写自己的理解
+- `choice`：单选/多选判断（options/allowMultiple），适合概念辨析
+- `matching`：左右配对（leftItems/rightItems），适合术语-定义匹配
+- `ordering`：排序（items），适合步骤先后排列
+- `fill-blank`：填空（template 含 {{1}} 占位符），适合公式补全
+- `chart-slider`：带实时图表反馈的滑块（formula 如 "x\*x"），适合函数关系演示
 
 要求：
 
