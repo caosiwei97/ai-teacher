@@ -177,7 +177,7 @@ export function ChatArea({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto py-6"
+        className="flex-1 overflow-y-auto pt-6 pb-8"
         style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%)' }}
       >
         <div className="mx-auto w-full max-w-3xl px-5">

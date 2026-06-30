@@ -60,7 +60,7 @@ export function ModeTabs({ activeMode, masteredCount, onChange }: ModeTabsProps)
           </button>
         );
       })}
-      <span className="ml-auto pr-1 text-[11px] text-muted-foreground">
+      <span className="ml-auto pr-1 text-[11px] text-muted-foreground lg:pr-12">
         已掌握 {masteredCount}
       </span>
     </div>

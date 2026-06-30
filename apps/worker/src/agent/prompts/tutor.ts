@@ -98,7 +98,16 @@ function lessonSection(): string {
 - 代码类知识点可在"动手感受"区嵌入可运行示例
 - 产物发出后对话退化为答疑 + 追问 + 判定掌握，不重复产物已讲的内容
 
-**必须实际调用 renderUI 工具**（blocks 数组传入 \`{ type: "interactive", html: "<完整 HTML 字符串>" }\`），不要只在文字里说"给你互动课/动手试试"——不调用工具，用户看不到任何 iframe 内容。html 骨架参考：\`<!DOCTYPE html><html><body><button id="b">点我</button><p id="out">未点击</p><script>document.getElementById('b').addEventListener('click',()=>{document.getElementById('out').textContent='已点击'})</script></body></html>\`，按知识点扩展按钮/可视化/步骤逻辑`;
+**HTML 生成硬性规范（违反会导致交互失效/布局错乱，必须遵守）**：
+- **交互绑定**：所有交互（按钮点击、滑块拖动、输入框）必须在 \`<script>\` 内用 \`addEventListener\` 绑定，**严禁用 inline 事件属性**（onclick/oninput/onchange 等）——它们会被净化移除，导致交互失效
+- **引号转义**：HTML 属性一律用双引号（\`id="b"\`）；JS 字符串**一律用反引号**（\`\`）包裹，避免中文标点/引号嵌套冲突导致 SyntaxError（整个 script 块不执行）。尤其 feedback 文案、含引号的中文内容必须用反引号
+  - ❌ 错误（单引号嵌套致 SyntaxError，整个 script 失效）：\`el.innerHTML='❌ 不对，注意"每日300kcal"才是对的'\`
+  - ✅ 正确（反引号包裹，内含双引号/中文标点都安全）：\`el.innerHTML=\`❌ 不对，注意"每日300kcal"才是对的\`\`
+  - 规则：JS 里所有 innerHTML/textContent/含中文标点的字符串，首尾必须用反引号 \`\`，绝不用单引号或双引号
+- **自测选项**：每个选项用 \`<button>\` 标签（不要自创标签），点击逻辑在 script 里用 addEventListener 绑定
+
+**必须实际调用 renderUI 工具**（blocks 数组传入 \`{ type: "interactive", html: "<完整 HTML 字符串>" }\`），不要只在文字里说"给你互动课/动手试试"——不调用工具，用户看不到任何 iframe 内容。html 骨架参考（含按钮+滑块+自测三要素，注意交互全用 addEventListener、字符串全用反引号）：
+\`<!DOCTYPE html><html><body><h3 style="font-size:18px">标题</h3><p style="color:#555">概念一句话</p><div><label>数值：<span id="val">50</span></label><input type="range" id="slider" min="0" max="100" value="50" style="width:100%"></div><div id="quiz"><p>自测题干</p><button id="optA" style="display:block;width:100%;margin:6px 0;padding:12px 16px">选项A</button><button id="optB" style="display:block;width:100%;margin:6px 0;padding:12px 16px">选项B</button><p id="feedback"></p></div><script>document.getElementById('slider').addEventListener('input',function(){document.getElementById('val').textContent=this.value});document.getElementById('optA').addEventListener('click',function(){document.getElementById('feedback').innerHTML=\`❌ 不对，再想想\`});document.getElementById('optB').addEventListener('click',function(){document.getElementById('feedback').innerHTML=\`✅ 正确！\`})</script></body></html>\`，按知识点扩展可视化/计算逻辑`;
 }
 
 function diagnosisSection(ctx: TutorPromptContext): string | null {
