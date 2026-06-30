@@ -1,10 +1,18 @@
 import { Worker as BullWorker } from "bullmq";
 import Redis from "ioredis";
 import { prisma } from "@ai-teacher/db";
-import { StructuredSummarySchema } from "@ai-teacher/shared";
+import {
+  StructuredSummarySchema,
+  createSSEEvent,
+  SSEEventType,
+} from "@ai-teacher/shared";
 import { tool as aiTool, generateText, type Tool } from "ai";
 import { runAgentLoop } from "../agent/run-agent-loop";
-import { tutorToolDefinitions, reviewToolDefinitions, interviewToolDefinitions } from "../agent/tools/create-tools";
+import {
+  tutorToolDefinitions,
+  reviewToolDefinitions,
+  interviewToolDefinitions,
+} from "../agent/tools/create-tools";
 import { createDelegateTaskTool } from "../agent/tools/delegate-task";
 import { subagentConfigs } from "../agent/subagents";
 import { MessageService } from "../agent/services/message-service";
@@ -58,7 +66,9 @@ function createPublisher(): Redis {
 }
 
 interface LlmJobConfig {
-  providerFn: (modelId: string) => ReturnType<ReturnType<typeof createProviderForConfig>>;
+  providerFn: (
+    modelId: string,
+  ) => ReturnType<ReturnType<typeof createProviderForConfig>>;
   sandboxModel?: string;
   sandboxBaseUrl?: string;
 }
@@ -106,7 +116,10 @@ async function generateSessionTitle(
         "根据用户的学习主题或首条消息，生成一个不超过 10 个汉字的简洁标题。只输出标题本身，不要引号、不要标点、不要解释。",
       prompt: firstMessage,
     });
-    const title = text.trim().replace(/["""''。.!！？?]/g, "").slice(0, 10);
+    const title = text
+      .trim()
+      .replace(/["""''。.!！？?]/g, "")
+      .slice(0, 10);
     return title || null;
   } catch (err) {
     console.error("[chat-turn] title generation failed:", err);
@@ -238,8 +251,7 @@ export function createChatTurnWorker(
         const masteredNodes = hasNodes
           ? roadmapNodes
               .filter(
-                (node) =>
-                  node.status === "mastered" || node.masteryScore >= 80,
+                (node) => node.status === "mastered" || node.masteryScore >= 80,
               )
               .map((node) => node.title)
           : [];
@@ -314,7 +326,11 @@ export function createChatTurnWorker(
                   title: currentNode.title,
                   description: currentNode.description,
                 }
-              : { id: "pending", title: topic, description: "等待诊断后生成学习路线" },
+              : {
+                  id: "pending",
+                  title: topic,
+                  description: "等待诊断后生成学习路线",
+                },
             allNodes: hasNodes
               ? roadmapNodes.map((n) => ({
                   id: n.id,
@@ -332,7 +348,10 @@ export function createChatTurnWorker(
           });
           const delegateTaskDef = createDelegateTaskTool(
             subagentConfigs,
-            { get: (name: string) => allToolDefs.find((t) => t.name === name), getAll: () => allToolDefs },
+            {
+              get: (name: string) => allToolDefs.find((t) => t.name === name),
+              getAll: () => allToolDefs,
+            },
             providerFn,
           );
           allToolDefs = [...tutorToolDefinitions, delegateTaskDef];
@@ -401,7 +420,9 @@ export function createChatTurnWorker(
           {
             hidden:
               (job.data.hidden ?? false) &&
-              loopResult.toolResults.some((tr) => tr.toolName === "generateRoadmap"),
+              loopResult.toolResults.some(
+                (tr) => tr.toolName === "generateRoadmap",
+              ),
           },
         );
 
@@ -425,12 +446,12 @@ export function createChatTurnWorker(
             });
             await publisher.publish(
               channel,
-              JSON.stringify({ type: "title-updated", data: { title } }),
+              createSSEEvent(SSEEventType.TitleUpdated, { data: { title } }),
             );
           }
         }
 
-        await publisher.publish(channel, JSON.stringify({ type: "done" }));
+        await publisher.publish(channel, createSSEEvent(SSEEventType.Done));
 
         console.log(
           `[chat-turn] completed job ${job.id} for session ${sessionId} (${loopResult.steps} steps, stop: ${loopResult.stopReason})`,
@@ -453,7 +474,7 @@ export function createChatTurnWorker(
           : errorMessage;
         await publisher.publish(
           channel,
-          JSON.stringify({ type: "error", message: userMessage }),
+          createSSEEvent(SSEEventType.Error, { message: userMessage }),
         );
 
         throw error;

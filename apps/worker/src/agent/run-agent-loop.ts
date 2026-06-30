@@ -5,6 +5,7 @@ import {
   type ModelMessage,
   type Tool,
 } from "ai";
+import { createSSEEvent, SSEEventType } from "@ai-teacher/shared";
 import { StreamingBlockParser } from "../streaming/block-parser";
 
 export interface AgentLoopOptions {
@@ -80,7 +81,7 @@ export async function runAgentLoop(
         stepText += text;
         await publisher.publish(
           channel,
-          JSON.stringify({ type: "text-delta", content: text }),
+          createSSEEvent(SSEEventType.TextDelta, { content: text }),
         );
       } else if (eventType === "tool-input-start" && "toolName" in event) {
         const toolName = (event as { toolName: string }).toolName;
@@ -90,18 +91,25 @@ export async function runAgentLoop(
             onBlock: async (block, index) => {
               await publisher.publish(
                 channel,
-                JSON.stringify({ type: "ui-block-delta", data: { block, index } }),
+                createSSEEvent(SSEEventType.UiBlockDelta, {
+                  data: { block, index },
+                }),
               );
             },
           });
           await publisher.publish(
             channel,
-            JSON.stringify({ type: "ui-stream-start", data: {} }),
+            createSSEEvent(SSEEventType.UiStreamStart, { data: {} }),
           );
         }
-      } else if (eventType === "tool-input-delta" && "inputTextDelta" in event) {
+      } else if (
+        eventType === "tool-input-delta" &&
+        "inputTextDelta" in event
+      ) {
         if (streamingToolName === "renderUI" && blockParser) {
-          blockParser.feed((event as { inputTextDelta: string }).inputTextDelta);
+          blockParser.feed(
+            (event as { inputTextDelta: string }).inputTextDelta,
+          );
         }
       } else if (
         eventType === "tool-input-available" ||
@@ -116,8 +124,7 @@ export async function runAgentLoop(
         stepHasToolCall = true;
         await publisher.publish(
           channel,
-          JSON.stringify({
-            type: "tool-call",
+          createSSEEvent(SSEEventType.ToolCall, {
             data: {
               toolName: (event as { toolName: string }).toolName,
               input: (event as { input: unknown }).input,
@@ -135,8 +142,7 @@ export async function runAgentLoop(
         });
         await publisher.publish(
           channel,
-          JSON.stringify({
-            type: "tool-result",
+          createSSEEvent(SSEEventType.ToolResult, {
             data: { toolName: toolEvent.toolName, result: toolEvent.output },
           }),
         );
@@ -174,7 +180,9 @@ export async function runAgentLoop(
     // Safety: ensure all values in tool results are JSON-serializable
     // (e.g. Prisma Date objects → ISO strings) to prevent schema validation
     // failures on subsequent streamText calls.
-    const sanitized = JSON.parse(JSON.stringify(response.messages)) as ModelMessage[];
+    const sanitized = JSON.parse(
+      JSON.stringify(response.messages),
+    ) as ModelMessage[];
     currentMessages = [...currentMessages, ...sanitized];
   }
 
@@ -197,15 +205,16 @@ async function publishToolSideEffects(
     if (output.uiBlocks && Array.isArray(output.uiBlocks)) {
       await publisher.publish(
         channel,
-        JSON.stringify({ type: "ui-blocks", data: { uiBlocks: output.uiBlocks } }),
+        createSSEEvent(SSEEventType.UiBlocks, {
+          data: { uiBlocks: output.uiBlocks },
+        }),
       );
     }
   } else if (toolEvent.toolName === "pushCode") {
     if (output.code) {
       await publisher.publish(
         channel,
-        JSON.stringify({
-          type: "code-push",
+        createSSEEvent(SSEEventType.CodePush, {
           data: {
             code: output.code,
             language: output.language,
@@ -218,8 +227,7 @@ async function publishToolSideEffects(
     if (output.questions && Array.isArray(output.questions)) {
       await publisher.publish(
         channel,
-        JSON.stringify({
-          type: "ask-question",
+        createSSEEvent(SSEEventType.AskQuestion, {
           data: {
             questions: output.questions,
             question: output.question,
@@ -232,8 +240,7 @@ async function publishToolSideEffects(
     if (output.roadmapUpdate) {
       await publisher.publish(
         channel,
-        JSON.stringify({
-          type: "roadmap-updated",
+        createSSEEvent(SSEEventType.RoadmapUpdated, {
           data: { nodes: (output.roadmapUpdate as { nodes: unknown[] }).nodes },
         }),
       );
@@ -241,15 +248,16 @@ async function publishToolSideEffects(
     if (output.sessionUpdate) {
       await publisher.publish(
         channel,
-        JSON.stringify({ type: "session-updated", data: output.sessionUpdate }),
+        createSSEEvent(SSEEventType.SessionUpdated, {
+          data: output.sessionUpdate,
+        }),
       );
     }
   } else if (toolEvent.toolName === "generateRoadmap") {
     if (output.roadmapUpdate) {
       await publisher.publish(
         channel,
-        JSON.stringify({
-          type: "roadmap-updated",
+        createSSEEvent(SSEEventType.RoadmapUpdated, {
           data: { nodes: (output.roadmapUpdate as { nodes: unknown[] }).nodes },
         }),
       );
@@ -257,7 +265,9 @@ async function publishToolSideEffects(
     if (output.sessionUpdate) {
       await publisher.publish(
         channel,
-        JSON.stringify({ type: "session-updated", data: output.sessionUpdate }),
+        createSSEEvent(SSEEventType.SessionUpdated, {
+          data: output.sessionUpdate,
+        }),
       );
     }
   }
