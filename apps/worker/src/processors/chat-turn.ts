@@ -167,6 +167,26 @@ export function createChatTurnWorker(
       const { messageId, sessionId, messages } = job.data;
       const channel = `chat:${sessionId}`;
 
+      const abortController = new AbortController();
+      const controlSubscriber = new Redis(REDIS_URL, {
+        maxRetriesPerRequest: null,
+      });
+      const controlChannel = `chat:${sessionId}:control`;
+      controlSubscriber.on("message", (_ch, payload) => {
+        try {
+          const msg = JSON.parse(payload);
+          if (msg.type === "abort") {
+            console.log(
+              `[chat-turn] abort signal for session ${sessionId}`,
+            );
+            abortController.abort();
+          }
+        } catch {
+          /* ignore malformed control messages */
+        }
+      });
+      await controlSubscriber.subscribe(controlChannel);
+
       console.log(
         `[chat-turn] processing job ${job.id} for session ${sessionId}`,
       );
@@ -402,6 +422,7 @@ export function createChatTurnWorker(
           channel,
           maxSteps: 7,
           timeoutMs: STREAM_TIMEOUT_MS,
+          abortSignal: abortController.signal,
         });
 
         // Post-process: async compaction if needed
@@ -451,7 +472,14 @@ export function createChatTurnWorker(
           }
         }
 
-        await publisher.publish(channel, createSSEEvent(SSEEventType.Done));
+        if (loopResult.stopReason === "aborted") {
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.Done, { reason: "aborted" }),
+          );
+        } else {
+          await publisher.publish(channel, createSSEEvent(SSEEventType.Done));
+        }
 
         console.log(
           `[chat-turn] completed job ${job.id} for session ${sessionId} (${loopResult.steps} steps, stop: ${loopResult.stopReason})`,
@@ -478,6 +506,9 @@ export function createChatTurnWorker(
         );
 
         throw error;
+      } finally {
+        controlSubscriber.unsubscribe(controlChannel);
+        controlSubscriber.quit();
       }
     },
     {

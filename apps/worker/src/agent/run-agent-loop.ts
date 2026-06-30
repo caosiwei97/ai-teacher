@@ -17,13 +17,14 @@ export interface AgentLoopOptions {
   channel: string;
   maxSteps?: number;
   timeoutMs?: number;
+  abortSignal?: AbortSignal;
 }
 
 export interface AgentLoopResult {
   assistantText: string;
   toolResults: Array<{ toolName: string; result: unknown }>;
   steps: number;
-  stopReason: "no-tool-call" | "max-steps" | "timeout";
+  stopReason: "no-tool-call" | "max-steps" | "timeout" | "aborted";
 }
 
 export async function runAgentLoop(
@@ -49,6 +50,10 @@ export async function runAgentLoop(
   const deadline = Date.now() + timeoutMs;
 
   for (step = 0; step < maxSteps; step++) {
+    if (opts.abortSignal?.aborted) {
+      stopReason = "aborted";
+      break;
+    }
     if (Date.now() > deadline) {
       stopReason = "timeout";
       break;
@@ -60,6 +65,7 @@ export async function runAgentLoop(
       messages: currentMessages,
       tools,
       stopWhen: stepCountIs(1),
+      abortSignal: opts.abortSignal,
     });
 
     let stepText = "";
@@ -69,6 +75,10 @@ export async function runAgentLoop(
     let streamingToolName: string | null = null;
 
     for await (const event of result.fullStream) {
+      if (opts.abortSignal?.aborted) {
+        stopReason = "aborted";
+        break;
+      }
       if (Date.now() > deadline) {
         stopReason = "timeout";
         break;

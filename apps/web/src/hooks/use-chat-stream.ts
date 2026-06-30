@@ -446,10 +446,15 @@ export function useChatStream(
     [input, isLoading, messages, sessionId, options],
   );
 
-  const stop = useCallback(() => {
+  const stop = useCallback(async () => {
     abortControllerRef.current?.abort();
     setIsLoading(false);
-  }, []);
+    try {
+      await fetch(`/api/chat/${sessionId}/abort`, { method: "POST" });
+    } catch {
+      /* ignore — best-effort abort notification */
+    }
+  }, [sessionId]);
 
   const submitMessage = useCallback(
     (
