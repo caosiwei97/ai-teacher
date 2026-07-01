@@ -24,7 +24,14 @@ import {
 import { useSession } from "@/contexts/session-context";
 import { SandboxProvider } from "@/contexts/sandbox-context";
 import type { UIMessage } from "ai";
-import { GraduationCap, PanelRightClose, MapPin, ArrowRight } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  GraduationCap,
+  History,
+  MapPin,
+  PanelRightClose,
+} from "lucide-react";
 import { ModeTabs, type ActiveMode } from "@/components/layout/mode-tabs";
 
 const USER_ID = "seed-user-ai-teacher";
@@ -109,8 +116,8 @@ function LandingView() {
   const disabled = llmConfigs.length === 0 && !hasEnvConfig;
 
   return (
-    <div className="flex h-full flex-col items-center justify-center px-6 py-10">
-      <div className="w-full max-w-3xl">
+    <div className="flex h-full flex-col items-center overflow-y-auto px-4 py-16 sm:px-6 sm:py-10">
+      <div className="my-auto w-full max-w-3xl">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
             <GraduationCap className="h-7 w-7 text-primary" />
@@ -123,7 +130,7 @@ function LandingView() {
           </p>
         </div>
 
-        <div className="mb-4">
+        <div>
           <ChatInput
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
@@ -144,42 +151,72 @@ function LandingView() {
           />
         </div>
 
-        <div
-          data-testid="suggested-topic-grid"
-          className="mb-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {suggestedTopics.map((t) => (
-            <button
-              key={t.title}
-              onClick={() => sendMessage(t.title)}
-              disabled={creating}
-              data-testid="suggested-topic-card"
-              className="group min-h-20 rounded-lg border border-border bg-card/70 px-4 py-3 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/45 hover:bg-secondary hover:shadow-md disabled:opacity-40"
-            >
-              <span className="text-[11px] font-medium text-muted-foreground transition-colors group-hover:text-primary">
-                {t.meta}
-              </span>
-              <span className="mt-1 block text-sm font-medium leading-snug text-foreground">
-                {t.title}
-              </span>
-            </button>
-          ))}
-        </div>
-
         {learningSession && (
-          <div className="mb-8 flex justify-center">
-            <button
-              onClick={() => navigate(`/learn/${learningSession.id}`, { replace: true })}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-            >
-              <span>继续上次学习：{learningSession.topic}</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          <button
+            onClick={() => navigate(`/learn/${learningSession.id}`, { replace: true })}
+            className="group mt-5 flex w-full cursor-pointer items-center gap-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-4 py-3 text-left transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary/40 hover:bg-primary/[0.07] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <History className="h-4 w-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-medium text-muted-foreground">
+                继续上次学习
+              </span>
+              <span className="mt-0.5 block truncate text-sm font-semibold text-foreground">
+                {learningSession.topic}
+              </span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 text-primary transition-transform duration-200 group-hover:translate-x-0.5" />
+          </button>
         )}
 
+        <section aria-labelledby="suggested-topics-title" className="mt-7">
+          <div className="mb-3 flex items-end justify-between px-1">
+            <div>
+              <h2
+                id="suggested-topics-title"
+                className="text-sm font-semibold text-foreground"
+              >
+                推荐学习主题
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                不知道从哪开始？选一个感兴趣的方向
+              </p>
+            </div>
+            <span className="hidden text-xs text-muted-foreground sm:block">
+              点击即可开始
+            </span>
+          </div>
+
+          <div
+            data-testid="suggested-topic-grid"
+            className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            {suggestedTopics.map((t) => (
+              <button
+                key={t.title}
+                onClick={() => sendMessage(t.title)}
+                disabled={creating}
+                data-testid="suggested-topic-card"
+                className="group flex min-h-16 cursor-pointer flex-col rounded-lg border border-border bg-card px-3.5 py-2.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/[0.03] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span className="flex w-full items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted-foreground transition-colors group-hover:text-primary">
+                    {t.meta}
+                  </span>
+                  <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/50 transition-[color,transform] duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary" />
+                </span>
+                <span className="mt-1 block text-[13px] font-medium leading-snug text-foreground">
+                  {t.title}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* 三阶段闭环示意 */}
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <div className="mt-9 flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <span className="rounded-lg bg-card px-3 py-2">🌱 学习</span>
           <span className="text-muted-foreground/40">→</span>
           <span className="rounded-lg bg-card px-3 py-2">🔁 复习</span>
