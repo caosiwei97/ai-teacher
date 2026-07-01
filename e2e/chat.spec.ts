@@ -23,5 +23,13 @@ test.describe("Chat — Message Flow", () => {
     const messages = page.locator('[class*="rounded-xl"]');
     const count = await messages.count();
     expect(count).toBeGreaterThanOrEqual(2);
+
+    const usageMeter = page.getByTestId("token-usage-meter");
+    await expect(usageMeter).toBeVisible({ timeout: 15000 });
+    await expect(usageMeter).toContainText("上下文");
+
+    await usageMeter.locator("summary").click();
+    await expect(usageMeter).toContainText("本轮输入");
+    await expect(usageMeter).toContainText("会话累计");
   });
 });

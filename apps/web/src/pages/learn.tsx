@@ -1246,6 +1246,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
     nextNodeTitle,
     tokenUsage: chat.tokenUsage,
     contextInfo: chat.contextInfo,
+    agentActivity: chat.agentActivity,
   };
 
   const showRight = nodes.length > 0 || codePanel;

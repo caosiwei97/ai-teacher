@@ -1,6 +1,17 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { UIMessage } from "ai";
 import { parseSSEEvent, SSEEventType, type SSEEvent } from "@ai-teacher/shared";
+import {
+  INITIAL_AGENT_ACTIVITY,
+  INITIAL_TOKEN_USAGE,
+  mergeUsage,
+  recordAgentCall,
+  type AgentActivity,
+  type TokenUsage,
+  type UsageEventData,
+} from "@/lib/usage-metrics";
+
+export type { AgentActivity, TokenUsage } from "@/lib/usage-metrics";
 
 interface UseChatStreamOptions {
   teachingMode?: "warm" | "strict";
@@ -74,47 +85,10 @@ export interface MessageMetadata {
   annotations?: AnnotationData[];
 }
 
-export interface TokenUsage {
-  input: number;
-  output: number;
-  total: number;
-  cacheRead: number;
-  cacheWrite: number;
-  reasoning: number;
-  sessionTotal: number;
-}
-
 export interface ContextInfo {
-  tokenCount: number;
-  budget: number;
+  estimatedHistoryTokens: number;
+  compactionBudget: number;
   needsCompaction: boolean;
-}
-
-const INITIAL_TOKEN_USAGE: TokenUsage = {
-  input: 0,
-  output: 0,
-  total: 0,
-  cacheRead: 0,
-  cacheWrite: 0,
-  reasoning: 0,
-  sessionTotal: 0,
-};
-
-function mergeUsage(prev: TokenUsage, u: Record<string, unknown>): TokenUsage {
-  const inputDetails = u.inputTokenDetails as Record<string, unknown> | undefined;
-  const outputDetails = u.outputTokenDetails as
-    | Record<string, unknown>
-    | undefined;
-  const total = (u.totalTokens as number) ?? prev.total;
-  return {
-    input: (u.inputTokens as number) ?? prev.input,
-    output: (u.outputTokens as number) ?? prev.output,
-    total,
-    cacheRead: inputDetails?.cacheReadTokens as number ?? prev.cacheRead,
-    cacheWrite: inputDetails?.cacheWriteTokens as number ?? prev.cacheWrite,
-    reasoning: outputDetails?.reasoningTokens as number ?? prev.reasoning,
-    sessionTotal: prev.sessionTotal + (total ?? 0),
-  };
 }
 
 // 单条 annotation 里承载 loopTrace（单对象，非数组）。updater 对该对象做就地变更，
@@ -168,7 +142,16 @@ export function useChatStream(
   const [isLoading, setIsLoading] = useState(false);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage>(INITIAL_TOKEN_USAGE);
   const [contextInfo, setContextInfo] = useState<ContextInfo | null>(null);
+  const [agentActivity, setAgentActivity] = useState<AgentActivity>(
+    INITIAL_AGENT_ACTIVITY,
+  );
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    setTokenUsage(INITIAL_TOKEN_USAGE);
+    setContextInfo(null);
+    setAgentActivity(INITIAL_AGENT_ACTIVITY);
+  }, [sessionId]);
 
   // Cleanup: abort any in-flight SSE stream when component unmounts
   useEffect(() => {
@@ -313,6 +296,7 @@ export function useChatStream(
                 const existing =
                   newMessages[assistantIdx].metadata?.annotations ?? [];
                 const toolName = String(data.toolName);
+                setAgentActivity((prev) => recordAgentCall(prev, toolName));
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
                   parts: newMessages[assistantIdx].parts,
@@ -632,10 +616,10 @@ export function useChatStream(
                 };
                 setMessages([...newMessages]);
               } else if (event.type === SSEEventType.Usage && event.data) {
-                const u = (
-                  event.data as { usage?: Record<string, unknown> }
-                )?.usage;
-                if (u) setTokenUsage((prev) => mergeUsage(prev, u));
+                const usageEvent = event.data as UsageEventData;
+                if (usageEvent.usage) {
+                  setTokenUsage((prev) => mergeUsage(prev, usageEvent));
+                }
               } else if (event.type === SSEEventType.ContextInfo && event.data) {
                 setContextInfo(
                   event.data as ContextInfo,
@@ -788,6 +772,7 @@ export function useChatStream(
             } else if (event.type === SSEEventType.ToolCall && event.data) {
               const data = event.data as Record<string, unknown>;
               const toolName = String(data.toolName);
+              setAgentActivity((prev) => recordAgentCall(prev, toolName));
               setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
@@ -1106,10 +1091,10 @@ export function useChatStream(
                 ];
               });
             } else if (event.type === SSEEventType.Usage && event.data) {
-              const u = (
-                event.data as { usage?: Record<string, unknown> }
-              )?.usage;
-              if (u) setTokenUsage((prev) => mergeUsage(prev, u));
+              const usageEvent = event.data as UsageEventData;
+              if (usageEvent.usage) {
+                setTokenUsage((prev) => mergeUsage(prev, usageEvent));
+              }
             } else if (event.type === SSEEventType.ContextInfo && event.data) {
               setContextInfo(event.data as ContextInfo);
             } else if (event.type === SSEEventType.Error) {
@@ -1149,5 +1134,6 @@ export function useChatStream(
     resumeStream,
     tokenUsage,
     contextInfo,
+    agentActivity,
   };
 }

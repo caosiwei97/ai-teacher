@@ -6,11 +6,17 @@ import {
   type AssessmentCardProps,
 } from "./assessment-card";
 import type { UIBlock } from "@ai-teacher/shared";
-import type { MessageMetadata, DiagnosticQuestionsData, LoopTrace, TokenUsage, ContextInfo } from "@/hooks/use-chat-stream";
+import type {
+  AgentActivity,
+  ContextInfo,
+  DiagnosticQuestionsData,
+  LoopTrace,
+  MessageMetadata,
+  TokenUsage,
+} from "@/hooks/use-chat-stream";
 import { ChatMessage } from "./chat-message";
 import type { InteractiveSubmitPayload } from "@/components/ui-blocks/interactive-block";
 import { ChatInput } from "./chat-input";
-import { TokenMeter } from "./token-meter";
 import { Sparkles } from "lucide-react";
 
 function getTextFromParts(parts: UIMessage["parts"]): string {
@@ -58,6 +64,7 @@ interface ChatAreaProps {
   nextNodeTitle?: string;
   tokenUsage?: TokenUsage;
   contextInfo?: ContextInfo | null;
+  agentActivity?: AgentActivity;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -186,6 +193,7 @@ export function ChatArea({
   nextNodeTitle,
   tokenUsage,
   contextInfo,
+  agentActivity,
 }: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -333,11 +341,6 @@ export function ChatArea({
             <p className="text-xs text-destructive">{error}</p>
           </div>
         )}
-        {tokenUsage && (tokenUsage.sessionTotal > 0 || contextInfo) && (
-          <div className="py-2">
-            <TokenMeter usage={tokenUsage} contextInfo={contextInfo ?? null} estimatedSystemTools={0} />
-          </div>
-        )}
         <ChatInput
           value={input}
           onChange={onInputChange}
@@ -358,6 +361,9 @@ export function ChatArea({
           onModelChange={onModelChange}
           frameless
           showSuggestButton
+          tokenUsage={tokenUsage}
+          contextInfo={contextInfo}
+          agentActivity={agentActivity}
         />
       </div>
     </div>
