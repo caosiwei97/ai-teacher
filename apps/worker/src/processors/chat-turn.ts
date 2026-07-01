@@ -7,7 +7,9 @@ import {
   SSEEventType,
 } from "@ai-teacher/shared";
 import { tool as aiTool, generateText, type Tool } from "ai";
+import { z } from "zod";
 import { runAgentLoop } from "../agent/run-agent-loop";
+import type { PromptToolDescriptor } from "../agent/context-breakdown";
 import {
   tutorToolDefinitions,
   reviewToolDefinitions,
@@ -170,6 +172,24 @@ function collectPromptSection(toolDefs: ToolDefinition[]): string {
     }
   }
   return sections.join("\n\n");
+}
+
+function describePromptTools(
+  toolDefs: ToolDefinition[],
+): PromptToolDescriptor[] {
+  return toolDefs.map((def) => {
+    let inputSchema: unknown;
+    try {
+      inputSchema = z.toJSONSchema(def.inputSchema);
+    } catch {
+      inputSchema = { type: "object" };
+    }
+    return {
+      name: def.name,
+      description: def.description,
+      inputSchema,
+    };
+  });
 }
 
 export function createChatTurnWorker(
@@ -418,6 +438,7 @@ export function createChatTurnWorker(
         const finalSystemPrompt = `${fullSystemPrompt}${ragHint}`;
 
         const tools = buildToolsRecord(allToolDefs, toolCtx);
+        const promptTools = describePromptTools(allToolDefs);
 
         // Prepare context (compaction check)
         const prepared = await contextManager.prepareForStream(
@@ -444,6 +465,7 @@ export function createChatTurnWorker(
           system: finalSystemPrompt,
           messages: prepared.messages,
           tools,
+          promptTools,
           publisher,
           channel,
           maxSteps: 7,

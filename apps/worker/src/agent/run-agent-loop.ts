@@ -14,12 +14,18 @@ import {
 } from "@ai-teacher/shared";
 import { StreamingBlockParser } from "../streaming/block-parser";
 import { LoopDetector } from "./loop-detector";
+import {
+  calibratePromptBreakdown,
+  estimatePromptBreakdown,
+  type PromptToolDescriptor,
+} from "./context-breakdown";
 
 export interface AgentLoopOptions {
   model: LanguageModel;
   system: string;
   messages: ModelMessage[];
   tools: Record<string, Tool>;
+  promptTools?: PromptToolDescriptor[];
   publisher: { publish: (channel: string, message: string) => Promise<number> };
   channel: string;
   maxSteps?: number;
@@ -39,6 +45,7 @@ export interface AgentLoopResult {
 function createUsageSSEEvent(
   usage: LanguageModelUsage,
   model: LanguageModel,
+  estimatedBreakdown: ReturnType<typeof estimatePromptBreakdown>,
 ): string {
   const modelId = typeof model === "string" ? model : model.modelId;
   const provider = typeof model === "string" ? undefined : model.provider;
@@ -49,6 +56,10 @@ function createUsageSSEEvent(
       modelId,
       provider,
       contextWindow: getModelContextWindow(modelId),
+      contextBreakdown: calibratePromptBreakdown(
+        estimatedBreakdown,
+        usage.inputTokens ?? 0,
+      ),
     },
   });
 }
@@ -66,6 +77,12 @@ export async function runAgentLoop(
     maxSteps = 7,
     timeoutMs = 120_000,
   } = opts;
+  const promptTools =
+    opts.promptTools ??
+    Object.entries(tools).map(([name, tool]) => ({
+      name,
+      description: tool.description,
+    }));
 
   let currentMessages: ModelMessage[] = [...messages];
   let assistantText = "";
@@ -97,6 +114,11 @@ export async function runAgentLoop(
     const stepToolResults: Array<{ toolName: string; result: unknown }> = [];
     let nextMessages: ModelMessage[] | null = null;
     let circuitBroken = false;
+    const estimatedBreakdown = estimatePromptBreakdown({
+      system,
+      messages: currentMessages,
+      tools: promptTools,
+    });
 
     const result = streamText({
       model,
@@ -109,7 +131,7 @@ export async function runAgentLoop(
         if (totalUsage) {
           await publisher.publish(
             channel,
-            createUsageSSEEvent(totalUsage, model),
+            createUsageSSEEvent(totalUsage, model, estimatedBreakdown),
           );
         }
       },
@@ -256,6 +278,7 @@ export async function runAgentLoop(
         system,
         messages: currentMessages,
         tools,
+        promptTools,
         publisher,
         channel,
         mainModel: model,
@@ -333,6 +356,7 @@ async function degradeStep(opts: {
   system: string;
   messages: ModelMessage[];
   tools: Record<string, Tool>;
+  promptTools: PromptToolDescriptor[];
   publisher: { publish: (channel: string, message: string) => Promise<number> };
   channel: string;
   mainModel: LanguageModel;
@@ -343,6 +367,11 @@ async function degradeStep(opts: {
   const { err } = opts;
   const reason = err instanceof Error ? err.message : String(err);
   const { publisher, channel, step } = opts;
+  const estimatedBreakdown = estimatePromptBreakdown({
+    system: opts.system,
+    messages: opts.messages,
+    tools: opts.promptTools,
+  });
 
   // ① 非流式 generateText（主 model）
   try {
@@ -372,7 +401,7 @@ async function degradeStep(opts: {
     if (gen.usage) {
       await publisher.publish(
         channel,
-        createUsageSSEEvent(gen.usage, opts.mainModel),
+        createUsageSSEEvent(gen.usage, opts.mainModel, estimatedBreakdown),
       );
     }
     const toolResults = gen.toolResults.map((tr) => ({
@@ -438,7 +467,7 @@ async function degradeStep(opts: {
       if (gen.usage) {
         await publisher.publish(
           channel,
-          createUsageSSEEvent(gen.usage, fallbackModel),
+          createUsageSSEEvent(gen.usage, fallbackModel, estimatedBreakdown),
         );
       }
       const toolResults = gen.toolResults.map((tr) => ({

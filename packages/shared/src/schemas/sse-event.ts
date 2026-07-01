@@ -35,6 +35,14 @@ export const SSEEventSchema = z.object({
 
 export type SSEEvent = z.infer<typeof SSEEventSchema>;
 
+export interface PromptContextBreakdown {
+  system: number;
+  user: number;
+  assistant: number;
+  tools: number;
+  mcpTools: number;
+}
+
 export function createSSEEvent(
   type: SSEEventType,
   payload?: Record<string, unknown>,
