@@ -24,12 +24,17 @@ test.describe("Chat — Message Flow", () => {
     const count = await messages.count();
     expect(count).toBeGreaterThanOrEqual(2);
 
-    const usageMeter = page.getByTestId("token-usage-meter");
-    await expect(usageMeter).toBeVisible({ timeout: 15000 });
-    await expect(usageMeter).toContainText("上下文");
+    const contextButton = page.getByRole("button", {
+      name: "查看 Prompt 上下文",
+    });
+    await expect(contextButton).toBeVisible({ timeout: 15000 });
+    await contextButton.click();
 
-    await usageMeter.locator("summary").click();
-    await expect(usageMeter).toContainText("本轮输入");
-    await expect(usageMeter).toContainText("会话累计");
+    const usageMeter = page.getByTestId("token-usage-meter");
+    await expect(usageMeter).toBeVisible();
+    await expect(usageMeter).toContainText("Prompt 上下文");
+    await expect(usageMeter).toContainText("系统消息");
+    await expect(usageMeter).toContainText("内置工具");
+    await expect(usageMeter).toContainText("缓存命中率");
   });
 });

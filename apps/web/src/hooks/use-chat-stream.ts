@@ -2,16 +2,13 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import type { UIMessage } from "ai";
 import { parseSSEEvent, SSEEventType, type SSEEvent } from "@ai-teacher/shared";
 import {
-  INITIAL_AGENT_ACTIVITY,
   INITIAL_TOKEN_USAGE,
   mergeUsage,
-  recordAgentCall,
-  type AgentActivity,
   type TokenUsage,
   type UsageEventData,
 } from "@/lib/usage-metrics";
 
-export type { AgentActivity, TokenUsage } from "@/lib/usage-metrics";
+export type { TokenUsage } from "@/lib/usage-metrics";
 
 interface UseChatStreamOptions {
   teachingMode?: "warm" | "strict";
@@ -97,7 +94,9 @@ function updateLoopTrace(
   annotations: AnnotationData[],
   updater: (trace: LoopTrace) => LoopTrace,
 ): AnnotationData[] {
-  const idx = annotations.findIndex((a) => a && "loopTrace" in a && a.loopTrace);
+  const idx = annotations.findIndex(
+    (a) => a && "loopTrace" in a && a.loopTrace,
+  );
   if (idx === -1) {
     const fresh: LoopTrace = { steps: [] };
     const next = updater(fresh);
@@ -142,15 +141,11 @@ export function useChatStream(
   const [isLoading, setIsLoading] = useState(false);
   const [tokenUsage, setTokenUsage] = useState<TokenUsage>(INITIAL_TOKEN_USAGE);
   const [contextInfo, setContextInfo] = useState<ContextInfo | null>(null);
-  const [agentActivity, setAgentActivity] = useState<AgentActivity>(
-    INITIAL_AGENT_ACTIVITY,
-  );
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setTokenUsage(INITIAL_TOKEN_USAGE);
     setContextInfo(null);
-    setAgentActivity(INITIAL_AGENT_ACTIVITY);
   }, [sessionId]);
 
   // Cleanup: abort any in-flight SSE stream when component unmounts
@@ -296,7 +291,6 @@ export function useChatStream(
                 const existing =
                   newMessages[assistantIdx].metadata?.annotations ?? [];
                 const toolName = String(data.toolName);
-                setAgentActivity((prev) => recordAgentCall(prev, toolName));
                 newMessages[assistantIdx] = {
                   ...newMessages[assistantIdx],
                   parts: newMessages[assistantIdx].parts,
@@ -521,7 +515,10 @@ export function useChatStream(
                 };
                 setMessages([...newMessages]);
               } else if (event.type === SSEEventType.StepEnd && event.data) {
-                const data = event.data as { step: number; durationMs?: number };
+                const data = event.data as {
+                  step: number;
+                  durationMs?: number;
+                };
                 const stepNum = Number(data.step);
                 const existing =
                   newMessages[assistantIdx].metadata?.annotations ?? [];
@@ -534,14 +531,20 @@ export function useChatStream(
                       ...trace,
                       steps: trace.steps.map((s) =>
                         s.step === stepNum
-                          ? { ...s, durationMs: data.durationMs ?? (Date.now() - s.t0) }
+                          ? {
+                              ...s,
+                              durationMs: data.durationMs ?? Date.now() - s.t0,
+                            }
                           : s,
                       ),
                     })),
                   },
                 };
                 setMessages([...newMessages]);
-              } else if (event.type === SSEEventType.ReasoningDelta && event.data) {
+              } else if (
+                event.type === SSEEventType.ReasoningDelta &&
+                event.data
+              ) {
                 const data = event.data as { step: number; text: string };
                 const stepNum = Number(data.step);
                 const delta = String(data.text ?? "");
@@ -592,8 +595,15 @@ export function useChatStream(
                   },
                 };
                 setMessages([...newMessages]);
-              } else if (event.type === SSEEventType.LoopWarning && event.data) {
-                const data = event.data as { type: string; toolName: string; step: number };
+              } else if (
+                event.type === SSEEventType.LoopWarning &&
+                event.data
+              ) {
+                const data = event.data as {
+                  type: string;
+                  toolName: string;
+                  step: number;
+                };
                 const existing =
                   newMessages[assistantIdx].metadata?.annotations ?? [];
                 newMessages[assistantIdx] = {
@@ -620,10 +630,11 @@ export function useChatStream(
                 if (usageEvent.usage) {
                   setTokenUsage((prev) => mergeUsage(prev, usageEvent));
                 }
-              } else if (event.type === SSEEventType.ContextInfo && event.data) {
-                setContextInfo(
-                  event.data as ContextInfo,
-                );
+              } else if (
+                event.type === SSEEventType.ContextInfo &&
+                event.data
+              ) {
+                setContextInfo(event.data as ContextInfo);
               } else if (event.type === SSEEventType.Error) {
                 const errorMsg =
                   typeof event.data === "string"
@@ -772,7 +783,6 @@ export function useChatStream(
             } else if (event.type === SSEEventType.ToolCall && event.data) {
               const data = event.data as Record<string, unknown>;
               const toolName = String(data.toolName);
-              setAgentActivity((prev) => recordAgentCall(prev, toolName));
               setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
@@ -976,7 +986,11 @@ export function useChatStream(
                         ...trace,
                         steps: [
                           ...trace.steps,
-                          { step: Number(data.step), total: Number(data.total), t0: Date.now() },
+                          {
+                            step: Number(data.step),
+                            total: Number(data.total),
+                            t0: Date.now(),
+                          },
                         ],
                       })),
                     },
@@ -999,7 +1013,11 @@ export function useChatStream(
                         ...trace,
                         steps: trace.steps.map((s) =>
                           s.step === stepNum
-                            ? { ...s, durationMs: data.durationMs ?? (Date.now() - s.t0) }
+                            ? {
+                                ...s,
+                                durationMs:
+                                  data.durationMs ?? Date.now() - s.t0,
+                              }
                             : s,
                         ),
                       })),
@@ -1007,7 +1025,10 @@ export function useChatStream(
                   },
                 ];
               });
-            } else if (event.type === SSEEventType.ReasoningDelta && event.data) {
+            } else if (
+              event.type === SSEEventType.ReasoningDelta &&
+              event.data
+            ) {
               const data = event.data as { step: number; text: string };
               const stepNum = Number(data.step);
               const delta = String(data.text ?? "");
@@ -1065,7 +1086,11 @@ export function useChatStream(
                 ];
               });
             } else if (event.type === SSEEventType.LoopWarning && event.data) {
-              const data = event.data as { type: string; toolName: string; step: number };
+              const data = event.data as {
+                type: string;
+                toolName: string;
+                step: number;
+              };
               setMessages((prev) => {
                 const idx = prev.length - 1;
                 const existing = prev[idx].metadata?.annotations ?? [];
@@ -1134,6 +1159,5 @@ export function useChatStream(
     resumeStream,
     tokenUsage,
     contextInfo,
-    agentActivity,
   };
 }

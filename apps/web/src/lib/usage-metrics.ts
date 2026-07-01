@@ -1,14 +1,13 @@
+import type { PromptContextBreakdown } from "@ai-teacher/shared";
+
 export interface TokenUsage {
   input: number;
-  output: number;
-  total: number;
   cacheRead: number;
-  cacheWrite: number;
-  reasoning: number;
-  sessionTotal: number;
+  cacheReadKnown: boolean;
   modelId: string | null;
   provider: string | null;
   contextWindow: number | null;
+  contextBreakdown: PromptContextBreakdown | null;
 }
 
 export interface UsageEventData {
@@ -16,43 +15,21 @@ export interface UsageEventData {
   modelId?: string;
   provider?: string;
   contextWindow?: number | null;
-}
-
-export interface AgentActivityItem {
-  name: string;
-  source: "tool" | "mcp";
-  count: number;
-}
-
-export interface AgentActivity {
-  toolCalls: number;
-  mcpCalls: number;
-  items: AgentActivityItem[];
+  contextBreakdown?: PromptContextBreakdown;
 }
 
 export const INITIAL_TOKEN_USAGE: TokenUsage = {
   input: 0,
-  output: 0,
-  total: 0,
   cacheRead: 0,
-  cacheWrite: 0,
-  reasoning: 0,
-  sessionTotal: 0,
+  cacheReadKnown: false,
   modelId: null,
   provider: null,
   contextWindow: null,
-};
-
-export const INITIAL_AGENT_ACTIVITY: AgentActivity = {
-  toolCalls: 0,
-  mcpCalls: 0,
-  items: [],
+  contextBreakdown: null,
 };
 
 function numberOr(value: unknown, fallback: number): number {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : fallback;
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 export function mergeUsage(
@@ -65,56 +42,24 @@ export function mergeUsage(
   const inputDetails = usage.inputTokenDetails as
     | Record<string, unknown>
     | undefined;
-  const outputDetails = usage.outputTokenDetails as
-    | Record<string, unknown>
-    | undefined;
-  const total = numberOr(usage.totalTokens, prev.total);
+  const cacheReadTokens = inputDetails?.cacheReadTokens;
 
   return {
     input: numberOr(usage.inputTokens, prev.input),
-    output: numberOr(usage.outputTokens, prev.output),
-    total,
-    cacheRead: numberOr(inputDetails?.cacheReadTokens, 0),
-    cacheWrite: numberOr(inputDetails?.cacheWriteTokens, 0),
-    reasoning: numberOr(outputDetails?.reasoningTokens, 0),
-    sessionTotal: prev.sessionTotal + total,
+    cacheRead: numberOr(cacheReadTokens, 0),
+    cacheReadKnown:
+      typeof cacheReadTokens === "number" && Number.isFinite(cacheReadTokens),
     modelId: event.modelId ?? prev.modelId,
     provider: event.provider ?? prev.provider,
     contextWindow:
       event.contextWindow === null
         ? null
         : numberOr(event.contextWindow, prev.contextWindow ?? 0) || null,
+    contextBreakdown: event.contextBreakdown ?? prev.contextBreakdown,
   };
 }
 
-export function getCurrentContextTokens(usage: TokenUsage): number {
-  return usage.total || usage.input + usage.output;
-}
-
-function getCallSource(toolName: string): AgentActivityItem["source"] {
-  return /^(mcp__|mcp:|mcp\/)/i.test(toolName) ? "mcp" : "tool";
-}
-
-export function recordAgentCall(
-  prev: AgentActivity,
-  toolName: string,
-): AgentActivity {
-  const source = getCallSource(toolName);
-  const existingIndex = prev.items.findIndex(
-    (item) => item.name === toolName && item.source === source,
-  );
-  const items = [...prev.items];
-
-  if (existingIndex >= 0) {
-    const existing = items[existingIndex];
-    items[existingIndex] = { ...existing, count: existing.count + 1 };
-  } else {
-    items.push({ name: toolName, source, count: 1 });
-  }
-
-  return {
-    toolCalls: prev.toolCalls + (source === "tool" ? 1 : 0),
-    mcpCalls: prev.mcpCalls + (source === "mcp" ? 1 : 0),
-    items,
-  };
+export function getCacheHitRate(usage: TokenUsage): number | null {
+  if (!usage.cacheReadKnown || usage.input <= 0) return null;
+  return Math.min(100, Math.round((usage.cacheRead / usage.input) * 100));
 }

@@ -12,7 +12,11 @@ import { QuickQuestion } from "@/components/chat/quick-question";
 import type { TeachingMode } from "@/components/chat/mode-selector";
 import type { InteractiveSubmitPayload } from "@/components/ui-blocks/interactive-block";
 import { useChatStream } from "@/hooks/use-chat-stream";
-import type { MessageMetadata, DiagnosticQuestionsData, AnnotationData } from "@/hooks/use-chat-stream";
+import type {
+  MessageMetadata,
+  DiagnosticQuestionsData,
+  AnnotationData,
+} from "@/hooks/use-chat-stream";
 import {
   fetchSession,
   fetchSessions,
@@ -62,7 +66,9 @@ function LandingView() {
   const [creating, setCreating] = useState(false);
   const [teachingMode, setTeachingMode] = useState<TeachingMode>("warm");
   const [llmConfigs, setLlmConfigs] = useState<LlmConfig[]>([]);
-  const [selectedConfigId, setSelectedConfigId] = useState<string | undefined>(undefined);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | undefined>(
+    undefined,
+  );
   const [hasEnvConfig, setHasEnvConfig] = useState(true);
 
   useEffect(() => {
@@ -94,11 +100,20 @@ function LandingView() {
     setCreating(true);
     const formatted = formatFirstMessage(trimmed);
     try {
-      const newSession = await createSession(USER_ID, "未命名对话", teachingMode, selectedConfigId);
+      const newSession = await createSession(
+        USER_ID,
+        "未命名对话",
+        teachingMode,
+        selectedConfigId,
+      );
       setSessions((prev) => [newSession, ...prev]);
       const target = `/learn/${newSession.id}`;
       navigate(target, {
-        state: { firstMessage: formatted, teachingMode, llmConfigId: selectedConfigId },
+        state: {
+          firstMessage: formatted,
+          teachingMode,
+          llmConfigId: selectedConfigId,
+        },
         replace: true,
         viewTransition: true,
         flushSync: true,
@@ -143,8 +158,15 @@ function LandingView() {
             disabled={disabled}
             teachingMode={teachingMode}
             onTeachingModeChange={setTeachingMode}
-            currentModel={llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel}
-            llmConfigs={llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault }))}
+            currentModel={
+              llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel
+            }
+            llmConfigs={llmConfigs.map((c) => ({
+              id: c.id,
+              provider: c.provider,
+              defaultModel: c.defaultModel,
+              isDefault: c.isDefault,
+            }))}
             selectedConfigId={selectedConfigId}
             onModelChange={setSelectedConfigId}
             frameless
@@ -153,7 +175,9 @@ function LandingView() {
 
         {learningSession && (
           <button
-            onClick={() => navigate(`/learn/${learningSession.id}`, { replace: true })}
+            onClick={() =>
+              navigate(`/learn/${learningSession.id}`, { replace: true })
+            }
             className="group mt-5 flex w-full cursor-pointer items-center gap-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-4 py-3 text-left transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary/40 hover:bg-primary/[0.07] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 disabled:cursor-not-allowed"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -237,13 +261,7 @@ interface NodeInfo {
   masteryScore: number;
 }
 
-type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonObject
-  | JsonValue[];
+type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 
 interface JsonObject {
   [key: string]: JsonValue;
@@ -286,7 +304,9 @@ function toAssessmentAnnotation(assessment: AssessmentCardProps): JsonObject {
   };
 }
 
-function getCodePushFromMetadata(metadata: unknown): { code: string; language: string; instruction?: string } | undefined {
+function getCodePushFromMetadata(
+  metadata: unknown,
+): { code: string; language: string; instruction?: string } | undefined {
   if (!isObject(metadata) || !Array.isArray(metadata.toolResults)) {
     return undefined;
   }
@@ -318,7 +338,11 @@ function getUIBlocksFromMetadata(metadata: unknown): unknown[] | undefined {
       continue;
     }
     const result = toolResult.result;
-    if (isObject(result) && Array.isArray(result.uiBlocks) && result.uiBlocks.length > 0) {
+    if (
+      isObject(result) &&
+      Array.isArray(result.uiBlocks) &&
+      result.uiBlocks.length > 0
+    ) {
       return result.uiBlocks as unknown[];
     }
   }
@@ -326,12 +350,19 @@ function getUIBlocksFromMetadata(metadata: unknown): unknown[] | undefined {
   return undefined;
 }
 
-function getDiagnosticQuestionsFromMetadata(metadata: unknown): DiagnosticQuestionsData | undefined {
+function getDiagnosticQuestionsFromMetadata(
+  metadata: unknown,
+): DiagnosticQuestionsData | undefined {
   if (!isObject(metadata)) return undefined;
 
   if (Array.isArray((metadata as Record<string, unknown>).annotations)) {
-    for (const ann of (metadata as Record<string, unknown>).annotations as Record<string, unknown>[]) {
-      if (isObject(ann) && "diagnosticQuestions" in ann && ann.diagnosticQuestions) {
+    for (const ann of (metadata as Record<string, unknown>)
+      .annotations as Record<string, unknown>[]) {
+      if (
+        isObject(ann) &&
+        "diagnosticQuestions" in ann &&
+        ann.diagnosticQuestions
+      ) {
         const dq = ann.diagnosticQuestions as Record<string, unknown>;
         if (Array.isArray(dq.questions) && dq.questions.length > 0) {
           return dq as unknown as DiagnosticQuestionsData;
@@ -341,8 +372,13 @@ function getDiagnosticQuestionsFromMetadata(metadata: unknown): DiagnosticQuesti
   }
 
   if (Array.isArray((metadata as Record<string, unknown>).toolResults)) {
-    for (const tr of (metadata as Record<string, unknown>).toolResults as Record<string, unknown>[]) {
-      if (isObject(tr) && tr.toolName === "askQuestion" && isObject(tr.result)) {
+    for (const tr of (metadata as Record<string, unknown>)
+      .toolResults as Record<string, unknown>[]) {
+      if (
+        isObject(tr) &&
+        tr.toolName === "askQuestion" &&
+        isObject(tr.result)
+      ) {
         const result = tr.result as Record<string, unknown>;
         if (Array.isArray(result.questions)) {
           return result as unknown as DiagnosticQuestionsData;
@@ -387,7 +423,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
   const [isNewSession, setIsNewSession] = useState(false);
   const prevSessionRef = useRef<string | null>(null);
   const [teachingMode, setTeachingMode] = useState<"warm" | "strict">(
-    () => (location.state as { teachingMode?: "warm" | "strict" } | null)?.teachingMode ?? "warm",
+    () =>
+      (location.state as { teachingMode?: "warm" | "strict" } | null)
+        ?.teachingMode ?? "warm",
   );
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagnosticSubmitted, setDiagnosticSubmitted] = useState(false);
@@ -396,8 +434,11 @@ function ChatView({ sessionId }: { sessionId: string }) {
   const [firstLessonPreparing, setFirstLessonPreparing] = useState(false);
   const [interactiveResponding, setInteractiveResponding] = useState(false);
 
-  const [masteryTransitionPending, setMasteryTransitionPending] = useState(false);
-  const [nextNodeTitle, setNextNodeTitle] = useState<string | undefined>(undefined);
+  const [masteryTransitionPending, setMasteryTransitionPending] =
+    useState(false);
+  const [nextNodeTitle, setNextNodeTitle] = useState<string | undefined>(
+    undefined,
+  );
   const streamErrorRef = useRef(false);
 
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -445,13 +486,15 @@ function ChatView({ sessionId }: { sessionId: string }) {
         : [],
     [firstMessage, pendingFirstMessage],
   );
-  const [reviewDueNodes, setReviewDueNodes] = useState<Array<{
-    id: string;
-    index: number;
-    title: string;
-    memoryStrength: number;
-    isOverdue: boolean;
-  }>>([]);
+  const [reviewDueNodes, setReviewDueNodes] = useState<
+    Array<{
+      id: string;
+      index: number;
+      title: string;
+      memoryStrength: number;
+      isOverdue: boolean;
+    }>
+  >([]);
   const [interviewResult, setInterviewResult] = useState<{
     status: "in_progress" | "completed";
     totalScore: number;
@@ -506,7 +549,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
             parts: [{ type: "text" as const, text: "" }],
             metadata: { annotations: [] },
           };
-          chat.setMessages(prev => [...prev, assistantMessage]);
+          chat.setMessages((prev) => [...prev, assistantMessage]);
 
           (async () => {
             try {
@@ -515,9 +558,16 @@ function ChatView({ sessionId }: { sessionId: string }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   sessionId,
-                  messages: [{ role: "user", content: `[Continue] 开始教学知识点：${title ?? "下一个知识点"}` }],
+                  messages: [
+                    {
+                      role: "user",
+                      content: `[Continue] 开始教学知识点：${title ?? "下一个知识点"}`,
+                    },
+                  ],
                   hidden: true,
-                  ...(selectedConfigId ? { llmConfigId: selectedConfigId } : {}),
+                  ...(selectedConfigId
+                    ? { llmConfigId: selectedConfigId }
+                    : {}),
                 }),
               });
 
@@ -645,7 +695,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
 
     fetch(`/api/llm/env-status`)
       .then((r) => r.json())
-      .then((data: { hasEnvConfig?: boolean }) => setHasEnvConfig(data.hasEnvConfig ?? false))
+      .then((data: { hasEnvConfig?: boolean }) =>
+        setHasEnvConfig(data.hasEnvConfig ?? false),
+      )
       .catch(() => setHasEnvConfig(false));
 
     fetchSessions(USER_ID)
@@ -663,8 +715,13 @@ function ChatView({ sessionId }: { sessionId: string }) {
                 status: sessionData.session.status || "active",
                 progress: {
                   totalNodes: fetchedNodes.length,
-                  masteredNodes: fetchedNodes.filter((n: NodeInfo) => n.status === "mastered").length,
-                  currentNodeId: fetchedNodes.find((n: NodeInfo) => n.status === "in_progress")?.id ?? null,
+                  masteredNodes: fetchedNodes.filter(
+                    (n: NodeInfo) => n.status === "mastered",
+                  ).length,
+                  currentNodeId:
+                    fetchedNodes.find(
+                      (n: NodeInfo) => n.status === "in_progress",
+                    )?.id ?? null,
                 },
               };
               setSessions([virtualSession, ...sessionsList]);
@@ -715,39 +772,58 @@ function ChatView({ sessionId }: { sessionId: string }) {
               !shouldHideLegacyDiagnosticRoadmapMessage(m),
           );
           setIsNewSession(!hasVisibleMessages);
-          setSelectedConfigId((sessionData.session as Record<string, unknown>).llmConfigId as string | undefined);
+          setSelectedConfigId(
+            (sessionData.session as Record<string, unknown>).llmConfigId as
+              | string
+              | undefined,
+          );
           setActiveMode(sessionData.session.activeMode);
 
           if (loadedNodes.length > 0) {
             setDiagnosticSubmitted(true);
           }
 
-          const historyMessages: UIMessage<MessageMetadata>[] = sessionData.session.messages
-            .filter(
-              (m) =>
-                (m.role === "learner" || m.role === "tutor") &&
-                !m.hidden &&
-                !shouldHideLegacyDiagnosticRoadmapMessage(m),
-            )
-            .map((m, i) => {
-              const assessment =
-                m.type === "assessment" ? getAssessmentFromMetadata(m.metadata) : undefined;
-              const diagnosticQuestions = getDiagnosticQuestionsFromMetadata(m.metadata);
-              const uiBlocks = getUIBlocksFromMetadata(m.metadata);
-              const codePush = getCodePushFromMetadata(m.metadata);
-              const annotations: AnnotationData[] = [];
-              if (assessment) annotations.push(toAssessmentAnnotation(assessment) as unknown as AnnotationData);
-              if (diagnosticQuestions) annotations.push({ diagnosticQuestions });
-              if (uiBlocks) annotations.push({ uiBlocks });
-              if (codePush) annotations.push({ codePush } as unknown as AnnotationData);
+          const historyMessages: UIMessage<MessageMetadata>[] =
+            sessionData.session.messages
+              .filter(
+                (m) =>
+                  (m.role === "learner" || m.role === "tutor") &&
+                  !m.hidden &&
+                  !shouldHideLegacyDiagnosticRoadmapMessage(m),
+              )
+              .map((m, i) => {
+                const assessment =
+                  m.type === "assessment"
+                    ? getAssessmentFromMetadata(m.metadata)
+                    : undefined;
+                const diagnosticQuestions = getDiagnosticQuestionsFromMetadata(
+                  m.metadata,
+                );
+                const uiBlocks = getUIBlocksFromMetadata(m.metadata);
+                const codePush = getCodePushFromMetadata(m.metadata);
+                const annotations: AnnotationData[] = [];
+                if (assessment)
+                  annotations.push(
+                    toAssessmentAnnotation(
+                      assessment,
+                    ) as unknown as AnnotationData,
+                  );
+                if (diagnosticQuestions)
+                  annotations.push({ diagnosticQuestions });
+                if (uiBlocks) annotations.push({ uiBlocks });
+                if (codePush)
+                  annotations.push({ codePush } as unknown as AnnotationData);
 
-              return {
-                id: `init-${i}`,
-                role: (m.role === "learner" ? "user" : "assistant") as "user" | "assistant",
-                parts: [{ type: "text" as const, text: m.content || "" }],
-                metadata: annotations.length > 0 ? { annotations } : undefined,
-              } satisfies UIMessage<MessageMetadata>;
-            });
+                return {
+                  id: `init-${i}`,
+                  role: (m.role === "learner" ? "user" : "assistant") as
+                    | "user"
+                    | "assistant",
+                  parts: [{ type: "text" as const, text: m.content || "" }],
+                  metadata:
+                    annotations.length > 0 ? { annotations } : undefined,
+                } satisfies UIMessage<MessageMetadata>;
+              });
           if (historyMessages.length > 0 || !pendingFirstMessage) {
             chat.setMessages(historyMessages);
           }
@@ -757,7 +833,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
           }
 
           const hasActiveProcessing = sessionData.session.messages.some(
-            (m) => m.status === "sending" || m.status === "processing"
+            (m) => m.status === "sending" || m.status === "processing",
           );
           if (hasActiveProcessing) {
             chat.resumeStream();
@@ -773,12 +849,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
       });
   }, [sessionId]);
 
-  const handleCodePanelChange = useCallback(
-    (code: string) => {
-      setCodePanel((prev) => (prev ? { ...prev, code } : null));
-    },
-    [],
-  );
+  const handleCodePanelChange = useCallback((code: string) => {
+    setCodePanel((prev) => (prev ? { ...prev, code } : null));
+  }, []);
 
   function optimisticUpdateTopic(topic: string) {
     if (!isNewSession) return;
@@ -871,7 +944,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
   async function handleModeChange(mode: ActiveMode) {
     if (mode === activeMode) return;
     // 乐观更新左栏模式图标（spec §5.3③）
-    setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, activeMode: mode } : s)));
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, activeMode: mode } : s)),
+    );
     if (mode === "review") {
       handleStartReview();
     } else if (mode === "interview") {
@@ -894,7 +969,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (!sessionId) return;
     const handler = async (e: Event) => {
-      const { nodeId, correct } = (e as CustomEvent<{ nodeId: string; correct: boolean }>).detail;
+      const { nodeId, correct } = (
+        e as CustomEvent<{ nodeId: string; correct: boolean }>
+      ).detail;
       try {
         await fetch(`/api/sessions/${sessionId}/review/result`, {
           method: "POST",
@@ -941,7 +1018,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
         const parts = chat.messages[i].parts;
         if (parts) {
           return parts
-            .filter((p): p is { type: "text"; text: string } => p.type === "text")
+            .filter(
+              (p): p is { type: "text"; text: string } => p.type === "text",
+            )
             .map((p) => p.text)
             .join("");
         }
@@ -996,7 +1075,11 @@ function ChatView({ sessionId }: { sessionId: string }) {
   }
 
   async function handleDiagnosticSubmit(
-    answers: Array<{ questionId: string; optionId: string; optionText: string }>,
+    answers: Array<{
+      questionId: string;
+      optionId: string;
+      optionText: string;
+    }>,
   ) {
     setDiagnosticSubmitted(true);
     setDiagnosticAnalyzing(true);
@@ -1022,10 +1105,14 @@ function ChatView({ sessionId }: { sessionId: string }) {
               .filter((m) => m.role === "user" || m.role === "assistant")
               .map((m) => ({
                 role: m.role as "user" | "assistant",
-                content: m.parts
-                  ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
-                  .map((p) => p.text)
-                  .join("") ?? "",
+                content:
+                  m.parts
+                    ?.filter(
+                      (p): p is { type: "text"; text: string } =>
+                        p.type === "text",
+                    )
+                    .map((p) => p.text)
+                    .join("") ?? "",
               })),
             { role: "user" as const, content: hiddenContent },
           ],
@@ -1056,7 +1143,12 @@ function ChatView({ sessionId }: { sessionId: string }) {
             const jsonStr = line.slice(6);
             if (jsonStr === "[DONE]") continue;
 
-            let event: { type: string; content?: string; data?: unknown; message?: string };
+            let event: {
+              type: string;
+              content?: string;
+              data?: unknown;
+              message?: string;
+            };
             try {
               event = JSON.parse(jsonStr);
             } catch {
@@ -1071,7 +1163,10 @@ function ChatView({ sessionId }: { sessionId: string }) {
                   error?: string;
                   firstNode?: { title?: string };
                   roadmapUpdate?: { nodes?: NodeInfo[] };
-                  sessionUpdate?: { masteredNodes?: number; totalNodes?: number };
+                  sessionUpdate?: {
+                    masteredNodes?: number;
+                    totalNodes?: number;
+                  };
                 };
               };
               if (data.toolName === "generateRoadmap") {
@@ -1119,14 +1214,18 @@ function ChatView({ sessionId }: { sessionId: string }) {
                 roadmapGenerated = true;
                 setNodes(data.nodes);
                 firstNodeTitle =
-                  data.nodes.find((node) => node.status === "in_progress")?.title ??
+                  data.nodes.find((node) => node.status === "in_progress")
+                    ?.title ??
                   data.nodes[0]?.title ??
                   firstNodeTitle;
               }
             }
 
             if (event.type === "session-updated" && event.data) {
-              const data = event.data as { masteredNodes?: number; totalNodes?: number };
+              const data = event.data as {
+                masteredNodes?: number;
+                totalNodes?: number;
+              };
               if (data.totalNodes !== undefined) {
                 setSessions((prev) =>
                   prev.map((s) =>
@@ -1170,7 +1269,9 @@ function ChatView({ sessionId }: { sessionId: string }) {
       setDiagnosticAnalyzing(false);
       setFirstLessonPreparing(false);
       setDiagnosticSubmitted(true);
-      setChatError(err instanceof Error ? err.message : "诊断分析失败，请稍后重试");
+      setChatError(
+        err instanceof Error ? err.message : "诊断分析失败，请稍后重试",
+      );
       setTimeout(() => setChatError(null), 5000);
     }
 
@@ -1204,13 +1305,14 @@ function ChatView({ sessionId }: { sessionId: string }) {
     // 重复提交由卡片自身 submitted 态 + interactiveResponding 双重拦截。
     // 不再用 chat.isLoading 拦截——它会吞掉首轮合法提交（提交后流未结束前的正常等待被误判）。
     if (interactiveResponding) return;
-    const answer = payload.answer ? `答案：${payload.answer}` : "用户已完成互动课自测";
+    const answer = payload.answer
+      ? `答案：${payload.answer}`
+      : "用户已完成互动课自测";
     const feedback = payload.feedback ? `；互动反馈：${payload.feedback}` : "";
     setInteractiveResponding(true);
-    chat.submitHiddenMessage(
-      `[Interactive Response] ${answer}${feedback}`,
-      { assistantId: `assistant-interactive-${Date.now()}` },
-    );
+    chat.submitHiddenMessage(`[Interactive Response] ${answer}${feedback}`, {
+      assistantId: `assistant-interactive-${Date.now()}`,
+    });
   }
 
   const chatAreaProps = {
@@ -1237,8 +1339,14 @@ function ChatView({ sessionId }: { sessionId: string }) {
     teachingMode,
     onTeachingModeChange: setTeachingMode,
     error: diagnosticError ?? chatError,
-    currentModel: llmConfigs.find((c) => c.id === selectedConfigId)?.defaultModel,
-    llmConfigs: llmConfigs.map((c) => ({ id: c.id, provider: c.provider, defaultModel: c.defaultModel, isDefault: c.isDefault })),
+    currentModel: llmConfigs.find((c) => c.id === selectedConfigId)
+      ?.defaultModel,
+    llmConfigs: llmConfigs.map((c) => ({
+      id: c.id,
+      provider: c.provider,
+      defaultModel: c.defaultModel,
+      isDefault: c.isDefault,
+    })),
     selectedConfigId,
     onModelChange: setSelectedConfigId,
     disabled: llmConfigs.length === 0 && !hasEnvConfig,
@@ -1246,7 +1354,6 @@ function ChatView({ sessionId }: { sessionId: string }) {
     nextNodeTitle,
     tokenUsage: chat.tokenUsage,
     contextInfo: chat.contextInfo,
-    agentActivity: chat.agentActivity,
   };
 
   const showRight = nodes.length > 0 || codePanel;
@@ -1270,12 +1377,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
             <GraduationCap className="h-7 w-7 text-muted-foreground" />
           </div>
           <div>
-            <h2 className="text-lg font-medium text-foreground">
-              加载失败
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {pageError}
-            </p>
+            <h2 className="text-lg font-medium text-foreground">加载失败</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{pageError}</p>
           </div>
           <button
             type="button"
@@ -1291,80 +1394,101 @@ function ChatView({ sessionId }: { sessionId: string }) {
 
   return (
     <SandboxProvider>
-    <div ref={containerRef} className="flex h-full min-w-0">
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-        {showRight && (
-          <div className="absolute right-3 top-3 z-10 hidden lg:block">
-            {rightCollapsed ? (
-              <button
-                onClick={() => setRightCollapsed(false)}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-secondary hover:text-foreground"
-              >
-                <MapPin className="h-3.5 w-3.5" />
-                <span>路线 {nodes.filter((n) => n.status === "mastered").length}/{nodes.length}</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setRightCollapsed(true)}
-                className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
-              >
-                <PanelRightClose className="h-4 w-4 text-foreground" />
-              </button>
-            )}
-          </div>
-        )}
-        <ModeTabs
-          activeMode={activeMode}
-          masteredCount={nodes.filter((n) => n.status === "mastered").length}
-          onChange={handleModeChange}
-        />
-        <ChatArea
-          {...chatAreaProps}
-          welcomeContent={
-            pendingFirstMessage ? (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-                <div className="flex gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0s" }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.2s" }} />
-                  <span className="h-1.5 w-1.5 rounded-full bg-chat-thinking" style={{ animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.4s" }} />
-                </div>
-                <p className="text-sm">正在发送…</p>
-              </div>
-            ) : undefined
-          }
-        />
-        <QuickQuestion sessionId={sessionId} />
-      </div>
-
-      {showRight && !rightCollapsed && (
-        <>
-          <ResizableDivider
-            direction="horizontal"
-            onResize={handleRightResize}
-            className="w-px cursor-col-resize border-0 bg-border/40 hover:bg-primary/30"
+      <div ref={containerRef} className="flex h-full min-w-0">
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          {showRight && (
+            <div className="absolute right-3 top-3 z-10 hidden lg:block">
+              {rightCollapsed ? (
+                <button
+                  onClick={() => setRightCollapsed(false)}
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground shadow-sm transition-colors hover:bg-secondary hover:text-foreground"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  <span>
+                    路线 {nodes.filter((n) => n.status === "mastered").length}/
+                    {nodes.length}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setRightCollapsed(true)}
+                  className="rounded-lg border border-border bg-card p-2 shadow-sm transition-colors hover:bg-secondary"
+                >
+                  <PanelRightClose className="h-4 w-4 text-foreground" />
+                </button>
+              )}
+            </div>
+          )}
+          <ModeTabs
+            activeMode={activeMode}
+            masteredCount={nodes.filter((n) => n.status === "mastered").length}
+            onChange={handleModeChange}
           />
-          <div
-            className="hidden lg:block shrink-0"
-            style={{ width: rightWidth }}
-          >
-            <RightSidebar
-              nodes={nodes}
-              activeMode={activeMode}
-              codePanel={codePanel}
-              onCodePanelChange={handleCodePanelChange}
-              activeTab={rightTab}
-              onTabChange={setRightTab}
-              reviewDueNodes={reviewDueNodes}
-              onStartReview={handleStartReview}
-              reviewActive={activeMode === "review"}
-              interviewResult={interviewResult}
-              onStartInterview={handleStartInterview}
-              interviewActive={activeMode === "interview"}
+          <ChatArea
+            {...chatAreaProps}
+            welcomeContent={
+              pendingFirstMessage ? (
+                <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+                  <div className="flex gap-1">
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-chat-thinking"
+                      style={{
+                        animation: "pulse-dot 1.4s ease-in-out infinite",
+                        animationDelay: "0s",
+                      }}
+                    />
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-chat-thinking"
+                      style={{
+                        animation: "pulse-dot 1.4s ease-in-out infinite",
+                        animationDelay: "0.2s",
+                      }}
+                    />
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-chat-thinking"
+                      style={{
+                        animation: "pulse-dot 1.4s ease-in-out infinite",
+                        animationDelay: "0.4s",
+                      }}
+                    />
+                  </div>
+                  <p className="text-sm">正在发送…</p>
+                </div>
+              ) : undefined
+            }
+          />
+          <QuickQuestion sessionId={sessionId} />
+        </div>
+
+        {showRight && !rightCollapsed && (
+          <>
+            <ResizableDivider
+              direction="horizontal"
+              onResize={handleRightResize}
+              className="w-px cursor-col-resize border-0 bg-border/40 hover:bg-primary/30"
             />
-          </div>
-        </>
-      )}
-    </div>
+            <div
+              className="hidden lg:block shrink-0"
+              style={{ width: rightWidth }}
+            >
+              <RightSidebar
+                nodes={nodes}
+                activeMode={activeMode}
+                codePanel={codePanel}
+                onCodePanelChange={handleCodePanelChange}
+                activeTab={rightTab}
+                onTabChange={setRightTab}
+                reviewDueNodes={reviewDueNodes}
+                onStartReview={handleStartReview}
+                reviewActive={activeMode === "review"}
+                interviewResult={interviewResult}
+                onStartInterview={handleStartInterview}
+                interviewActive={activeMode === "interview"}
+              />
+            </div>
+          </>
+        )}
+      </div>
     </SandboxProvider>
   );
 }

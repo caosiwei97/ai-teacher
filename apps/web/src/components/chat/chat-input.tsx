@@ -1,8 +1,9 @@
-
 import { useState } from "react";
 import { ArrowUp, Lightbulb, Square, ChevronDown } from "lucide-react";
 import { ModeSelector, type TeachingMode } from "./mode-selector";
 import { SourceUploadPanel } from "./source-upload-panel";
+import { TokenMeter } from "./token-meter";
+import type { ContextInfo, TokenUsage } from "@/hooks/use-chat-stream";
 
 interface LlmConfigOption {
   id: string;
@@ -33,6 +34,9 @@ interface ChatInputProps {
   frameless?: boolean;
   /** 建议回复按钮只在具体会话页出现；落地页复用输入框但不展示 */
   showSuggestButton?: boolean;
+  /** Token 用量信息 */
+  tokenUsage?: TokenUsage;
+  contextInfo?: ContextInfo | null;
 }
 
 export function ChatInput({
@@ -55,9 +59,13 @@ export function ChatInput({
   onModelChange,
   frameless,
   showSuggestButton,
+  tokenUsage,
+  contextInfo,
 }: ChatInputProps) {
   const [modelOpen, setModelOpen] = useState(false);
   const shouldShowSuggestion = showSuggestButton && onSuggest;
+  const showTokenMeter =
+    tokenUsage && (tokenUsage.input > 0 || contextInfo?.needsCompaction);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.nativeEvent.isComposing || e.key !== "Enter" || e.shiftKey) return;
@@ -74,7 +82,14 @@ export function ChatInput({
     >
       {disabled && (
         <div className="mx-auto mb-2 max-w-3xl rounded-lg bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-500">
-          请先在<a href="/settings" className="underline font-medium hover:text-amber-400">设置页</a>配置模型后再开始对话
+          请先在
+          <a
+            href="/settings"
+            className="underline font-medium hover:text-amber-400"
+          >
+            设置页
+          </a>
+          配置模型后再开始对话
         </div>
       )}
       <form onSubmit={onSubmit} className="mx-auto max-w-3xl">
@@ -103,26 +118,113 @@ export function ChatInput({
           >
             <div className="flex min-w-0 flex-wrap items-center gap-1">
               {onTeachingModeChange && (
-                <ModeSelector value={teachingMode} onChange={onTeachingModeChange} />
+                <ModeSelector
+                  value={teachingMode}
+                  onChange={onTeachingModeChange}
+                />
               )}
               <SourceUploadPanel />
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-1">
+              {showTokenMeter && tokenUsage && (
+                <div className="group relative">
+                  <button
+                    type="button"
+                    className="flex h-10 w-10 items-center justify-center rounded-[10px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)]"
+                    aria-label="查看 Prompt 上下文"
+                    aria-haspopup="dialog"
+                    aria-controls="prompt-context-popover"
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                      className="shrink-0 -rotate-90"
+                    >
+                      <circle
+                        cx="10"
+                        cy="10"
+                        r="7"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="text-border opacity-50"
+                      />
+                      {(() => {
+                        const contextWindow = tokenUsage.contextWindow;
+                        const usedPercent = contextWindow
+                          ? Math.min(
+                              100,
+                              Math.round(
+                                (tokenUsage.input / contextWindow) * 100,
+                              ),
+                            )
+                          : null;
+                        const radius = 7;
+                        const circumference = 2 * Math.PI * radius;
+                        const usedArc =
+                          usedPercent === null
+                            ? 0
+                            : (usedPercent / 100) * circumference;
+
+                        return usedPercent !== null ? (
+                          <circle
+                            cx="10"
+                            cy="10"
+                            r={radius}
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeDasharray={`${usedArc} ${circumference}`}
+                            strokeLinecap="round"
+                            className="text-primary"
+                          />
+                        ) : null;
+                      })()}
+                    </svg>
+                  </button>
+                  <div className="absolute bottom-full left-1/2 z-50 hidden -translate-x-1/2 pb-2 group-hover:block group-focus-within:block">
+                    <div className="relative">
+                      <div className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-border bg-card" />
+                      <div className="rounded-xl border border-border bg-card shadow-lg">
+                        <TokenMeter
+                          usage={tokenUsage}
+                          contextInfo={contextInfo ?? null}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {currentModel && (
                 <div className="relative">
                   <button
                     type="button"
                     disabled={isLoading}
-                    onClick={() => !isLoading && llmConfigs && llmConfigs.length > 1 && setModelOpen(!modelOpen)}
+                    onClick={() =>
+                      !isLoading &&
+                      llmConfigs &&
+                      llmConfigs.length > 1 &&
+                      setModelOpen(!modelOpen)
+                    }
                     className={`flex items-center gap-1 rounded-[8px] px-2 py-1 text-[11px] text-[var(--color-chat-input-placeholder)] transition-colors hover:bg-white/10 hover:text-[var(--color-chat-input-text)] ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     {isLoading ? "回答中…" : currentModel}
-                    {!isLoading && llmConfigs && llmConfigs.length > 1 && <ChevronDown className="h-2.5 w-2.5" />}
+                    {!isLoading && llmConfigs && llmConfigs.length > 1 && (
+                      <ChevronDown className="h-2.5 w-2.5" />
+                    )}
                   </button>
                   {modelOpen && llmConfigs && llmConfigs.length > 1 && (
                     <>
-                      <div className="fixed inset-0 z-40" onClick={() => setModelOpen(false)} />
-                      <div className="absolute right-0 bottom-full z-50 mb-1 rounded-lg border border-border bg-popover p-1 shadow-lg" style={{ minWidth: "160px" }}>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setModelOpen(false)}
+                      />
+                      <div
+                        className="absolute right-0 bottom-full z-50 mb-1 rounded-lg border border-border bg-popover p-1 shadow-lg"
+                        style={{ minWidth: "160px" }}
+                      >
                         {llmConfigs.map((config) => (
                           <button
                             key={config.id}
@@ -137,9 +239,13 @@ export function ChatInput({
                                 : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                             }`}
                           >
-                            <span className="flex-1 truncate">{config.defaultModel}</span>
+                            <span className="flex-1 truncate">
+                              {config.defaultModel}
+                            </span>
                             {config.isDefault && (
-                              <span className="text-[10px] text-muted-foreground">默认</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                默认
+                              </span>
                             )}
                           </button>
                         ))}
