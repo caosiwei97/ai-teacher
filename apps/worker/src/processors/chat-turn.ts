@@ -429,8 +429,8 @@ export function createChatTurnWorker(
           channel,
           createSSEEvent(SSEEventType.ContextInfo, {
             data: {
-              tokenCount: prepared.tokenCount,
-              budget: 6000,
+              estimatedHistoryTokens: prepared.tokenCount,
+              compactionBudget: contextManager.compactionBudget,
               needsCompaction: prepared.needsCompaction,
             },
           }),

@@ -3,10 +3,15 @@ import {
   generateText,
   stepCountIs,
   type LanguageModel,
+  type LanguageModelUsage,
   type ModelMessage,
   type Tool,
 } from "ai";
-import { createSSEEvent, SSEEventType } from "@ai-teacher/shared";
+import {
+  createSSEEvent,
+  getModelContextWindow,
+  SSEEventType,
+} from "@ai-teacher/shared";
 import { StreamingBlockParser } from "../streaming/block-parser";
 import { LoopDetector } from "./loop-detector";
 
@@ -29,6 +34,23 @@ export interface AgentLoopResult {
   toolResults: Array<{ toolName: string; result: unknown }>;
   steps: number;
   stopReason: "no-tool-call" | "max-steps" | "timeout" | "aborted";
+}
+
+function createUsageSSEEvent(
+  usage: LanguageModelUsage,
+  model: LanguageModel,
+): string {
+  const modelId = typeof model === "string" ? model : model.modelId;
+  const provider = typeof model === "string" ? undefined : model.provider;
+
+  return createSSEEvent(SSEEventType.Usage, {
+    data: {
+      usage,
+      modelId,
+      provider,
+      contextWindow: getModelContextWindow(modelId),
+    },
+  });
 }
 
 export async function runAgentLoop(
@@ -87,7 +109,7 @@ export async function runAgentLoop(
         if (totalUsage) {
           await publisher.publish(
             channel,
-            createSSEEvent(SSEEventType.Usage, { data: { usage: totalUsage } }),
+            createUsageSSEEvent(totalUsage, model),
           );
         }
       },
@@ -350,7 +372,7 @@ async function degradeStep(opts: {
     if (gen.usage) {
       await publisher.publish(
         channel,
-        createSSEEvent(SSEEventType.Usage, { data: { usage: gen.usage } }),
+        createUsageSSEEvent(gen.usage, opts.mainModel),
       );
     }
     const toolResults = gen.toolResults.map((tr) => ({
@@ -416,7 +438,7 @@ async function degradeStep(opts: {
       if (gen.usage) {
         await publisher.publish(
           channel,
-          createSSEEvent(SSEEventType.Usage, { data: { usage: gen.usage } }),
+          createUsageSSEEvent(gen.usage, fallbackModel),
         );
       }
       const toolResults = gen.toolResults.map((tr) => ({

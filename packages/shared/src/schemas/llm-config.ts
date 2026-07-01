@@ -40,6 +40,7 @@ export interface ModelInfo {
   label: string;
   tier: "flagship" | "standard" | "value" | "light";
   price: string;
+  contextWindow?: number;
 }
 
 export interface ProviderPreset {
@@ -124,7 +125,13 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     models: [
       { id: "glm-5.1", label: "GLM-5.1", tier: "flagship", price: "¥24/1M" },
       { id: "glm-5", label: "GLM-5", tier: "standard", price: "¥18/1M" },
-      { id: "glm-4.7", label: "GLM-4.7", tier: "value", price: "¥8/1M" },
+      {
+        id: "glm-4.7",
+        label: "GLM-4.7",
+        tier: "value",
+        price: "¥8/1M",
+        contextWindow: 200_000,
+      },
       { id: "glm-4.7-FlashX", label: "GLM-4.7 FlashX", tier: "light", price: "免费" },
       { id: "glm-5-turbo", label: "GLM-5 Turbo", tier: "light", price: "¥22/1M" },
     ],
@@ -136,3 +143,14 @@ export const PROVIDER_PRESETS: Record<string, ProviderPreset> = {
     models: [],
   },
 };
+
+export function getModelContextWindow(modelId: string): number | null {
+  const normalizedId = modelId.trim().toLowerCase();
+  for (const preset of Object.values(PROVIDER_PRESETS)) {
+    const model = preset.models.find(
+      (candidate) => candidate.id.toLowerCase() === normalizedId,
+    );
+    if (model) return model.contextWindow ?? null;
+  }
+  return null;
+}

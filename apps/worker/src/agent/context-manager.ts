@@ -28,6 +28,7 @@ interface ContextManagerDeps {
   model?: LanguageModel;
 }
 
+// 仅控制历史消息压缩策略，不代表模型上下文窗口。
 const DEFAULT_TOKEN_BUDGET = 6000;
 const COMPACT_THRESHOLD = 0.8;
 const KEEP_RECENT_TURNS = 10;
@@ -40,6 +41,10 @@ export class ContextManager {
   constructor(deps: ContextManagerDeps, tokenBudget?: number) {
     this.deps = deps;
     this.tokenBudget = tokenBudget ?? DEFAULT_TOKEN_BUDGET;
+  }
+
+  get compactionBudget(): number {
+    return this.tokenBudget;
   }
 
   async process(
