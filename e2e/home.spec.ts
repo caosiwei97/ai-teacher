@@ -22,6 +22,39 @@ test.describe("Home Page — 落地页", () => {
     await expect(page.getByText("🔥 面试")).toBeVisible();
   });
 
+  test("should keep the landing page usable with a mobile sidebar drawer", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/");
+    await expect(page.getByText("真正掌握，而不只是看过")).toBeVisible({ timeout: 10000 });
+
+    const headingBox = await page.getByText("真正掌握，而不只是看过").boundingBox();
+    expect(headingBox?.y).toBeGreaterThanOrEqual(0);
+
+    await expect(page.getByTestId("mobile-session-sidebar")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "打开侧栏" })).toBeVisible();
+
+    const firstTopicCard = page.getByTestId("suggested-topic-card").first();
+    const cardBox = await firstTopicCard.boundingBox();
+    expect(cardBox?.height).toBeLessThanOrEqual(72);
+
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(hasHorizontalOverflow).toBe(false);
+
+    await page.getByRole("button", { name: "打开侧栏" }).click();
+    await expect(page.getByTestId("mobile-session-sidebar")).toBeVisible();
+    await expect(page.getByTestId("mobile-session-sidebar").getByText("学习中")).toBeVisible();
+
+    await page
+      .getByTestId("mobile-session-sidebar")
+      .getByRole("button", { name: "收起侧栏" })
+      .click();
+    await expect(page.getByTestId("mobile-session-sidebar")).toHaveCount(0);
+  });
+
   test("should navigate to learn page on topic submit", async ({ page }) => {
     test.setTimeout(60000);
     await page.goto("/");

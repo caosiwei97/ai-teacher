@@ -33,6 +33,7 @@ interface LeftSidebarProps {
   onToggle?: () => void;
   onNewSession?: () => void;
   onArchiveSession?: (id: string) => void;
+  onNavigate?: () => void;
 }
 
 export function LeftSidebar({
@@ -43,6 +44,7 @@ export function LeftSidebar({
   onToggle,
   onNewSession,
   onArchiveSession,
+  onNavigate,
 }: LeftSidebarProps) {
   // 分类：学习中（active/diagnosing）/ 已完成（completed）。无数据时也展示分类骨架 + 暂无
   const active = sessions.filter((s) => s.status === "active" || s.status === "diagnosing");
@@ -84,6 +86,7 @@ export function LeftSidebar({
 
         <Link
           to="/settings"
+          onClick={onNavigate}
           className="mb-2 flex h-8 w-8 items-center justify-center rounded-md text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
           title="模型设置"
         >
@@ -114,6 +117,7 @@ export function LeftSidebar({
           <ThemeToggle />
           <button
             onClick={onToggle}
+            aria-label="收起侧栏"
             className="rounded-md p-1 text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -250,6 +254,7 @@ export function LeftSidebar({
       <div className="border-t border-sidebar-border px-3 py-3">
         <Link
           to="/settings"
+          onClick={onNavigate}
           className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-sidebar-muted transition-colors hover:bg-sidebar-hover hover:text-sidebar-foreground"
         >
           <Settings className="h-4 w-4" />
