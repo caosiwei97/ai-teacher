@@ -33,6 +33,60 @@ export const assessMasteryTool: ToolDefinition = {
       }>;
     };
 
+    const targetNode = await prisma.node.findUnique({
+      where: { id: p.conceptId },
+      include: {
+        roadmap: {
+          include: {
+            session: true,
+            nodes: { orderBy: { index: "asc" } },
+          },
+        },
+      },
+    });
+
+    if (!targetNode || targetNode.roadmap.sessionId !== ctx.sessionId) {
+      return {
+        success: false,
+        error: "Knowledge node not found for current session",
+      };
+    }
+
+    if (targetNode.status === "mastered" || targetNode.masteryScore >= 80) {
+      const refreshedNodes = await prisma.node.findMany({
+        where: { roadmapId: targetNode.roadmapId },
+        orderBy: { index: "asc" },
+      });
+      const plainNodes = JSON.parse(JSON.stringify(refreshedNodes));
+      const masteredCount = refreshedNodes.filter(
+        (n) => n.status === "mastered" || n.masteryScore >= 80,
+      ).length;
+      return {
+        success: true,
+        skipped: true,
+        reason: "already_mastered",
+        conceptId: p.conceptId,
+        score: targetNode.masteryScore,
+        roadmapUpdate: { nodes: plainNodes },
+        sessionUpdate: {
+          masteredNodes: masteredCount,
+          totalNodes: refreshedNodes.length,
+        },
+        instruction: `节点「${targetNode.title}」已经掌握，不要重复评估或推进。请继续当前未完成知识点。`,
+      };
+    }
+
+    const currentNode = targetNode.roadmap.nodes.find(
+      (node) => node.status === "in_progress",
+    );
+    if (currentNode && currentNode.id !== targetNode.id) {
+      return {
+        success: false,
+        error: `Cannot assess non-current node. Current node is "${currentNode.title}".`,
+        currentNode: { id: currentNode.id, title: currentNode.title },
+      };
+    }
+
     await prisma.node.update({
       where: { id: p.conceptId },
       data: {
@@ -44,13 +98,7 @@ export const assessMasteryTool: ToolDefinition = {
     });
 
     if (p.score >= 80) {
-      const node = await prisma.node.findUnique({
-        where: { id: p.conceptId },
-        include: {
-          roadmap: { include: { nodes: { orderBy: { index: "asc" } } } },
-        },
-      });
-      if (node) {
+      const node = targetNode;
         const nextNode = node.roadmap.nodes
           .filter((n) => n.index > node.index)
           .find((n) => n.status === "not_started");
@@ -68,7 +116,9 @@ export const assessMasteryTool: ToolDefinition = {
         // Strip Prisma objects to plain JSON (Date → ISO string) to avoid
         // AI SDK ModelMessage[] schema validation errors on subsequent steps.
         const plainNodes = JSON.parse(JSON.stringify(refreshedNodes));
-        const masteredCount = refreshedNodes.filter((n) => n.status === "mastered").length;
+        const masteredCount = refreshedNodes.filter(
+          (n) => n.status === "mastered" || n.masteryScore >= 80,
+        ).length;
         if (nextNode) {
           return {
             success: true,
@@ -82,6 +132,12 @@ export const assessMasteryTool: ToolDefinition = {
             activatedNextNode: { id: nextNode.id, title: nextNode.title },
           };
         }
+        if (masteredCount === refreshedNodes.length) {
+          await prisma.session.update({
+            where: { id: ctx.sessionId },
+            data: { status: "completed" },
+          });
+        }
         return {
           success: true,
           ...p,
@@ -89,10 +145,11 @@ export const assessMasteryTool: ToolDefinition = {
           sessionUpdate: {
             masteredNodes: masteredCount,
             totalNodes: refreshedNodes.length,
+            learningStatus:
+              masteredCount === refreshedNodes.length ? "completed" : "active",
           },
           instruction: `全部知识点已掌握！用一句话简短祝贺学习成果，然后结束本轮。不要生成长篇总结报告。`,
         };
-      }
     }
 
     return { success: true, ...p };

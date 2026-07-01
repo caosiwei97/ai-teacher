@@ -56,6 +56,7 @@ interface ChatAreaProps {
     }>,
   ) => void;
   onInteractiveSubmit?: (payload: InteractiveSubmitPayload) => void;
+  currentNodeId?: string | null;
   loadingLabelOverride?: string;
   diagnosticSubmitted?: boolean;
   diagnosticAnalyzing?: boolean;
@@ -207,6 +208,7 @@ export function ChatArea({
   onDismissSuggestion,
   onDiagnosticSubmit,
   onInteractiveSubmit,
+  currentNodeId,
   loadingLabelOverride,
   diagnosticSubmitted,
   diagnosticAnalyzing,
@@ -298,6 +300,7 @@ export function ChatArea({
                   diagnosticQuestions ? onDiagnosticSubmit : undefined
                 }
                 onInteractiveSubmit={onInteractiveSubmit}
+                currentNodeId={currentNodeId}
                 diagnosticSubmitted={diagnosticSubmitted}
                 diagnosticAnalyzing={diagnosticAnalyzing}
                 loopTrace={loopTrace}

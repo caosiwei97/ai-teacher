@@ -440,6 +440,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
     undefined,
   );
   const streamErrorRef = useRef(false);
+  const nextLessonRef = useRef<string | null>(null);
+  const nextLessonSubmittingRef = useRef(false);
 
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestion, setSuggestion] = useState<string | undefined>(undefined);
@@ -540,51 +542,21 @@ function ChatView({ sessionId }: { sessionId: string }) {
       }
       setFirstLessonPreparing(false);
       setInteractiveResponding(false);
-      if (masteryTransitionPending) {
-        const title = nextNodeTitle;
+      if (nextLessonRef.current && !nextLessonSubmittingRef.current) {
+        const title = nextLessonRef.current;
+        nextLessonRef.current = null;
+        nextLessonSubmittingRef.current = true;
         setTimeout(() => {
-          const assistantMessage: UIMessage<MessageMetadata> = {
-            id: `assistant-next-${Date.now()}`,
-            role: "assistant",
-            parts: [{ type: "text" as const, text: "" }],
-            metadata: { annotations: [] },
-          };
-          chat.setMessages((prev) => [...prev, assistantMessage]);
-
-          (async () => {
-            try {
-              const postRes = await fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  sessionId,
-                  messages: [
-                    {
-                      role: "user",
-                      content: `[Continue] 开始教学知识点：${title ?? "下一个知识点"}`,
-                    },
-                  ],
-                  hidden: true,
-                  ...(selectedConfigId
-                    ? { llmConfigId: selectedConfigId }
-                    : {}),
-                }),
-              });
-
-              if (!postRes.ok) {
-                setMasteryTransitionPending(false);
-                setNextNodeTitle(undefined);
-                return;
-              }
-
-              chat.resumeStream();
-            } catch {
+          void chat
+            .submitHiddenMessage(
+              `[Continue] 开始教学知识点：${title ?? "下一个知识点"}`,
+              { assistantId: `assistant-next-${Date.now()}` },
+            )
+            .finally(() => {
+              nextLessonSubmittingRef.current = false;
               setMasteryTransitionPending(false);
               setNextNodeTitle(undefined);
-            }
-          })();
-          setMasteryTransitionPending(false);
-          setNextNodeTitle(undefined);
+            });
         }, 1500);
         return;
       }
@@ -603,6 +575,8 @@ function ChatView({ sessionId }: { sessionId: string }) {
       setInteractiveResponding(false);
       setMasteryTransitionPending(false);
       setNextNodeTitle(undefined);
+      nextLessonRef.current = null;
+      nextLessonSubmittingRef.current = false;
       setTimeout(() => setChatError(null), 5000);
     },
     onRoadmapUpdate: (updatedNodes) => {
@@ -627,6 +601,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
       }
     },
     onMasteryTransition: (title) => {
+      nextLessonRef.current = title ?? "下一个知识点";
       setMasteryTransitionPending(true);
       setNextNodeTitle(title);
     },
@@ -1259,10 +1234,12 @@ function ChatView({ sessionId }: { sessionId: string }) {
       }
       if (roadmapGenerated) {
         setFirstLessonPreparing(true);
-        chat.submitHiddenMessage(
-          `[Continue] 开始教学知识点：${firstNodeTitle ?? "第一个知识点"}`,
-          { assistantId: `assistant-first-lesson-${Date.now()}` },
-        );
+        void chat
+          .submitHiddenMessage(
+            `[Continue] 开始教学知识点：${firstNodeTitle ?? "第一个知识点"}`,
+            { assistantId: `assistant-first-lesson-${Date.now()}` },
+          )
+          .finally(() => setFirstLessonPreparing(false));
       }
     } catch (err) {
       console.error("Diagnostic submit error:", err);
@@ -1309,11 +1286,23 @@ function ChatView({ sessionId }: { sessionId: string }) {
       ? `答案：${payload.answer}`
       : "用户已完成互动课自测";
     const feedback = payload.feedback ? `；互动反馈：${payload.feedback}` : "";
+    const currentNodeId =
+      nodes.find((node) => node.status === "in_progress")?.id ?? null;
+    if (payload.nodeId && currentNodeId && payload.nodeId !== currentNodeId) {
+      return;
+    }
     setInteractiveResponding(true);
-    chat.submitHiddenMessage(`[Interactive Response] ${answer}${feedback}`, {
-      assistantId: `assistant-interactive-${Date.now()}`,
-    });
+    const nodeHint = payload.nodeId ? `nodeId: ${payload.nodeId}；` : "";
+    void chat.submitHiddenMessage(
+      `[Interactive Response] ${nodeHint}${answer}${feedback}`,
+      {
+        assistantId: `assistant-interactive-${Date.now()}`,
+      },
+    );
   }
+
+  const currentNodeId =
+    nodes.find((node) => node.status === "in_progress")?.id ?? null;
 
   const chatAreaProps = {
     messages: pendingFirstMessage ? pendingFirstMessages : chat.messages,
@@ -1329,6 +1318,7 @@ function ChatView({ sessionId }: { sessionId: string }) {
     onDismissSuggestion: handleDismissSuggestion,
     onDiagnosticSubmit: handleDiagnosticSubmit,
     onInteractiveSubmit: handleInteractiveSubmit,
+    currentNodeId,
     loadingLabelOverride: firstLessonPreparing
       ? "路线已生成，正在准备第一节互动练习…"
       : interactiveResponding

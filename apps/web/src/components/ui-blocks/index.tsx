@@ -10,6 +10,7 @@ interface MessageContentProps {
   uiBlocks?: UIBlock[];
   streamingBlocks?: boolean;
   onInteractiveSubmit?: (payload: InteractiveSubmitPayload) => void;
+  currentNodeId?: string | null;
 }
 
 export function MessageContent({
@@ -17,6 +18,7 @@ export function MessageContent({
   uiBlocks,
   streamingBlocks,
   onInteractiveSubmit,
+  currentNodeId,
 }: MessageContentProps) {
   if (!uiBlocks || uiBlocks.length === 0) {
     if (streamingBlocks) {
@@ -34,6 +36,7 @@ export function MessageContent({
               <InteractiveBlockRenderer
                 block={block}
                 onSubmit={onInteractiveSubmit}
+                currentNodeId={currentNodeId}
               />
             </div>
           );

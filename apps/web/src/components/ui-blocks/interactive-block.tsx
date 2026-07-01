@@ -17,9 +17,11 @@ import { ChartSliderExplore } from "./explore/chart-slider";
 interface InteractiveBlockProps {
   block: InteractiveBlockType;
   onSubmit?: (payload: InteractiveSubmitPayload) => void;
+  currentNodeId?: string | null;
 }
 
 export interface InteractiveSubmitPayload {
+  nodeId?: string;
   answer?: string;
   feedback?: string;
   source: "manual";
@@ -45,7 +47,11 @@ const markdownComponents: Components = {
   },
 };
 
-export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockProps) {
+export function InteractiveBlockRenderer({
+  block,
+  onSubmit,
+  currentNodeId,
+}: InteractiveBlockProps) {
   // 数据经 SSE 透传未经前端校验，LLM 可能省略空数组字段 → 兜底防御
   const explore = block.explore ?? [];
   const quiz = block.quiz ?? { question: "", options: [], correctId: "", explanation: "" };
@@ -64,21 +70,24 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [revealed, setRevealed] = useState(false);
 
+  const isCurrentNode = !block.nodeId || !currentNodeId || block.nodeId === currentNodeId;
+  const disabled = submitted || !isCurrentNode;
   const isCorrect = selectedId === quiz.correctId;
   const canSubmit = revealed; // 必须先作答再提交
 
   function handleSelectOption(optionId: string) {
-    if (submitted || revealed) return;
+    if (disabled || revealed) return;
     setSelectedId(optionId);
     setRevealed(true);
   }
 
   function handleManualSubmit() {
-    if (submitted || !revealed) return;
+    if (disabled || !revealed) return;
     setSubmitted(true);
     const selectedOption = quiz.options.find((o) => o.id === selectedId);
     onSubmit?.({
       source: "manual",
+      nodeId: block.nodeId,
       answer: selectedOption?.text,
       feedback: `${isCorrect ? "答对" : "答错"}：${quiz.explanation}`,
     });
@@ -127,7 +136,7 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
                       onChange={(e) =>
                         setSliderValues((prev) => ({ ...prev, [i]: Number(e.target.value) }))
                       }
-                      disabled={submitted}
+                      disabled={disabled}
                       className="w-full accent-[var(--color-roadmap-fill)]"
                     />
                   </div>
@@ -144,7 +153,7 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
                       onChange={(e) =>
                         setInputValues((prev) => ({ ...prev, [i]: e.target.value }))
                       }
-                      readOnly={submitted}
+                      readOnly={disabled}
                       className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-roadmap-fill focus:outline-none"
                     />
                   </div>
@@ -153,35 +162,35 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
               if (item.kind === "choice") {
                 return (
                   <div key={i} data-testid={`interactive-explore-${i}`}>
-                    <ChoiceExplore label={item.label} options={item.options} allowMultiple={item.allowMultiple} disabled={submitted} />
+                    <ChoiceExplore label={item.label} options={item.options} allowMultiple={item.allowMultiple} disabled={disabled} />
                   </div>
                 );
               }
               if (item.kind === "matching") {
                 return (
                   <div key={i} data-testid={`interactive-explore-${i}`}>
-                    <MatchingExplore label={item.label} leftItems={item.leftItems} rightItems={item.rightItems} disabled={submitted} />
+                    <MatchingExplore label={item.label} leftItems={item.leftItems} rightItems={item.rightItems} disabled={disabled} />
                   </div>
                 );
               }
               if (item.kind === "ordering") {
                 return (
                   <div key={i} data-testid={`interactive-explore-${i}`}>
-                    <OrderingExplore label={item.label} items={item.items} disabled={submitted} />
+                    <OrderingExplore label={item.label} items={item.items} disabled={disabled} />
                   </div>
                 );
               }
               if (item.kind === "fill-blank") {
                 return (
                   <div key={i} data-testid={`interactive-explore-${i}`}>
-                    <FillBlankExplore label={item.label} template={item.template} disabled={submitted} />
+                    <FillBlankExplore label={item.label} template={item.template} disabled={disabled} />
                   </div>
                 );
               }
               if (item.kind === "chart-slider") {
                 return (
                   <div key={i} data-testid={`interactive-explore-${i}`}>
-                    <ChartSliderExplore label={item.label} min={item.min} max={item.max} step={item.step} initial={item.initial} chartType={item.chartType} formula={item.formula} disabled={submitted} />
+                    <ChartSliderExplore label={item.label} min={item.min} max={item.max} step={item.step} initial={item.initial} chartType={item.chartType} formula={item.formula} disabled={disabled} />
                   </div>
                 );
               }
@@ -204,7 +213,7 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
                   type="button"
                   data-testid={`interactive-option-${opt.id}`}
                   onClick={() => handleSelectOption(opt.id)}
-                  disabled={submitted || revealed}
+                  disabled={disabled || revealed}
                   className={`flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left text-[13px] transition-all ${
                     showCorrect
                       ? "border-roadmap-mastered bg-roadmap-mastered/5 text-foreground"
@@ -262,15 +271,17 @@ export function InteractiveBlockRenderer({ block, onSubmit }: InteractiveBlockPr
       </div>
 
       <div className="flex items-center justify-between border-t border-border bg-secondary/20 px-4 py-3">
-        {submitted ? (
+        {submitted || !isCurrentNode ? (
           <>
-            <span className="text-xs text-muted-foreground">自测已提交</span>
+            <span className="text-xs text-muted-foreground">
+              {submitted ? "自测已提交" : "历史练习，仅供回看"}
+            </span>
             <div
               data-testid="interactive-submit-status"
               className="flex items-center gap-1.5 text-xs font-medium text-roadmap-mastered"
             >
               <Check className="h-3.5 w-3.5" />
-              <span>已提交</span>
+              <span>{submitted ? "已提交" : "已锁定"}</span>
             </div>
           </>
         ) : (

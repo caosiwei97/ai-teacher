@@ -1,8 +1,8 @@
 # AI Teacher — 苏格拉底式教学 Prompt 设计
 
 > 版本：v0.9
-> 更新日期：2026-06-30
-> 状态：已对齐实际实现（含迭代 029 掌握报告、迭代 050 删掌握仪式、诊断路线生成后系统续接第一课）
+> 更新日期：2026-07-01
+> 状态：已对齐实际实现（含课程自动续接权限边界、互动卡 nodeId 绑定与兜底互动课）
 > 参考：Sigma Skill + 同类竞品实际交互分析
 
 ---
@@ -139,6 +139,9 @@ JSON 骨架参考：`{ "type": "interactive", "title": "复利的力量", "conce
 - 当 assessMastery 没有返回 instruction（分数 < 80），继续当前节点的追问教学
 - ⚠️ assessMastery 只能在用户实际学过当前知识点后调用（完成互动课自测或经过苏格拉底追问）。绝不能在刚生成路线图、还没教任何内容时调用——那会让学习者没学就被判"掌握"。第一个知识点必须先教学再评估
 - 不要编造节点 ID，使用上面列表中提供的真实 ID
+- 系统自动续接消息 `[Continue] 开始教学知识点：...` 只允许生成教学产物，不允许评估掌握；Worker 会在该轮隐藏 `assessMastery` 等推进类工具。只有 `[Interactive Response]` 这类自测完成消息才具备评估权限
+- 每个 interactive block 会绑定当前 `nodeId`。前端只允许当前 `in_progress` 节点的互动卡提交，历史卡刷新后会锁定为“历史练习，仅供回看”
+- 若自动续接轮没有产出 interactive block，Worker 会补一个当前节点的兜底互动自测，防止课程停在只有标题/演示块、无法提交的状态
 ```
 
 ### 2.3 Review Agent System Prompt（迭代 051②）
@@ -414,7 +417,7 @@ Prompt 核心片段：
       // heading: { level: 2|3, text: string }
       // badge: { items: { text, variant: "success"|"warning"|"info" }[] }
       // mastery-report: { nodeId, nodeName, score, summary, table: { columns, rows }, badges: string[] }
-      // interactive: { title, concept, explore: [{kind:"slider"|"input",...}], quiz: {question, options:[{id,text}], correctId, explanation} } — 结构化三段式互动课（迭代 050②，后改结构化 A2UI）
+      // interactive: { nodeId?, title, concept, explore: [{kind:"slider"|"input"|"choice"|"matching"|"ordering"|"fill-blank"|"chart-slider",...}], quiz: {question, options:[{id,text}], correctId, explanation} } — 结构化三段式互动课（迭代 050②，后改结构化 A2UI；学习模式下由 Worker 自动补当前 nodeId）
       // flashcard: { nodeId, front, back } — 复习抽认卡，正面问题→翻面答案（迭代 051②）
       // interviewScore: { totalScore, difficulty, weakPoints, improvement, questionCount } — 面试评分卡（迭代 052②）
     }]

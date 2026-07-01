@@ -59,6 +59,7 @@ export const renderUITool: ToolDefinition = {
           }),
           z.object({
             type: z.literal("interactive"),
+            nodeId: z.string().optional(),
             title: z.string(),
             concept: z.string(),
             explore: z
@@ -138,9 +139,43 @@ export const renderUITool: ToolDefinition = {
       )
       .describe("要渲染的结构化内容块列表"),
   }),
-  execute: async (params) => {
+  execute: async (params, ctx) => {
     const p = params as { blocks: unknown[] };
-    return { success: true, uiBlocks: p.blocks };
+    const prisma = ctx.prisma as import("@prisma/client").PrismaClient;
+    let currentNodeId: string | null = null;
+
+    try {
+      const session = await prisma.session.findUnique({
+        where: { id: ctx.sessionId },
+        include: {
+          roadmap: {
+            include: {
+              nodes: { orderBy: { index: "asc" } },
+            },
+          },
+        },
+      });
+      currentNodeId =
+        session?.roadmap?.nodes.find((node) => node.status === "in_progress")
+          ?.id ?? null;
+    } catch {
+      currentNodeId = null;
+    }
+
+    const uiBlocks = p.blocks.map((block) => {
+      if (
+        block &&
+        typeof block === "object" &&
+        (block as { type?: unknown }).type === "interactive" &&
+        currentNodeId &&
+        !(block as { nodeId?: unknown }).nodeId
+      ) {
+        return { ...block, nodeId: currentNodeId };
+      }
+      return block;
+    });
+
+    return { success: true, uiBlocks };
   },
   promptSnippet: `**renderUI 工具**：你可以在对话中生成结构化教学组件，让知识呈现更直观。支持九种类型：
 - table: 表格（适合对比多个属性、罗列要点）

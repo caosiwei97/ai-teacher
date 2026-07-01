@@ -26,6 +26,7 @@ export interface AgentLoopOptions {
   messages: ModelMessage[];
   tools: Record<string, Tool>;
   promptTools?: PromptToolDescriptor[];
+  currentNodeId?: string;
   publisher: { publish: (channel: string, message: string) => Promise<number> };
   channel: string;
   maxSteps?: number;
@@ -140,6 +141,18 @@ export async function runAgentLoop(
     try {
       let blockParser: StreamingBlockParser | null = null;
       let streamingToolName: string | null = null;
+      const annotateBlock = (block: unknown) => {
+        if (
+          opts.currentNodeId &&
+          block &&
+          typeof block === "object" &&
+          (block as { type?: unknown }).type === "interactive" &&
+          !(block as { nodeId?: unknown }).nodeId
+        ) {
+          return { ...block, nodeId: opts.currentNodeId };
+        }
+        return block;
+      };
 
       for await (const event of result.fullStream) {
         if (opts.abortSignal?.aborted) {
@@ -175,7 +188,7 @@ export async function runAgentLoop(
                 await publisher.publish(
                   channel,
                   createSSEEvent(SSEEventType.UiBlockDelta, {
-                    data: { block, index },
+                    data: { block: annotateBlock(block), index },
                   }),
                 );
               },

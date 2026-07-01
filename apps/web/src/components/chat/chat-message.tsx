@@ -16,6 +16,7 @@ interface ChatMessageProps {
   diagnosticQuestions?: DiagnosticQuestionsData;
   onDiagnosticSubmit?: (answers: Array<{ questionId: string; optionId: string; optionText: string }>) => void;
   onInteractiveSubmit?: (payload: InteractiveSubmitPayload) => void;
+  currentNodeId?: string | null;
   diagnosticSubmitted?: boolean;
   diagnosticAnalyzing?: boolean;
   loopTrace?: LoopTrace;
@@ -30,6 +31,7 @@ export function ChatMessage({
   diagnosticQuestions,
   onDiagnosticSubmit,
   onInteractiveSubmit,
+  currentNodeId,
   diagnosticSubmitted,
   diagnosticAnalyzing,
   loopTrace,
@@ -74,6 +76,7 @@ export function ChatMessage({
               uiBlocks={effectiveBlocks}
               streamingBlocks={streamingBlocks}
               onInteractiveSubmit={onInteractiveSubmit}
+              currentNodeId={currentNodeId}
             />
           </div>
         )}

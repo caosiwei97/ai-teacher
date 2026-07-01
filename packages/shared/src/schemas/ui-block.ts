@@ -160,6 +160,7 @@ export const InteractiveExploreItemSchema = z.discriminatedUnion("kind", [
 
 export const InteractiveBlockSchema = z.object({
   type: z.literal("interactive"),
+  nodeId: z.string().optional(),
   title: z.string(),
   concept: z.string(),
   explore: z.array(InteractiveExploreItemSchema).default([]),

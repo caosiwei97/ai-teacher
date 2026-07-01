@@ -218,7 +218,7 @@ POST /api/chat
 }
 ```
 
-### 响应
+### 响应 `200`
 
 SSE 流式响应。流程：`POST /api/chat` → Hono Server 入队 BullMQ Job → Worker 执行 Agent（AI SDK streamText）→ 通过 Redis Pub/Sub 流式推送 SSE 事件。
 
@@ -257,14 +257,32 @@ data: {"type":"<event-type>","content":...,"data":...}
 未返回缓存字段时显示“未提供”。`context-info.compactionBudget` 仅表示历史消息
 压缩策略，不是模型上下文窗口。
 
+### 响应 `409`
+
+同一学习会话同一时间只允许一个 active turn。若已有 learner message 处于
+`sending` 或 `processing`，服务端返回：
+
+```json
+{
+  "error": "Session has an active turn",
+  "messageId": "clx...",
+  "status": "processing"
+}
+```
+
+前端应忽略重复提交或等待当前 SSE 完成后重试。该保护用于避免连续 `[Continue]`
+或重复互动提交产生多张同一知识点卡片、乱序推进路线图。
+
 ### 后端副作用（异步持久化）
 
 对话完成后，后端自动：
 
 1. 保存 learner 消息 + tutor 消息到数据库
-2. 如果有 `assessMastery` 结果 → 更新节点掌握度和状态
-3. 如果掌握度 ≥ 80% → 自动将下一个 `not-started` 节点设为 `in-progress`
+2. 如果有 `assessMastery` 结果 → 校验 conceptId 属于当前会话且为当前 `in_progress` 节点，再更新节点掌握度和状态
+3. 如果掌握度 ≥ 80% → 自动将下一个 `not-started` 节点设为 `in-progress`；若全部掌握则将 session 置为 `completed`
 4. 如果有 `generateAssessment` → 保存评估卡片到消息 metadata
+5. 学习模式下的系统自动续接消息（`[Continue] ...`）只暴露教学产出类工具（`renderUI`/`pushCode`/`executeCode`/`retrieveContext`），不暴露 `assessMastery`，避免“还没学就被评估掌握”
+6. 若自动续接轮未产出 `interactive` UI block，Worker 会补一个绑定当前 `nodeId` 的兜底互动自测，保证课程可继续推进
 
 ### 会话存在性校验
 

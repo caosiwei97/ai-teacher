@@ -25,8 +25,13 @@ const chatRequestSchema = z.object({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function subscribeAndStream(c: any, sessionId: string) {
   return streamSSE(c, async (stream) => {
-    const subscriber = new Redis(REDIS_URL);
-    const controlPublisher = new Redis(REDIS_URL);
+    const subscriber = new Redis(REDIS_URL, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+    });
+    const controlPublisher = new Redis(REDIS_URL, {
+      maxRetriesPerRequest: null,
+    });
     const channel = `chat:${sessionId}`;
 
     const incoming: Array<{ ch: string; payload: string }> = [];
@@ -116,6 +121,26 @@ export const chatRoute = new Hono()
     // 不存在则返回 404，让前端漏建暴露为可排查错误，而非静默兜底创建掩盖 bug。
     if (!session) {
       return c.json({ error: "Session not found" }, 404);
+    }
+
+    const activeMessage = await prisma.message.findFirst({
+      where: {
+        sessionId,
+        status: { in: ["sending", "processing"] },
+      },
+      select: { id: true, status: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (activeMessage) {
+      return c.json(
+        {
+          error: "Session has an active turn",
+          messageId: activeMessage.id,
+          status: activeMessage.status,
+        },
+        409,
+      );
     }
 
     const message = await prisma.message.create({

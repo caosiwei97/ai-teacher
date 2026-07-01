@@ -83,11 +83,50 @@ ${p.startHint ? `起点建议：${p.startHint}` : ""}`;
 
     const session = await prisma.session.findUnique({
       where: { id: ctx.sessionId },
-      include: { roadmap: true },
+      include: {
+        roadmap: {
+          include: {
+            nodes: { orderBy: { index: "asc" } },
+          },
+        },
+      },
     });
 
     if (!session?.roadmap) {
       return { success: false, error: "Session or roadmap not found" };
+    }
+
+    if (session.roadmap.nodes.length > 0) {
+      const plainNodes = JSON.parse(JSON.stringify(session.roadmap.nodes));
+      const firstNode =
+        session.roadmap.nodes.find((node) => node.status === "in_progress") ??
+        session.roadmap.nodes[0];
+      const masteredNodes = session.roadmap.nodes.filter(
+        (node) => node.status === "mastered" || node.masteryScore >= 80,
+      ).length;
+      return {
+        success: true,
+        skipped: true,
+        reason: "roadmap_already_exists",
+        roadmapTitle: session.topic,
+        nodes: session.roadmap.nodes.map((n) => ({
+          id: n.id,
+          index: n.index,
+          title: n.title,
+          description: n.description,
+          status: n.status,
+        })),
+        roadmapUpdate: { nodes: plainNodes },
+        sessionUpdate: {
+          masteredNodes,
+          totalNodes: session.roadmap.nodes.length,
+        },
+        firstNode: {
+          id: firstNode?.id,
+          title: firstNode?.title,
+          description: firstNode?.description,
+        },
+      };
     }
 
     const firstNodeStatus = "in_progress";

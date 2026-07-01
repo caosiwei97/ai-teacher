@@ -9,6 +9,10 @@ import {
 import { tool as aiTool, generateText, type Tool } from "ai";
 import { z } from "zod";
 import { runAgentLoop } from "../agent/run-agent-loop";
+import {
+  createFallbackInteractiveBlock,
+  toolResultsHaveInteractiveBlock,
+} from "../agent/fallback-interactive";
 import type { PromptToolDescriptor } from "../agent/context-breakdown";
 import {
   tutorToolDefinitions,
@@ -192,6 +196,60 @@ function describePromptTools(
   });
 }
 
+export function scopeToolsForTurn(
+  toolDefs: ToolDefinition[],
+  userContent: string,
+): ToolDefinition[] {
+  if (!userContent.startsWith("[Continue]")) return toolDefs;
+
+  const allowedOnAutoContinue = new Set([
+    "renderUI",
+    "pushCode",
+    "executeCode",
+    "retrieveContext",
+  ]);
+  return toolDefs.filter((def) => allowedOnAutoContinue.has(def.name));
+}
+
+function parseDiagnosticHiddenContent(content: string): {
+  learnerLevel: "beginner" | "intermediate" | "advanced";
+  diagnosticSummary: string;
+  startHint: string;
+} | null {
+  if (!content.startsWith("[Quiz Response]")) return null;
+
+  const lower = content.toLowerCase();
+  const advancedMatches = (lower.match(/\b(d|advanced|高级|很熟悉|深入|系统)\b/g) ?? [])
+    .length;
+  const intermediateMatches = (lower.match(/\b(c|intermediate|中级|基本理解|了解)\b/g) ?? [])
+    .length;
+  const beginnerMatches = (lower.match(/\b(a|beginner|初学|完全|不了解|没有|没听说)\b/g) ?? [])
+    .length;
+
+  let learnerLevel: "beginner" | "intermediate" | "advanced" = "beginner";
+  if (
+    beginnerMatches >= advancedMatches &&
+    beginnerMatches >= intermediateMatches
+  ) {
+    learnerLevel = "beginner";
+  } else if (advancedMatches >= 2 && advancedMatches >= intermediateMatches) {
+    learnerLevel = "advanced";
+  } else if (intermediateMatches >= 2 || advancedMatches === 1) {
+    learnerLevel = "intermediate";
+  }
+
+  return {
+    learnerLevel,
+    diagnosticSummary: `系统根据诊断作答自动判定为${learnerLevel === "beginner" ? "初学者" : learnerLevel === "intermediate" ? "中级学习者" : "高级学习者"}。原始作答：${content.replace("[Quiz Response]", "").trim()}`,
+    startHint:
+      learnerLevel === "beginner"
+        ? "从最基础概念、风险收益关系和常见工具开始"
+        : learnerLevel === "intermediate"
+          ? "从核心机制、工具对比和配置思路开始"
+          : "从高级应用、误区辨析和综合实践开始",
+  };
+}
+
 export function createChatTurnWorker(
   connection?: Redis,
 ): BullWorker<ChatTurnJobData> {
@@ -206,6 +264,7 @@ export function createChatTurnWorker(
       const abortController = new AbortController();
       const controlSubscriber = new Redis(REDIS_URL, {
         maxRetriesPerRequest: null,
+        enableReadyCheck: false,
       });
       const controlChannel = `chat:${sessionId}:control`;
       controlSubscriber.on("message", (_ch, payload) => {
@@ -419,7 +478,100 @@ export function createChatTurnWorker(
           userId,
         };
 
-        const toolPromptSection = collectPromptSection(allToolDefs);
+        const deterministicDiagnostic = parseDiagnosticHiddenContent(
+          job.data.userContent,
+        );
+        if (
+          deterministicDiagnostic &&
+          !hasNodes &&
+          !isReviewMode &&
+          !isInterviewMode
+        ) {
+          const generateRoadmapDef = allToolDefs.find(
+            (def) => def.name === "generateRoadmap",
+          );
+          if (!generateRoadmapDef) {
+            throw new Error("generateRoadmap tool not available");
+          }
+
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.StepStart, {
+              step: 0,
+              total: 1,
+              t0: Date.now(),
+            }),
+          );
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.ToolCall, {
+              data: {
+                toolName: "generateRoadmap",
+                input: {
+                  topic,
+                  ...deterministicDiagnostic,
+                },
+              },
+            }),
+          );
+
+          const roadmapResult = await generateRoadmapDef.execute(
+            {
+              topic,
+              ...deterministicDiagnostic,
+            },
+            toolCtx,
+          );
+
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.ToolResult, {
+              data: { toolName: "generateRoadmap", result: roadmapResult },
+            }),
+          );
+          if (roadmapResult.roadmapUpdate) {
+            await publisher.publish(
+              channel,
+              createSSEEvent(SSEEventType.RoadmapUpdated, {
+                data: {
+                  nodes: (roadmapResult.roadmapUpdate as { nodes: unknown[] })
+                    .nodes,
+                },
+              }),
+            );
+          }
+          if (roadmapResult.sessionUpdate) {
+            await publisher.publish(
+              channel,
+              createSSEEvent(SSEEventType.SessionUpdated, {
+                data: roadmapResult.sessionUpdate,
+              }),
+            );
+          }
+          await MessageService.persistTurn(
+            sessionId,
+            "",
+            [{ toolName: "generateRoadmap", result: roadmapResult }],
+            { hidden: true },
+          );
+          await prisma.message.update({
+            where: { id: messageId },
+            data: { status: "completed" },
+          });
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.StepEnd, {
+              step: 0,
+              durationMs: 0,
+            }),
+          );
+          await publisher.publish(channel, createSSEEvent(SSEEventType.Done));
+          return;
+        }
+
+        const turnToolDefs = scopeToolsForTurn(allToolDefs, job.data.userContent);
+
+        const toolPromptSection = collectPromptSection(turnToolDefs);
         const fullSystemPrompt = toolPromptSection
           ? `${systemPrompt}\n\n# 工具使用说明\n\n${toolPromptSection}`
           : systemPrompt;
@@ -437,8 +589,9 @@ export function createChatTurnWorker(
         }
         const finalSystemPrompt = `${fullSystemPrompt}${ragHint}`;
 
-        const tools = buildToolsRecord(allToolDefs, toolCtx);
-        const promptTools = describePromptTools(allToolDefs);
+        const tools = buildToolsRecord(turnToolDefs, toolCtx);
+        const promptTools = describePromptTools(turnToolDefs);
+        const currentNodeIdForUi = currentNode?.id ?? undefined;
 
         // Prepare context (compaction check)
         const prepared = await contextManager.prepareForStream(
@@ -466,6 +619,7 @@ export function createChatTurnWorker(
           messages: prepared.messages,
           tools,
           promptTools,
+          currentNodeId: currentNodeIdForUi,
           publisher,
           channel,
           maxSteps: 7,
@@ -482,6 +636,40 @@ export function createChatTurnWorker(
               }
             : undefined,
         });
+
+        if (
+          !isReviewMode &&
+          !isInterviewMode &&
+          job.data.userContent.startsWith("[Continue]") &&
+          currentNode &&
+          !toolResultsHaveInteractiveBlock(loopResult.toolResults)
+        ) {
+          const fallbackBlock = createFallbackInteractiveBlock(currentNode);
+          const fallbackResult = {
+            success: true,
+            fallback: true,
+            reason: "missing_interactive_lesson",
+            uiBlocks: [fallbackBlock],
+          };
+
+          loopResult.toolResults.push({
+            toolName: "renderUI",
+            result: fallbackResult,
+          });
+
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.ToolResult, {
+              data: { toolName: "renderUI", result: fallbackResult },
+            }),
+          );
+          await publisher.publish(
+            channel,
+            createSSEEvent(SSEEventType.UiBlocks, {
+              data: { uiBlocks: [fallbackBlock] },
+            }),
+          );
+        }
 
         // Post-process: async compaction if needed
         if (prepared.needsCompaction) {

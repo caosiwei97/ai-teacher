@@ -176,7 +176,7 @@ export function useChatStream(
     ) => {
       e?.preventDefault();
       const text = overrideText ?? input;
-      if (!text.trim() || isLoading) return;
+      if (!text.trim() || isLoading) return false;
       const showUser = submitOptions?.showUser ?? true;
 
       const userMessage: UIMessage<MessageMetadata> = {
@@ -297,7 +297,10 @@ export function useChatStream(
                   metadata: {
                     ...newMessages[assistantIdx].metadata,
                     annotations: appendToolToLastStep(
-                      [...existing, { toolName, args: data.args }],
+                      [
+                        ...existing,
+                        { toolName, args: data.input ?? data.args },
+                      ],
                       toolName,
                     ),
                   },
@@ -662,6 +665,7 @@ export function useChatStream(
         }
         options?.onFinish?.();
       }
+      return true;
     },
     [input, isLoading, messages, sessionId, options],
   );
@@ -793,7 +797,10 @@ export function useChatStream(
                     metadata: {
                       ...prev[idx].metadata,
                       annotations: appendToolToLastStep(
-                        [...existing, { toolName, args: data.args }],
+                        [
+                          ...existing,
+                          { toolName, args: data.input ?? data.args },
+                        ],
                         toolName,
                       ),
                     },
