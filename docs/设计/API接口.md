@@ -1,8 +1,8 @@
 # AI Teacher — API 接口文档
 
-> 版本：v1.3
-> 更新日期：2026-06-30
-> 状态：已对齐实际实现（含多 Provider、发消息才建会话、title-updated 事件、env-status 端点）
+> 版本：v1.4
+> 更新日期：2026-07-01
+> 状态：已对齐实际实现（含多 Provider、模型用量与上下文事件、env-status 端点）
 
 ---
 
@@ -228,18 +228,30 @@ data: {"type":"<event-type>","content":...,"data":...}
 
 #### SSE 事件类型
 
-| 事件类型          | 说明               | 数据格式                                                             |
-| ----------------- | ------------------ | -------------------------------------------------------------------- |
-| `text-delta`      | 流式文本片段       | `{ content: string }`                                                |
-| `tool-call`       | 工具调用开始       | `{ data: { toolName, input } }`                                      |
-| `tool-result`     | 工具调用结果       | `{ data: { toolName, result } }`                                     |
-| `ui-blocks`       | 结构化教学组件     | `{ data: { uiBlocks: UIBlock[] } }`                                  |
-| `code-push`       | 代码推送到编辑器   | `{ data: { code, language, instruction? } }`                         |
-| `ask-question`    | 聊天内诊断题       | `{ data: { questions, question, nodeId } }`                          |
-| `roadmap-updated` | 路线图节点状态变更 | `{ data: { nodes: RoadmapNode[] } }`                                 |
-| `session-updated` | 会话状态变更       | `{ data: { masteredNodes?, totalNodes?, title?, learningStatus? } }` |
-| `title-updated`   | 会话标题生成完成   | `{ data: { title: string } }`                                        |
-| `error`           | 错误               | `{ data: { message } }`                                              |
+| 事件类型          | 说明               | 数据格式                                                                  |
+| ----------------- | ------------------ | ------------------------------------------------------------------------- |
+| `text-delta`      | 流式文本片段       | `{ content: string }`                                                     |
+| `tool-call`       | 工具调用开始       | `{ data: { toolName, input } }`                                           |
+| `tool-result`     | 工具调用结果       | `{ data: { toolName, result } }`                                          |
+| `ui-blocks`       | 结构化教学组件     | `{ data: { uiBlocks: UIBlock[] } }`                                       |
+| `code-push`       | 代码推送到编辑器   | `{ data: { code, language, instruction? } }`                              |
+| `ask-question`    | 聊天内诊断题       | `{ data: { questions, question, nodeId } }`                               |
+| `roadmap-updated` | 路线图节点状态变更 | `{ data: { nodes: RoadmapNode[] } }`                                      |
+| `session-updated` | 会话状态变更       | `{ data: { masteredNodes?, totalNodes?, title?, learningStatus? } }`      |
+| `title-updated`   | 会话标题生成完成   | `{ data: { title: string } }`                                             |
+| `step-start`      | Agent 步骤开始     | `{ step, total, t0 }`                                                     |
+| `step-end`        | Agent 步骤结束     | `{ step, durationMs }`                                                    |
+| `reasoning-delta` | 推理过程片段       | `{ step, text }`                                                          |
+| `failover`        | 模型降级轨迹       | `{ from, to, reason, step }`                                              |
+| `loop-warning`    | 循环调用预警       | `{ type, toolName, step }`                                                |
+| `usage`           | 单次模型调用用量   | `{ data: { usage, modelId, provider?, contextWindow } }`                  |
+| `context-info`    | 历史压缩状态       | `{ data: { estimatedHistoryTokens, compactionBudget, needsCompaction } }` |
+| `done`            | 本轮流式响应结束   | `{ reason?: "aborted" }`                                                  |
+| `error`           | 错误               | `{ data: { message } }`                                                   |
+
+`usage.contextWindow` 来自项目维护的模型元数据；未知或自定义模型返回
+`null`，前端不会猜测。`context-info.compactionBudget` 仅表示历史消息压缩策略，
+不是模型上下文窗口。
 
 ### 后端副作用（异步持久化）
 
